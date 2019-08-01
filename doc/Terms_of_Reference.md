@@ -1,9 +1,12 @@
 This document lays out terms of reference for CCL developers and contributors in the wider TJP and LSST DESC context.
 
 Background:
+-----------
+
  * This document lays out terms of reference for TJPCov developers and contributors in the wider TJP and LSST DESC context.
  
- Scope: 
+Scope: 
+------
   * TJPCov provides a set of APIs for calculation of covariance (and cross-covariance) matrices (or other descriptions of measurement uncertainty as required) for all main canonical large scale structure cosmological probes in DESC:
     - weak lensing shear
     - galaxy clustering
@@ -32,6 +35,7 @@ Background:
       
    * Boundaries of TJPCov:
      - TJPCov does not support calculation of covariance matrices that are not covariant with the main large-scale structure probes (i.e supoernovae luministity distance)
+     - TJPCov performs theoretical computations of the covariance matrix given survey properties and assumed cosmology. It does not perform calculations on the data, e.g. various boot-strap techniques
      - In general, TJPCov does not support covariance arising from systematic effects although exceptions could be made on as-needed basis (i.e. we provide covariance matrix as observed by a perfect instrument with no galactic foregrounds, etc.)
      
    
