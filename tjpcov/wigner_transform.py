@@ -147,6 +147,7 @@ def wigner_d_parallel(s1,s2,theta,l,ncpu=None,l_use_bessel=1.e4):
         ncpu=cpu_count()
     p=Pool(ncpu)
     d_mat=np.array(p.map(partial(wigner_d,s1,s2,theta,l_use_bessel=l_use_bessel),l))
+    p.close()
     return d_mat[:,:,0].T
 
 def bin_mat(r=[],mat=[],r_bins=[]):#works for cov and skewness
