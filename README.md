@@ -24,6 +24,7 @@ When you want to push a new version to pip (the server is called PyPI) then:
 1. increase the version number in setup.py
 2. create an account at pypi.org if you don't have one already
 3. run these commands:
+4. ask Joe Zuntz to be added to the collaborator list for the project
 
 ```
 # just the first time:
