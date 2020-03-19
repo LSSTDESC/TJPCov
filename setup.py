@@ -6,12 +6,17 @@ http://opensource.org/licenses/MIT
 """
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
-    name='tjocov',
+    name='tjpcov',
     version='0.0.1',
     description='Covariances for LSST DESC',
     url='https://github.com/LSSTDESC/tjpcov',
-    maintainer='Sukhdeep Singh',
+    author='Sukhdeep Singh',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     license='MIT',
     classifiers=[
         'Intended Audience :: Developers',
@@ -20,5 +25,6 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     packages=['tjpcov'],
-    install_requires=['scipy', 'numpy']
+    install_requires=['scipy', 'numpy', 'Jinja2', 'pyyaml'],
+    python_requires='>=3.6',
 )
