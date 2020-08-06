@@ -193,7 +193,7 @@ def bin_mat(r=[],mat=[],r_bins=[]):#works for cov and skewness
         return bin_center,mat_int
     
 def bin_cov(r=[],cov=[],r_bins=[]):
-        bin_center=np.sqrt(r_bins[1:]*r_bins[:-1])
+        bin_center=0.5*(r_bins[1:]+r_bins[:-1])
         n_bins=len(bin_center)
         cov_int=np.zeros((n_bins,n_bins),dtype='float64')
         bin_idx=np.digitize(r,r_bins)-1
