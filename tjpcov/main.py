@@ -2,7 +2,8 @@ import pyccl as ccl
 import sacc
 from tjpcov import wigner_transform, bin_cov, parse
 import numpy as np
-d2r = 180/np.pi
+d2r = np.pi/180
+import pdb
 
 class CovarianceCalculator():
     def __init__(self,
@@ -30,6 +31,7 @@ class CovarianceCalculator():
             maps 
             if float it is assumed to be f_sky value
         """
+
         if isinstance(cosmo_fn, str):
             try:
                 cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
@@ -74,6 +76,8 @@ class CovarianceCalculator():
 
         self.theta,  self.theta_edges = th_list
         self.theta_bins = np.sqrt(self.theta_edges[1:]*self.theta_edges[:-1])
+
+        # ell is the value for WT
         self.ell, self.ell_bins, self.ell_edges = ell_list
 
         print("Preparing WT...")
@@ -81,18 +85,15 @@ class CovarianceCalculator():
         print("Done!")
         return
 
-
-
     def print_setup(self):
         """
-        Prints current setup
+        TODO: Check the current setup for TJPCovs
         """
         cosmo = self.cosmo
-        ell  = self.ell
+        ell = self.ell
 
-
-    def set_ell_theta(self, ang_min, ang_max, n_ang, 
-                        ang_scale='linear', do_xi=False):
+    def set_ell_theta(self, ang_min, ang_max, n_ang,
+                      ang_scale='linear', do_xi=False):
         """
         Utility for return custom theta/ell bins (outside sacc)
 
@@ -127,10 +128,8 @@ class CovarianceCalculator():
 
         return ang, ang_edges
 
-
-
-    def get_ell_theta(self, two_point_data, data_type, tracer_comb, ang_scale, 
-                        do_xi=False):
+    def get_ell_theta(self, two_point_data, data_type, tracer_comb, ang_scale,
+                      do_xi=False):
         """
         Get ell or theta for bins given the sacc object 
         For now, presuming only log and linear bins 
@@ -163,15 +162,14 @@ class CovarianceCalculator():
             ang_scale = 'linear'
 
         ang, ang_edges = self.set_ell_theta(angb_min-del_ang/2,
-                                       angb_max+del_ang/2,
-                                       len(ang_bins),
-                                       ang_scale=ang_scale, do_xi=do_xi)
+                                            angb_max+del_ang/2,
+                                            len(ang_bins),
+                                            ang_scale=ang_scale, do_xi=do_xi)
         # Sanity check
         if ang_scale == 'linear':
             assert np.allclose((ang_edges[1:]+ang_edges[:-1])/2, ang_bins), \
                 "differences in produced ell/theta"
         return ang, ang_bins, ang_edges
-
 
     def wt_setup(self, ell, theta):
         """
@@ -189,30 +187,28 @@ class CovarianceCalculator():
         # theta_rad = two_point_data.metadata['th']*d2r
         # get_ell_theta()
 
+        WT_factors = {}
+        WT_factors['lens', 'source'] = (0, 2)
+        WT_factors['source', 'lens'] = (2, 0)  # same as (0,2)
+        WT_factors['source', 'source'] = {'plus': (2, 2), 'minus': (2, -2)}
+        WT_factors['lens', 'lens'] = (0, 0)
 
-        WT_factors={}
-        WT_factors['lens','source']=(0,2)
-        WT_factors['source','lens']=(2,0) #same as (0,2)
-        WT_factors['source','source']={'plus':(2,2),'minus':(2,-2)}
-        WT_factors['lens','lens']=(0,0)
+        self.WT_factors = WT_factors
 
         ell = np.array(ell)
-        if not np.alltrue(ell>1):
+        if not np.alltrue(ell > 1):
             # fao check warnings in WT for ell < 2
             print("Removing ell=1 for Wigner Transformation")
-            ell = ell[(ell>1)]
+            ell = ell[(ell > 1)]
 
-        WT_kwargs={'l': ell,
-                   'theta': theta*d2r,
-                   's1_s2':[(2,2),(2,-2),(0,2),(2,0),(0,0)]}
+        WT_kwargs = {'l': ell,
+                     'theta': theta/d2r,
+                     's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
 
-
-        WT=wigner_transform(**WT_kwargs)
+        WT = wigner_transform(**WT_kwargs)
         return WT
 
-
-
-    def get_cov_WT_spin(tracer_comb=None):
+    def get_cov_WT_spin(self, tracer_comb=None):
         """
         Parameters:
         -----------
@@ -223,193 +219,223 @@ class CovarianceCalculator():
 
         """
     #     tracers=tuple(i.split('_')[0] for i in tracer_comb)
-        tracers=[]
+        tracers = []
         for i in tracer_comb:
             if 'lens' in i:
-                tracers+=['lens']
+                tracers += ['lens']
             if 'src' in i:
-                tracers+=['source']
-        return WT_factors[tuple(tracers)]
+                tracers += ['source']
+        return self.WT_factors[tuple(tracers)]
+
+    def get_tracer_info(self, two_point_data={}):
+        """
+        Creates CCL tracer objects and computes the noise for all the tracers
+        Check usage: Can we call all the tracer at once?
+
+        Parameters:
+        -----------
+            two_point_data (sacc obj):
+
+        Returns:
+        --------
+            ccl_tracers: dict, ccl obj
+                ccl.WeakLensingTracer or ccl.NumberCountsTracer
+            tracer_Noise ({dict: float}): 
+                shot (shape) noise for lens (sources)
+        """
+        ccl_tracers = {}
+        tracer_Noise = {}
+        for tracer in two_point_data.tracers:
+            tracer_dat = two_point_data.get_tracer(tracer)
+            z = tracer_dat.z
+
+            # FIXME: Following should be read from sacc dataset.--------------
+            Ngal = 26.  # arc_min^2
+            sigma_e = .26
+            b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
+            AI = .5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
+            Ngal = Ngal*3600/d2r**2
+            # ---------------------------------------------------------------
+
+            dNdz = tracer_dat.nz
+            dNdz /= (dNdz*np.gradient(z)).sum()
+            dNdz *= Ngal
+
+            if 'source' in tracer or 'src' in tracer:
+                ccl_tracers[tracer] = ccl.WeakLensingTracer(
+                    self.cosmo, dndz=(z, dNdz), ia_bias=(z, AI))
+                # CCL automatically normalizes dNdz
+                tracer_Noise[tracer] = sigma_e**2/Ngal
+            elif 'lens' in tracer:
+                tracer_Noise[tracer] = 1./Ngal
+                ccl_tracers[tracer] = ccl.NumberCountsTracer(
+                    self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+        return ccl_tracers, tracer_Noise
 
 
-
-    def get_tracer_info(self,two_point_data={}):
-            """
-            Creates CCL tracer objects and computes the noise for all the tracers
-            Check usage: Can we call all the tracer at once?
-
-            Parameters:
-            -----------
-                two_point_data (sacc obj):
-
-            Returns:
-            --------
-                ccl_tracers: ccl obj
-                    ccl.WeakLensingTracer or ccl.NumberCountsTracer
-                tracer_Noise ({dict: float}): 
-                    shot (shape) noise for lens (sources)
-            """
-            ccl_tracers = {}
-            tracer_Noise = {}
-            for tracer in two_point_data.tracers:
-                tracer_dat = two_point_data.get_tracer(tracer)
-                z = tracer_dat.z
-
-                # FIXME: Following should be read from sacc dataset.--------------
-                Ngal = 26.  # arc_min^2
-                sigma_e = .26
-                b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
-                AI = .5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
-                Ngal = Ngal*3600/d2r**2
-                # ---------------------------------------------------------------
-
-                dNdz = tracer_dat.nz
-                dNdz /= (dNdz*np.gradient(z)).sum()
-                dNdz *= Ngal
-
-                if 'source' in tracer or 'src' in tracer:
-                    ccl_tracers[tracer] = ccl.WeakLensingTracer(
-                        self.cosmo, dndz=(z, dNdz), ia_bias=(z, AI))
-                    # CCL automatically normalizes dNdz
-                    tracer_Noise[tracer] = sigma_e**2/Ngal
-                elif 'lens' in tracer:
-                    tracer_Noise[tracer] = 1./Ngal
-                    ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                        self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
-            return ccl_tracers, tracer_Noise
-
-
-    def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None, ccl_tracers=None, tracer_Noise=None,
-                        two_point_data=None, do_xi=False, xi_plus_minus1='plus', xi_plus_minus2='plus'): 
+    def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None, 
+                        data_type1 = None, data_type2=None,
+                        ccl_tracers=None, tracer_Noise=None,
+                        two_point_data=None, do_xi=False, 
+                        xi_plus_minus1='plus', xi_plus_minus2='plus'):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
-        
+
         Returns:
         --------
             final:  covariance for C_ell
             final_b : covariance for xi
         """
-        #fsky should be read from the sacc
-        #tracers 1,2,3,4=tracer_comb1[0],tracer_comb1[1],tracer_comb2[0],tracer_comb2[1]
-        #ell=two_point_data.metadata['ell']
+        # fsky should be read from the sacc
+        # tracers 1,2,3,4=tracer_comb1[0],tracer_comb1[1],tracer_comb2[0],tracer_comb2[1]
+        # ell=two_point_data.metadata['ell']
+        # fao to discuss: indices 
         cosmo = self.cosmo
 
+
         if not do_xi:
-            ell = two_point_data.get_cl
-        cl={}
-        cl[13] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[0]], ccl_tracers[tracer_comb2[0]], ell)
-        cl[24] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[1]], ccl_tracers[tracer_comb2[1]], ell)
-        cl[14] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[0]], ccl_tracers[tracer_comb2[1]], ell)
-        cl[23] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[1]], ccl_tracers[tracer_comb2[0]], ell)
-        
-        SN={}
-        SN[13]=tracer_Noise[tracer_comb1[0]] if tracer_comb1[0]==tracer_comb2[0]  else 0
-        SN[24]=tracer_Noise[tracer_comb1[1]] if tracer_comb1[1]==tracer_comb2[1]  else 0
-        SN[14]=tracer_Noise[tracer_comb1[0]] if tracer_comb1[0]==tracer_comb2[1]  else 0
-        SN[23]=tracer_Noise[tracer_comb1[1]] if tracer_comb1[1]==tracer_comb2[0]  else 0
-        
-        if do_xi:
-            norm=np.pi*4*two_point_data.metadata['fsky']
-        else: #do c_ell
-            norm=(2*ell+1)*np.gradient(ell)*two_point_data.metadata['fsky']
-
-        coupling_mat={}
-        coupling_mat[1324]=np.eye(len(ell)) #placeholder
-        coupling_mat[1423]=np.eye(len(ell)) #placeholder
-        
-        cov={}
-        cov[1324]=np.outer(cl[13]+SN[13],cl[24]+SN[24])*coupling_mat[1324]
-        cov[1423]=np.outer(cl[14]+SN[14],cl[23]+SN[23])*coupling_mat[1423]
-        
-        cov['final']=cov[1423]+cov[1324]
-        
-        if do_xi:
-            s1_s2_1=get_cov_WT_spin(tracer_comb=tracer_comb1)
-            s1_s2_2=get_cov_WT_spin(tracer_comb=tracer_comb2)
-            if isinstance(s1_s2_1,dict):
-                s1_s2_1=s1_s2_1[xi_plus_minus1] 
-            if isinstance(s1_s2_2,dict):
-                s1_s2_2=s1_s2_2[xi_plus_minus2] 
-            th,cov['final']=WT.projected_covariance2(l_cl=ell,s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2,
-                                                          cl_cov=cov['final'])
-
-        cov['final']/=norm
-        
-        if do_xi:
-            thb,cov['final_b']=bin_cov(r=th/d2r,r_bins=two_point_data.metadata['th_bins'],cov=cov['final']) 
+            ell = self.ell
         else:
-            if two_point_data.metadata['ell_bins'] is not None:
-                lb,cov['final_b']=bin_cov(r=ell,r_bins=two_point_data.metadata['ell_bins'],cov=cov['final']) 
-                
+            #FIXME:  check the max_ell here in the case of only xi
+            ell = self.ell
+
+
+        cl = {}
+        cl[13] = ccl.angular_cl(
+            cosmo, ccl_tracers[tracer_comb1[0]], ccl_tracers[tracer_comb2[0]], ell)
+        cl[24] = ccl.angular_cl(
+            cosmo, ccl_tracers[tracer_comb1[1]], ccl_tracers[tracer_comb2[1]], ell)
+        cl[14] = ccl.angular_cl(
+            cosmo, ccl_tracers[tracer_comb1[0]], ccl_tracers[tracer_comb2[1]], ell)
+        cl[23] = ccl.angular_cl(
+            cosmo, ccl_tracers[tracer_comb1[1]], ccl_tracers[tracer_comb2[0]], ell)
+
+        SN = {}
+        SN[13] = tracer_Noise[tracer_comb1[0]
+                              ] if tracer_comb1[0] == tracer_comb2[0] else 0
+        SN[24] = tracer_Noise[tracer_comb1[1]
+                              ] if tracer_comb1[1] == tracer_comb2[1] else 0
+        SN[14] = tracer_Noise[tracer_comb1[0]
+                              ] if tracer_comb1[0] == tracer_comb2[1] else 0
+        SN[23] = tracer_Noise[tracer_comb1[1]
+                              ] if tracer_comb1[1] == tracer_comb2[0] else 0
+
+        if do_xi:
+            norm = np.pi*4*two_point_data.metadata['fsky']
+        else:  # do c_ell
+            norm = (2*ell+1)*np.gradient(ell)*two_point_data.metadata['fsky']
+
+        coupling_mat = {}
+        coupling_mat[1324] = np.eye(len(ell))  # placeholder
+        coupling_mat[1423] = np.eye(len(ell))  # placeholder
+
+        cov = {}
+        cov[1324] = np.outer(cl[13]+SN[13], cl[24]+SN[24])*coupling_mat[1324]
+        cov[1423] = np.outer(cl[14]+SN[14], cl[23]+SN[23])*coupling_mat[1423]
+
+        cov['final'] = cov[1423]+cov[1324]
+
+        if do_xi:
+            #Fixme: CAN WE SET A CUSTOM ELL FOR do_xi cas, in order to use 
+            # a single sacc input file
+            ell = self.ell
+            s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
+            s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
+            if isinstance(s1_s2_1, dict):
+                s1_s2_1 = s1_s2_1[xi_plus_minus1]
+            if isinstance(s1_s2_2, dict):
+                s1_s2_2 = s1_s2_2[xi_plus_minus2]
+            th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1, 
+                                                        s1_s2_cross=s1_s2_2,
+                                                        cl_cov=cov['final'])
+
+        cov['final'] /= norm
+        pdb.set_trace()
+        if do_xi:
+            thb, cov['final_b'] = bin_cov(
+                r=self.theta/d2r, r_bins=self.theta_edges, cov=cov['final'])
+                # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
+        else:
+            # if two_point_data.metadata['ell_bins'] is not None:
+            if self.ell_edges is not None:    
+                lb, cov['final_b'] = bin_cov(
+                    r=self.ell, r_bins=self.ell_edges, cov=cov['final'])
+                    # r=ell, r_bins=two_point_data.metadata['ell_bins'], cov=cov['final'])
+
     #     cov[1324]=None #if want to save memory
     #     cov[1423]=None #if want to save memory
         return cov
 
 
-
-    #compute all the covariances and then combine them into one single giant matrix
-    def get_all_cov(two_point_data={},do_xi=False):
+    def get_all_cov(self, do_xi=False):
         """
         Compute all the covariances and then combine them into one single giant matrix
         Parameters:
         -----------
         two_point_data (sacc obj): sacc object containg two_point data
-        
+
         Returns:
         --------
         cov_full (Npt x Npt numpy array):
             Covariance matrix for all combinations. 
             Npt = (number of bins ) * (number of combinations)
-        
+
         """
-        #FIXME: Only input needed should be two_point_data, 
-        #which is the sacc data file. Other parameters should be 
-        #included within sacc and read from there."""
+        # FIXME: Only input needed should be two_point_data,
+        # which is the sacc data file. Other parameters should be
+        # included within sacc and read from there."""
+
+        two_point_data = self.xi_data if do_xi else self.cl_data
         
-        ccl_tracers, tracer_Noise = get_tracer_info(two_point_data=two_point_data)
-        
-        tracer_combs=two_point_data.get_tracer_combinations() # we will loop over all these
-        N2pt=len(tracer_combs)
-        
+
+        ccl_tracers, tracer_Noise = get_tracer_info(
+            two_point_data=two_point_data)
+
+        # we will loop over all these
+        tracer_combs = two_point_data.get_tracer_combinations()
+        N2pt = len(tracer_combs)
+
         if two_point_data.metadata['ell_bins'] is not None:
-            Nell_bins=len(two_point_data.metadata['ell_bins'])-1
+            Nell_bins = len(two_point_data.metadata['ell_bins'])-1
         else:
-            Nell_bins=len(two_point_data.metadata['ell'])
-            
+            Nell_bins = len(two_point_data.metadata['ell'])
+
         if do_xi:
-            Nell_bins=len(two_point_data.metadata['th_bins'])-1
-        
-        cov_full=np.zeros((Nell_bins*N2pt,Nell_bins*N2pt))
-        
-        #Fix this loop for uneven scale cuts (different N_ell)
+            Nell_bins = len(two_point_data.metadata['th_bins'])-1
+
+        cov_full = np.zeros((Nell_bins*N2pt, Nell_bins*N2pt))
+
+        # Fix this loop for uneven scale cuts (different N_ell)
         for i in np.arange(N2pt):
             print("{}/{}".format(i+1, N2pt))
-            tracer_comb1=tracer_combs[i]
-            indx_i=i*Nell_bins
-            for j in np.arange(i,N2pt):
-                tracer_comb2=tracer_combs[j]
-                indx_j=j*Nell_bins
-                cov_ij=cl_gaussian_cov(tracer_comb1=tracer_comb1,
-                                       tracer_comb2=tracer_comb2,                            
-                                       ccl_tracers=ccl_tracers,
-                                       tracer_Noise=tracer_Noise,
-                                       do_xi=do_xi,
-                                       two_point_data=two_point_data)
-                
+            tracer_comb1 = tracer_combs[i]
+            indx_i = i*Nell_bins
+            for j in np.arange(i, N2pt):
+                tracer_comb2 = tracer_combs[j]
+                indx_j = j*Nell_bins
+                cov_ij = cl_gaussian_cov(tracer_comb1=tracer_comb1,
+                                         tracer_comb2=tracer_comb2,
+                                         ccl_tracers=ccl_tracers,
+                                         tracer_Noise=tracer_Noise,
+                                         do_xi=do_xi,
+                                         two_point_data=two_point_data)
+
                 if do_xi or two_point_data.metadata['ell_bins'] is not None:
-                    cov_ij=cov_ij['final_b']
+                    cov_ij = cov_ij['final_b']
                 else:
-                    cov_ij=cov_ij['final']
-                    
-                cov_full[indx_i:indx_i+Nell_bins, indx_j:indx_j+Nell_bins]=cov_ij
-                cov_full[indx_j:indx_j+Nell_bins, indx_i:indx_i+Nell_bins]=cov_ij.T
+                    cov_ij = cov_ij['final']
+
+                cov_full[indx_i:indx_i+Nell_bins,
+                         indx_j:indx_j+Nell_bins] = cov_ij
+                cov_full[indx_j:indx_j+Nell_bins,
+                         indx_i:indx_i+Nell_bins] = cov_ij.T
         return cov_full
 
 
     def create_sacc_cov(output=None):
         """ Write created cov to a new sacc object
         """
-        pass    
+        pass
 
 
 if __name__=="__main__":
@@ -418,4 +444,20 @@ if __name__=="__main__":
     xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
     cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
 
-    tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn, sacc_fn_xi=xi_fn)
+    tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn, 
+                                    sacc_fn_xi=xi_fn)
+
+    pdb.set_trace()
+    ccl_tracers, tracer_Noise = tjp.get_tracer_info(tjp.cl_data)
+    trcs = tjp.cl_data.get_tracer_combinations()
+
+    pdb.set_trace()
+    gcov_cl = tjp.cl_gaussian_cov(tracer_comb1= ('lens0', 'lens0'), 
+                        tracer_comb2=('lens0', 'lens0'), 
+                        data_type1='galaxy_density_cl',
+                        data_type2='galaxy_density_cl',
+                        ccl_tracers=ccl_tracers,
+                        tracer_Noise=tracer_Noise,
+                       two_point_data=tjp.cl_data)
+    print(gcov_cl['final'])
+    print(gcov_cl['final_b'].diagonal())
