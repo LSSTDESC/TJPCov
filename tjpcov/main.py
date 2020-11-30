@@ -276,7 +276,6 @@ class CovarianceCalculator():
         return ccl_tracers, tracer_Noise
 
     def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
-                        data_type1=None, data_type2=None,
                         ccl_tracers=None, tracer_Noise=None,
                         two_point_data=None, do_xi=False,
                         xi_plus_minus1='plus', xi_plus_minus2='plus'):
@@ -385,50 +384,58 @@ class CovarianceCalculator():
 
         two_point_data = self.xi_data if do_xi else self.cl_data
 
-        ccl_tracers, tracer_Noise = get_tracer_info(
+        ccl_tracers, tracer_Noise = self.get_tracer_info(
             two_point_data=two_point_data)
 
         # we will loop over all these
         tracer_combs = two_point_data.get_tracer_combinations()
         N2pt = len(tracer_combs)
 
-        ncov = len(two_point_data.indices())
+        N_data = len(two_point_data.indices())
+        print(f"Producing covariance with {N_data}x{N_data} points", end=" ")
+        print(f"for {N2pt} tracers combinations")
 
-        if two_point_data.metadata['ell_bins'] is not None:
-            Nell_bins = len(two_point_data.metadata['ell_bins'])-1
-        else:
-            Nell_bins = len(two_point_data.metadata['ell'])
+        # if two_point_data.metadata['ell_bins'] is not None:
+        #     Nell_bins = len(two_point_data.metadata['ell_bins'])-1
+        # else:
+        #     Nell_bins = len(two_point_data.metadata['ell'])
 
-        if do_xi:
-            Nell_bins = len(two_point_data.metadata['th_bins'])-1
+        # if do_xi:
+        #     Nell_bins = len(two_point_data.metadata['th_bins'])-1
 
         # cov_full = np.zeros((Nell_bins*N2pt, Nell_bins*N2pt))
-        cov_full = np.zeros((ncov, ncov))
+
+        cov_full = np.zeros((N_data, N_data))
 
         # Fix this loop for uneven scale cuts (different N_ell)
         for i in np.arange(N2pt):
             print("{}/{}".format(i+1, N2pt))
             tracer_comb1 = tracer_combs[i]
-            indx_i = i*Nell_bins
+            # solution for non-equal number of ell in bins
+            Nell_bins_i = len(two_point_data.indices(tracers=tracer_comb1))
+            indx_i = i*Nell_bins_i
             for j in np.arange(i, N2pt):
                 tracer_comb2 = tracer_combs[j]
-                indx_j = j*Nell_bins
-                cov_ij = cl_gaussian_cov(tracer_comb1=tracer_comb1,
+                Nell_bins_j = len(two_point_data.indices(tracers=tracer_comb2))
+                indx_j = j*Nell_bins_j
+                cov_ij = self.cl_gaussian_cov(tracer_comb1=tracer_comb1,
                                          tracer_comb2=tracer_comb2,
                                          ccl_tracers=ccl_tracers,
                                          tracer_Noise=tracer_Noise,
                                          do_xi=do_xi,
                                          two_point_data=two_point_data)
 
-                if do_xi or two_point_data.metadata['ell_bins'] is not None:
+                # if do_xi or two_point_data.metadata['ell_bins'] is not None:
+                #check
+                if do_xi or self.ell_bins is not None:
                     cov_ij = cov_ij['final_b']
                 else:
                     cov_ij = cov_ij['final']
 
-                cov_full[indx_i:indx_i+Nell_bins,
-                         indx_j:indx_j+Nell_bins] = cov_ij
-                cov_full[indx_j:indx_j+Nell_bins,
-                         indx_i:indx_i+Nell_bins] = cov_ij.T
+                cov_full[indx_i:indx_i+Nell_bins_i,
+                         indx_j:indx_j+Nell_bins_j] = cov_ij
+                cov_full[indx_j:indx_j+Nell_bins_i,
+                         indx_i:indx_i+Nell_bins_j] = cov_ij.T
         return cov_full
 
     def create_sacc_cov(output=None):
@@ -457,8 +464,6 @@ if __name__ == "__main__":
 
     gcov_cl_0 = tjp.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
                                     tracer_comb2=('lens0', 'lens0'),
-                                    data_type1='galaxy_density_cl',
-                                    data_type2='galaxy_density_cl',
                                     ccl_tracers=ccl_tracers,
                                     tracer_Noise=tracer_Noise,
                                     two_point_data=tjp.cl_data)
@@ -471,8 +476,6 @@ if __name__ == "__main__":
 
     gcov_cl_1 = tjp2.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
                                      tracer_comb2=('lens0', 'lens0'),
-                                     data_type1='galaxy_density_cl',
-                                     data_type2='galaxy_density_cl',
                                      ccl_tracers=ccl_tracers,
                                      tracer_Noise=tracer_Noise,
                                      two_point_data=tjp.cl_data)
@@ -482,4 +485,9 @@ if __name__ == "__main__":
 
     print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
     print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
+
+    covall = tjp2.get_all_cov()
+    print(covall.diagonal()/cov0cl.diagonal())
+    with open("../test/data/produced_covcl.pkl", "wb") as ff:
+        pickle.dump(covall, ff)
 
