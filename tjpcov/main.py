@@ -1,9 +1,10 @@
+import pdb
 import pyccl as ccl
 import sacc
 from tjpcov import wigner_transform, bin_cov, parse
 import numpy as np
 d2r = np.pi/180
-import pdb
+
 
 class CovarianceCalculator():
     def __init__(self,
@@ -20,6 +21,8 @@ class CovarianceCalculator():
         Parameters
         ----------
         cosmo_fn : None, str
+            WARNING Cosmo  write_yaml seems to not pass 
+                    the transfer_function
             path to CCL yaml file 
             Fiducial Cosmology used in calculations
         sacc_fn_xi/cl : None, str
@@ -111,7 +114,7 @@ class CovarianceCalculator():
         if not do_xi:
             ang_delta = (ang_max-ang_min)//n_ang
             ang_edges = np.arange(ang_min, ang_max+1, ang_delta)
-            ang = np.arange(ang_min, ang_max + ang_delta)
+            ang = np.arange(ang_min, ang_max + ang_delta - 1)
 
         if do_xi:
             th_min = ang_min/60  # in degrees
@@ -272,11 +275,10 @@ class CovarianceCalculator():
                     self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
         return ccl_tracers, tracer_Noise
 
-
-    def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None, 
-                        data_type1 = None, data_type2=None,
+    def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
+                        data_type1=None, data_type2=None,
                         ccl_tracers=None, tracer_Noise=None,
-                        two_point_data=None, do_xi=False, 
+                        two_point_data=None, do_xi=False,
                         xi_plus_minus1='plus', xi_plus_minus2='plus'):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
@@ -289,16 +291,14 @@ class CovarianceCalculator():
         # fsky should be read from the sacc
         # tracers 1,2,3,4=tracer_comb1[0],tracer_comb1[1],tracer_comb2[0],tracer_comb2[1]
         # ell=two_point_data.metadata['ell']
-        # fao to discuss: indices 
+        # fao to discuss: indices
         cosmo = self.cosmo
-
 
         if not do_xi:
             ell = self.ell
         else:
-            #FIXME:  check the max_ell here in the case of only xi
+            # FIXME:  check the max_ell here in the case of only xi
             ell = self.ell
-
 
         cl = {}
         cl[13] = ccl.angular_cl(
@@ -336,7 +336,7 @@ class CovarianceCalculator():
         cov['final'] = cov[1423]+cov[1324]
 
         if do_xi:
-            #Fixme: CAN WE SET A CUSTOM ELL FOR do_xi cas, in order to use 
+            # Fixme: CAN WE SET A CUSTOM ELL FOR do_xi cas, in order to use
             # a single sacc input file
             ell = self.ell
             s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
@@ -345,27 +345,25 @@ class CovarianceCalculator():
                 s1_s2_1 = s1_s2_1[xi_plus_minus1]
             if isinstance(s1_s2_2, dict):
                 s1_s2_2 = s1_s2_2[xi_plus_minus2]
-            th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1, 
-                                                        s1_s2_cross=s1_s2_2,
-                                                        cl_cov=cov['final'])
+            th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
+                                                             s1_s2_cross=s1_s2_2,
+                                                             cl_cov=cov['final'])
 
         cov['final'] /= norm
-        pdb.set_trace()
         if do_xi:
             thb, cov['final_b'] = bin_cov(
                 r=self.theta/d2r, r_bins=self.theta_edges, cov=cov['final'])
-                # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
+            # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
         else:
             # if two_point_data.metadata['ell_bins'] is not None:
-            if self.ell_edges is not None:    
+            if self.ell_edges is not None:
                 lb, cov['final_b'] = bin_cov(
                     r=self.ell, r_bins=self.ell_edges, cov=cov['final'])
-                    # r=ell, r_bins=two_point_data.metadata['ell_bins'], cov=cov['final'])
+                # r=ell, r_bins=two_point_data.metadata['ell_bins'], cov=cov['final'])
 
     #     cov[1324]=None #if want to save memory
     #     cov[1423]=None #if want to save memory
         return cov
-
 
     def get_all_cov(self, do_xi=False):
         """
@@ -386,7 +384,6 @@ class CovarianceCalculator():
         # included within sacc and read from there."""
 
         two_point_data = self.xi_data if do_xi else self.cl_data
-        
 
         ccl_tracers, tracer_Noise = get_tracer_info(
             two_point_data=two_point_data)
@@ -394,6 +391,8 @@ class CovarianceCalculator():
         # we will loop over all these
         tracer_combs = two_point_data.get_tracer_combinations()
         N2pt = len(tracer_combs)
+
+        ncov = len(two_point_data.indices())
 
         if two_point_data.metadata['ell_bins'] is not None:
             Nell_bins = len(two_point_data.metadata['ell_bins'])-1
@@ -403,7 +402,8 @@ class CovarianceCalculator():
         if do_xi:
             Nell_bins = len(two_point_data.metadata['th_bins'])-1
 
-        cov_full = np.zeros((Nell_bins*N2pt, Nell_bins*N2pt))
+        # cov_full = np.zeros((Nell_bins*N2pt, Nell_bins*N2pt))
+        cov_full = np.zeros((ncov, ncov))
 
         # Fix this loop for uneven scale cuts (different N_ell)
         for i in np.arange(N2pt):
@@ -431,33 +431,55 @@ class CovarianceCalculator():
                          indx_i:indx_i+Nell_bins] = cov_ij.T
         return cov_full
 
-
     def create_sacc_cov(output=None):
         """ Write created cov to a new sacc object
         """
         pass
 
 
-if __name__=="__main__":
-    cosmo_filename = "../test/cosmo_desy1.yaml"
-    # sxi = sacc.Sacc.load_fits("../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits") 
+if __name__ == "__main__":
+    import pickle
+    with open("../test/data/cosmo_desy1_obj.pkl", 'rb') as ff:
+        cosmo = pickle.load(ff)
+    with open("../test/data/tjpcov_cl.pkl", "rb") as ff:
+        cov0cl = pickle.load(ff)
+
+    cosmo_filename = "../test/data/cosmo_desy1.yaml"
     xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
     cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
 
-    tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn, 
-                                    sacc_fn_xi=xi_fn)
+    # pyccl write_yaml seems to not transcript the transfer_function
+    tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
+                               sacc_fn_xi=xi_fn)
 
-    pdb.set_trace()
     ccl_tracers, tracer_Noise = tjp.get_tracer_info(tjp.cl_data)
     trcs = tjp.cl_data.get_tracer_combinations()
 
-    pdb.set_trace()
-    gcov_cl = tjp.cl_gaussian_cov(tracer_comb1= ('lens0', 'lens0'), 
-                        tracer_comb2=('lens0', 'lens0'), 
-                        data_type1='galaxy_density_cl',
-                        data_type2='galaxy_density_cl',
-                        ccl_tracers=ccl_tracers,
-                        tracer_Noise=tracer_Noise,
-                       two_point_data=tjp.cl_data)
-    print(gcov_cl['final'])
-    print(gcov_cl['final_b'].diagonal())
+    gcov_cl_0 = tjp.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
+                                    tracer_comb2=('lens0', 'lens0'),
+                                    data_type1='galaxy_density_cl',
+                                    data_type2='galaxy_density_cl',
+                                    ccl_tracers=ccl_tracers,
+                                    tracer_Noise=tracer_Noise,
+                                    two_point_data=tjp.cl_data)
+
+    tjp2 = CovarianceCalculator(cosmo_fn=cosmo, sacc_fn_cl=cl_fn,
+                                sacc_fn_xi=xi_fn)
+
+    ccl_tracers, tracer_Noise = tjp2.get_tracer_info(tjp.cl_data)
+    trcs = tjp2.cl_data.get_tracer_combinations()
+
+    gcov_cl_1 = tjp2.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
+                                     tracer_comb2=('lens0', 'lens0'),
+                                     data_type1='galaxy_density_cl',
+                                     data_type2='galaxy_density_cl',
+                                     ccl_tracers=ccl_tracers,
+                                     tracer_Noise=tracer_Noise,
+                                     two_point_data=tjp.cl_data)
+
+    print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:10])
+    print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:10])
+
+    print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
+    print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
+
