@@ -114,7 +114,7 @@ class CovarianceCalculator():
         if not do_xi:
             ang_delta = (ang_max-ang_min)//n_ang
             ang_edges = np.arange(ang_min, ang_max+1, ang_delta)
-            ang = np.arange(ang_min, ang_max + ang_delta - 1)
+            ang = np.arange(ang_min, ang_max + ang_delta - 2)
 
         if do_xi:
             th_min = ang_min/60  # in degrees
@@ -205,7 +205,7 @@ class CovarianceCalculator():
             ell = ell[(ell > 1)]
 
         WT_kwargs = {'l': ell,
-                     'theta': theta/d2r,
+                     'theta': theta*d2r,
                      's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
 
         WT = wigner_transform(**WT_kwargs)
@@ -349,9 +349,11 @@ class CovarianceCalculator():
                                                              cl_cov=cov['final'])
 
         cov['final'] /= norm
+
         if do_xi:
+            pdb.set_trace()
             thb, cov['final_b'] = bin_cov(
-                r=self.theta/d2r, r_bins=self.theta_edges, cov=cov['final'])
+                r=th/d2r, r_bins=self.theta_edges, cov=cov['final'])
             # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
         else:
             # if two_point_data.metadata['ell_bins'] is not None:
@@ -454,40 +456,45 @@ if __name__ == "__main__":
     cosmo_filename = "../test/data/cosmo_desy1.yaml"
     xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
     cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
+    check_yaml = False
+    if check_yaml :
+        # pyccl write_yaml seems to not transcript the transfer_function
+        tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
+                                   sacc_fn_xi=xi_fn)
 
-    # pyccl write_yaml seems to not transcript the transfer_function
-    tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
-                               sacc_fn_xi=xi_fn)
+        ccl_tracers, tracer_Noise = tjp.get_tracer_info(tjp.cl_data)
+        trcs = tjp.cl_data.get_tracer_combinations()
 
-    ccl_tracers, tracer_Noise = tjp.get_tracer_info(tjp.cl_data)
-    trcs = tjp.cl_data.get_tracer_combinations()
-
-    gcov_cl_0 = tjp.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
-                                    tracer_comb2=('lens0', 'lens0'),
-                                    ccl_tracers=ccl_tracers,
-                                    tracer_Noise=tracer_Noise,
-                                    two_point_data=tjp.cl_data)
+        gcov_cl_0 = tjp.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
+                                        tracer_comb2=('lens0', 'lens0'),
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        two_point_data=tjp.cl_data)
 
     tjp2 = CovarianceCalculator(cosmo_fn=cosmo, sacc_fn_cl=cl_fn,
                                 sacc_fn_xi=xi_fn)
 
-    ccl_tracers, tracer_Noise = tjp2.get_tracer_info(tjp.cl_data)
+    ccl_tracers, tracer_Noise = tjp2.get_tracer_info(tjp2.cl_data)
     trcs = tjp2.cl_data.get_tracer_combinations()
 
     gcov_cl_1 = tjp2.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
                                      tracer_comb2=('lens0', 'lens0'),
                                      ccl_tracers=ccl_tracers,
                                      tracer_Noise=tracer_Noise,
-                                     two_point_data=tjp.cl_data)
+                                     two_point_data=tjp2.cl_data)
 
-    print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:10])
+    if check_yaml:
+        print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:10])
     print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:10])
 
-    print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
+    if check_yaml:
+        print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
     print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
 
-    covall = tjp2.get_all_cov()
-    print(covall.diagonal()/cov0cl.diagonal())
-    with open("../test/data/produced_covcl.pkl", "wb") as ff:
-        pickle.dump(covall, ff)
+    if False:
+        covall = tjp2.get_all_cov()
+        print(covall.diagonal()/cov0cl.diagonal())
+        # with open("../test/data/produced_covcl.pkl", "wb") as ff:
+        #     pickle.dump(covall, ff)
+    tjp2.get_all_cov(do_xi=True)
 
