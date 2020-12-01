@@ -75,7 +75,7 @@ class CovarianceCalculator():
                                       ('lens0', 'lens0'),
                                       'linear')
         # fix this for the sacc file case:
-        th_list = self.set_ell_theta(25, 250, 20, do_xi=True)
+        th_list = self.set_ell_theta(2.5, 250, 20, do_xi=True)
 
         self.theta,  self.theta_edges = th_list
         self.theta_bins = np.sqrt(self.theta_edges[1:]*self.theta_edges[:-1])
