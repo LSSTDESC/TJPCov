@@ -13,7 +13,7 @@ class CovarianceCalculator():
                  sacc_fn_cl=None,  # harmonic space
                  window_fn=None):
         """
-        theta input in degrees
+        theta input in arcmin
         Is reading all config from a single yaml a good option?
         - sacc passing values after scale cuts and no angbin_edges
         - angbin_edges necessary for bin averages
@@ -21,7 +21,8 @@ class CovarianceCalculator():
 
         Parameters
         ----------
-        cosmo_fn : None, str
+        cosmo_fn : pyccl.object or str
+        	Receives the cosmo object or a the yaml filename
             WARNING CCL Cosmo write_yaml seems to not pass 
                     the transfer_function
             path to CCL yaml file 
@@ -62,7 +63,6 @@ class CovarianceCalculator():
 
         # fao Set this inside get_ell_theta ?
         ell, ell_bins, ell_edges = None, None, None
-        # theta input in arcmin
         theta, theta_bins, theta_edges = None, None, None
 
         self.cosmo = cosmo
@@ -88,6 +88,7 @@ class CovarianceCalculator():
         self.WT = self.wt_setup(self.ell, self.theta)
         print("Done!")
         return
+
 
     def print_setup(self):
         """
