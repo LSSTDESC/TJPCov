@@ -13,6 +13,7 @@ class CovarianceCalculator():
                  sacc_fn_cl=None,  # harmonic space
                  window_fn=None):
         """
+        theta input in degrees
         Is reading all config from a single yaml a good option?
         - sacc passing values after scale cuts and no angbin_edges
         - angbin_edges necessary for bin averages
@@ -21,7 +22,7 @@ class CovarianceCalculator():
         Parameters
         ----------
         cosmo_fn : None, str
-            WARNING Cosmo  write_yaml seems to not pass 
+            WARNING CCL Cosmo write_yaml seems to not pass 
                     the transfer_function
             path to CCL yaml file 
             Fiducial Cosmology used in calculations
@@ -95,6 +96,7 @@ class CovarianceCalculator():
         cosmo = self.cosmo
         ell = self.ell
 
+
     def set_ell_theta(self, ang_min, ang_max, n_ang,
                       ang_scale='linear', do_xi=False):
         """
@@ -110,7 +112,7 @@ class CovarianceCalculator():
             (theta, theta_edges ) (degrees):
         """
         # FIXME:
-        # Learning if sacc is passing this
+        # check if sacc is passing this
         if not do_xi:
             ang_delta = (ang_max-ang_min)//n_ang
             ang_edges = np.arange(ang_min, ang_max+1, ang_delta)
@@ -157,7 +159,7 @@ class CovarianceCalculator():
             # assuming log bins
             del_ang = (ang_bins[1:]/ang_bins[:-1]).mean()
             ang_scale = 'log'
-            assert 1 == 2
+            assert 1 == 1
 
         elif ang_name == 'ell':
             # assuming linear bins
@@ -284,8 +286,8 @@ class CovarianceCalculator():
 
         Returns:
         --------
-            final:  covariance for C_ell
-            final_b : covariance for xi
+            final:  unbinned covariance for C_ell
+            final_b : binned covariance 
         """
         # fsky should be read from the sacc
         # tracers 1,2,3,4=tracer_comb1[0],tracer_comb1[1],tracer_comb2[0],tracer_comb2[1]
@@ -335,8 +337,8 @@ class CovarianceCalculator():
         cov['final'] = cov[1423]+cov[1324]
 
         if do_xi:
-            # Fixme: CAN WE SET A CUSTOM ELL FOR do_xi cas, in order to use
-            # a single sacc input file
+            # Fixme: CAN WE SET A CUSTOM ELL FOR do_xi case, in order to use
+            # a single sacc input filefile
             ell = self.ell
             s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
             s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
@@ -351,7 +353,7 @@ class CovarianceCalculator():
         cov['final'] /= norm
 
         if do_xi:
-            pdb.set_trace()
+            #pdb.set_trace()
             thb, cov['final_b'] = bin_cov(
                 r=th/d2r, r_bins=self.theta_edges, cov=cov['final'])
             # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
@@ -395,7 +397,7 @@ class CovarianceCalculator():
 
         N_data = len(two_point_data.indices())
         print(f"Producing covariance with {N_data}x{N_data} points", end=" ")
-        print(f"for {N2pt} tracers combinations")
+        print(f"({N2pt} combinations of tracers)")
 
         # if two_point_data.metadata['ell_bins'] is not None:
         #     Nell_bins = len(two_point_data.metadata['ell_bins'])-1
@@ -448,15 +450,16 @@ class CovarianceCalculator():
 
 if __name__ == "__main__":
     import pickle
-    with open("../test/data/cosmo_desy1_obj.pkl", 'rb') as ff:
-        cosmo = pickle.load(ff)
-    with open("../test/data/tjpcov_cl.pkl", "rb") as ff:
+    # with open("../tests/data/cosmo_desy1_obj.pkl", 'rb') as ff:
+    with open("../tests/data/cosmos_desy1_v2p1p0.pkl", 'rb') as ff:
+            cosmo = pickle.load(ff)
+    with open("../tests/data/tjpcov_cl.pkl", "rb") as ff:
         cov0cl = pickle.load(ff)
 
-    cosmo_filename = "../test/data/cosmo_desy1.yaml"
+    cosmo_filename = "../tests/data/cosmo_desy1.yaml"
     xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
     cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
-    check_yaml = False
+    check_yaml = True
     if check_yaml :
         # pyccl write_yaml seems to not transcript the transfer_function
         tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
@@ -494,7 +497,7 @@ if __name__ == "__main__":
     if False:
         covall = tjp2.get_all_cov()
         print(covall.diagonal()/cov0cl.diagonal())
-        # with open("../test/data/produced_covcl.pkl", "wb") as ff:
+        # with open("../tests/data/produced_covcl.pkl", "wb") as ff:
         #     pickle.dump(covall, ff)
     tjp2.get_all_cov(do_xi=True)
 
