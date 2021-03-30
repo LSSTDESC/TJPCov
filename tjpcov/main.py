@@ -13,24 +13,26 @@ class CovarianceCalculator():
                  sacc_fn_cl=None,  # harmonic space
                  window_fn=None):
         """
-        theta input in arcmin
-        Is reading all config from a single yaml a good option?
-        - sacc passing values after scale cuts and no angbin_edges
-        - angbin_edges necessary for bin averages
-        - Find firecrown's way to handle survey features
+        Covariance Calculator object for TJPCov. 
+
+        .. note::
+            - the cosmo_fn parameter is always necessary  
+            - theta input in arcmin
+            - Is reading all config from a single yaml a good option?
+            - sacc passing values after scale cuts and no angbin_edges
+            - angbin_edges necessary for bin averages
+            - Check firecrown's way to handle survey features
 
         Parameters
         ----------
-        cosmo_fn : pyccl.object or str
-        	Receives the cosmo object or a the yaml filename
+        cosmo_fn ( pyccl.object or str ):
+            Receives the cosmo object or a the yaml filename
             WARNING CCL Cosmo write_yaml seems to not pass 
                     the transfer_function
-            path to CCL yaml file 
-            Fiducial Cosmology used in calculations
-        sacc_fn_xi/cl : None, str
+        sacc_fn_xi/cl (None, str):
             path to sacc file yaml
             sacc object containing the tracers and binning to be used in covariance calculation
-        window : None, dict, float
+        window (None, dict, float):
             If None, used window function specified in the sacc file
             if dict, the keys are sacc tracer names and values are either HealSparse inverse variance
             maps 
@@ -70,23 +72,36 @@ class CovarianceCalculator():
         self.xi_data = xi_data
         self.window_fn = window_fn  # windown handler TBD
 
+        # self.do_xi = False # TODO: this line will replace the WT initialization
         # fix this for the general case:
         ell_list = self.get_ell_theta(cl_data,
                                       'galaxy_density_cl',
                                       ('lens0', 'lens0'),
                                       'linear')
-        # fix this for the sacc file case:
-        th_list = self.set_ell_theta(2.5, 250, 20, do_xi=True)
 
-        self.theta,  self.theta_edges = th_list
-        self.theta_bins = np.sqrt(self.theta_edges[1:]*self.theta_edges[:-1])
+        # fix this for the sacc file case:
+        th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
+
+        self.theta,  self.theta_bins, self.theta_edges,  = th_list
+        if True:
+            assert len(self.theta_bins)==20 
+            assert len(self.theta_edges)==21
+            assert len(self.theta)==1199, 'wrong size '
+        # self.theta_bins = np.sqrt(self.theta_edges[1:]*self.theta_edges[:-1])
+        # self.theta_bins=self.theta # equal to twopoint_data.metadata['th']
+        # FAO redundant
 
         # ell is the value for WT
         self.ell, self.ell_bins, self.ell_edges = ell_list
 
-        print("Preparing WT...")
-        self.WT = self.wt_setup(self.ell, self.theta)
-        print("Done!")
+        # TODO: put this line for  "if =='xi' ". Separate it as an independent method.
+        if False: #self.do_xi:
+            print("Preparing WT...")
+            self.WT = self.wt_setup(self.ell, self.theta)
+            print("Done!")
+        else:
+            self.WT = None
+
         return
 
 
@@ -131,6 +146,10 @@ class CovarianceCalculator():
             th2 = np.linspace(1, th_max*1.02, n_th_bins*30)
 
             ang = np.unique(np.sort(np.append(th, th2)))
+            ang_bins = 0.5 * (ang_edges[1:] + ang_edges[:-1])
+            
+            return ang, ang_bins, ang_edges #TODO FIXIT 
+
 
         return ang, ang_edges
 
@@ -222,6 +241,7 @@ class CovarianceCalculator():
 
         Returns:
         --------
+        WT_factors: 
 
         """
     #     tracers=tuple(i.split('_')[0] for i in tracer_comb)
@@ -338,6 +358,12 @@ class CovarianceCalculator():
         cov['final'] = cov[1423]+cov[1324]
 
         if do_xi:
+            if self.WT is None: # class modifier of WT initialization
+                # TODO: removing WT initialization from constructor when yaml implemented 
+                print("Preparing WT...")
+                self.WT = self.wt_setup(self.ell, self.theta)
+                print("Done!")
+
             # Fixme: CAN WE SET A CUSTOM ELL FOR do_xi case, in order to use
             # a single sacc input filefile
             ell = self.ell
@@ -347,6 +373,7 @@ class CovarianceCalculator():
                 s1_s2_1 = s1_s2_1[xi_plus_minus1]
             if isinstance(s1_s2_2, dict):
                 s1_s2_2 = s1_s2_2[xi_plus_minus2]
+            # pdb.set_trace()
             th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
                                                              s1_s2_cross=s1_s2_2,
                                                              cl_cov=cov['final'])
@@ -441,11 +468,28 @@ class CovarianceCalculator():
                          indx_j:indx_j+Nell_bins_j] = cov_ij
                 cov_full[indx_j:indx_j+Nell_bins_i,
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
+                # pdb.set_trace()
         return cov_full
 
-    def create_sacc_cov(output=None):
+    def create_sacc_cov(output, do_xi=False):
         """ Write created cov to a new sacc object
+        
+        Parameters:
+        ----------
+        output (str): filename output
+        do_xi (bool): do_xi=True for real space, do_xi=False for harmonic
+            space
+        
+        Returns:
+        -------
+        None
+
         """
+        print("Placeholder...")
+        if do_xi: 
+            print(f"Saving xi covariance as \n{output}")
+        else:
+            print(f"Saving xi covariance as \n{output}")
         pass
 
 
@@ -460,7 +504,7 @@ if __name__ == "__main__":
     cosmo_filename = "../tests/data/cosmo_desy1.yaml"
     xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
     cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
-    check_yaml = True
+    check_yaml = False
     if check_yaml :
         # pyccl write_yaml seems to not transcript the transfer_function
         tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
