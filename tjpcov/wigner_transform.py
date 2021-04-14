@@ -192,24 +192,27 @@ def bin_mat(r=[],mat=[],r_bins=[]):#works for cov and skewness
             norm_int[indxs]=norm_ijk
         return bin_center,mat_int
     
-def bin_cov(r=[],cov=[],r_bins=[]):
-        bin_center=0.5*(r_bins[1:]+r_bins[:-1])
-        n_bins=len(bin_center)
-        cov_int=np.zeros((n_bins,n_bins),dtype='float64')
-        bin_idx=np.digitize(r,r_bins)-1
-        r2=np.sort(np.unique(np.append(r,r_bins))) #this takes care of problems around bin edges
-        dr=np.gradient(r2)
-        r2_idx=[i for i in np.arange(len(r2)) if r2[i] in r]
-        dr=dr[r2_idx]
-        r_dr=r*dr
-        cov_r_dr=cov*np.outer(r_dr,r_dr)
-        for i in np.arange(min(bin_idx),n_bins):
-            xi=bin_idx==i
-            for j in np.arange(min(bin_idx),n_bins):
-                xj=bin_idx==j
-                norm_ij=np.sum(r_dr[xi])*np.sum(r_dr[xj])
-                if norm_ij==0:
-                    continue
-                cov_int[i][j]=np.sum(cov_r_dr[xi,:][:,xj])/norm_ij
-        #cov_int=np.nan_to_num(cov_int)
-        return bin_center,cov_int
+def bin_cov(r=[], cov=[], r_bins=[]):
+    bin_center = 0.5*(r_bins[1:]+r_bins[:-1])
+    n_bins = len(bin_center)
+    cov_int = np.zeros((n_bins, n_bins), dtype='float64')
+    bin_idx = np.digitize(r, r_bins)-1
+    
+    # this takes care of problems around bin edges
+    r2 = np.sort(np.unique(np.append(r, r_bins)))
+    dr = np.gradient(r2)
+    r2_idx = [i for i in np.arange(len(r2)) if r2[i] in r]
+    dr = dr[r2_idx]
+    r_dr = r*dr
+    cov_r_dr = cov*np.outer(r_dr, r_dr)
+
+    for i in np.arange(min(bin_idx), n_bins):
+        xi = bin_idx == i
+        for j in np.arange(min(bin_idx), n_bins):
+            xj = bin_idx == j
+            norm_ij = np.sum(r_dr[xi])*np.sum(r_dr[xj])
+            if norm_ij == 0:
+                continue
+            cov_int[i][j] = np.sum(cov_r_dr[xi, :][:, xj])/norm_ij
+    # cov_int=np.nan_to_num(cov_int)
+    return bin_center, cov_int
