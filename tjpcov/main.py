@@ -67,9 +67,9 @@ class CovarianceCalculator():
         if cosmo_fn is None or cosmo_fn == 'set':
 
             print("setting from parameters in config")
-            self.cosmo = set_ccl_cosmo(config)
+            self.cosmo = self.set_ccl_cosmo(config)
 
-        if cosmo_fn[-5:] == '.yaml':
+        elif cosmo_fn[-5:] == '.yaml':
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
             # TODO: remove this hot fix of ccl
             self.cosmo.config.transfer_function_method = 1
@@ -82,7 +82,8 @@ class CovarianceCalculator():
         elif isinstance(cosmo_fn, ccl.core.Cosmology):  # trying to load from object
             self.cosmo = cosmo_fn
             # TODO: test if this is ccl object
-
+        else:
+            raise Exception("Err: File for cosmo field in input not recognized")
         # TO DO: remove this hotfix
         self.xi_data, self.cl_data = None, None
 
@@ -142,7 +143,7 @@ class CovarianceCalculator():
             with open(output, 'w') as ff:
                 ff.write('....txt')
 
-    def set_ccl_cosmo(config):
+    def set_ccl_cosmo(self, config):
         """
         set the ccl cosmo from paramters in config file
 
