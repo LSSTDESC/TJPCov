@@ -8,11 +8,11 @@ d2r = np.pi/180
 
 class CovarianceCalculator():
     def __init__(self,
-                tjpcov_cfg=None):
-                 # cosmo_fn=None,
-                 # sacc_fn_xi=None,  # real space
-                 # sacc_fn_cl=None,  # harmonic space
-                 # window_fn=None):
+                 tjpcov_cfg=None):
+        # cosmo_fn=None,
+        # sacc_fn_xi=None,  # real space
+        # sacc_fn_cl=None,  # harmonic space
+        # window_fn=None):
         """
         Covariance Calculator object for TJPCov. 
 
@@ -47,16 +47,15 @@ class CovarianceCalculator():
             if float it is assumed to be f_sky value
         """
         config, inp_dat = parse(tjpcov_cfg)
-        
+
         self.do_xi = config['tjpcov'].get('do_xi')
 
         if self.do_xi is None:
             raise Exception("Err: check if you set do_xi: False (Harmonic Space) "
-                +"or do_xi: True in 'tjpcov' field of your yaml")
+                            + "or do_xi: True in 'tjpcov' field of your yaml")
 
         print("\nBeginning TJPCov covariance calculator for", end=' ')
         print(["Configuration space" if self.do_xi else "Harmonic Space"][0])
-        
 
         if self.do_xi:
             xi_fn = config['tjpcov'].get('xi_file')
@@ -65,39 +64,41 @@ class CovarianceCalculator():
 
         cosmo_fn = config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
-        if cosmo_fn is None:
-            raise Exception("Err: cosmo file loading")
+        if cosmo_fn is None or cosmo_fn == 'set':
 
-        if cosmo_fn[-5:]=='.yaml':
+            print("setting from parameters in config")
+            self.cosmo = set_ccl_cosmo(config)
+
+        if cosmo_fn[-5:] == '.yaml':
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
+            # TODO: remove this hot fix of ccl
+            self.cosmo.config.transfer_function_method = 1
 
-        elif cosmo_fn[-4:]=='.pkl':
+        elif cosmo_fn[-4:] == '.pkl':
             import pickle
             with open(cosmo_fn, 'rb') as ccl_cosmo_file:
                 self.cosmo = pickle.load(ccl_cosmo_file)
 
-        elif isinstance(cosmo_fn, ccl.core.Cosmology): # trying to load from object
+        elif isinstance(cosmo_fn, ccl.core.Cosmology):  # trying to load from object
             self.cosmo = cosmo_fn
             # TODO: test if this is ccl object
-
 
         # TO DO: remove this hotfix
         self.xi_data, self.cl_data = None, None
 
         if self.do_xi:
-            self.xi_data = sacc.Sacc.load_fits(config['tjpcov'].get('sacc_file'))
+            self.xi_data = sacc.Sacc.load_fits(
+                config['tjpcov'].get('sacc_file'))
         else:
-            self.cl_data = sacc.Sacc.load_fits(config['tjpcov'].get('sacc_file'))
+            self.cl_data = sacc.Sacc.load_fits(
+                config['tjpcov'].get('sacc_file'))
 
         # pdb.set_trace()
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
 
-        
         # fao Set this inside get_ell_theta ?
         ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
-
-        
 
         ell_list = self.get_ell_theta(self.cl_data,
                                       'galaxy_density_cl',
@@ -109,9 +110,9 @@ class CovarianceCalculator():
 
         self.theta,  self.theta_bins, self.theta_edges,  = th_list
         if False:
-            assert len(self.theta_bins)==20 
-            assert len(self.theta_edges)==21
-            assert len(self.theta)==1199, 'wrong size '
+            assert len(self.theta_bins) == 20
+            assert len(self.theta_edges) == 21
+            assert len(self.theta) == 1199, 'wrong size '
         # self.theta_bins = np.sqrt(self.theta_edges[1:]*self.theta_edges[:-1])
         # self.theta_bins=self.theta # equal to twopoint_data.metadata['th']
         # FAO redundant
@@ -120,7 +121,7 @@ class CovarianceCalculator():
         self.ell, self.ell_bins, self.ell_edges = ell_list
 
         # TODO: put this line for  "if =='xi' ". Separate it as an independent method.
-        if False: #self.do_xi:
+        if False:  # self.do_xi:
             print("Preparing WT...")
             self.WT = self.wt_setup(self.ell, self.theta)
             print("Done!")
@@ -128,7 +129,6 @@ class CovarianceCalculator():
             self.WT = None
 
         return
-
 
     def print_setup(self, output=None):
         """
@@ -141,6 +141,20 @@ class CovarianceCalculator():
         if isinstance(output, str):
             with open(output, 'w') as ff:
                 ff.write('....txt')
+
+    def set_ccl_cosmo(config):
+        """
+        set the ccl cosmo from paramters in config file
+
+        """
+        print("Setting up cosmology...")
+
+        cosmo_param_names = ['Omega_c', 'Omega_b', 'h',
+                             'sigma8', 'n_s', 'transfer_function']
+        cosmo_params = {name: config['parameters'][name]
+                        for name in cosmo_param_names}
+        cosmo = ccl.Cosmology(**cosmo_params)
+        return cosmo
 
     def set_ell_theta(self, ang_min, ang_max, n_ang,
                       ang_scale='linear', do_xi=False):
@@ -176,9 +190,8 @@ class CovarianceCalculator():
 
             ang = np.unique(np.sort(np.append(th, th2)))
             ang_bins = 0.5 * (ang_edges[1:] + ang_edges[:-1])
-            
-            return ang, ang_bins, ang_edges #TODO FIXIT 
 
+            return ang, ang_bins, ang_edges  # TODO FIXIT
 
         return ang, ang_edges
 
@@ -387,8 +400,8 @@ class CovarianceCalculator():
         cov['final'] = cov[1423]+cov[1324]
 
         if do_xi:
-            if self.WT is None: # class modifier of WT initialization
-                # TODO: removing WT initialization from constructor when yaml implemented 
+            if self.WT is None:  # class modifier of WT initialization
+                # TODO: removing WT initialization from constructor when yaml implemented
                 print("Preparing WT...")
                 self.WT = self.wt_setup(self.ell, self.theta)
                 print("Done!")
@@ -410,7 +423,7 @@ class CovarianceCalculator():
         cov['final'] /= norm
 
         if do_xi:
-            #pdb.set_trace()
+            # pdb.set_trace()
             thb, cov['final_b'] = bin_cov(
                 r=th/d2r, r_bins=self.theta_edges, cov=cov['final'])
             # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
@@ -480,14 +493,14 @@ class CovarianceCalculator():
                 Nell_bins_j = len(two_point_data.indices(tracers=tracer_comb2))
                 indx_j = j*Nell_bins_j
                 cov_ij = self.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-                                         tracer_comb2=tracer_comb2,
-                                         ccl_tracers=ccl_tracers,
-                                         tracer_Noise=tracer_Noise,
-                                         do_xi=do_xi,
-                                         two_point_data=two_point_data)
+                                              tracer_comb2=tracer_comb2,
+                                              ccl_tracers=ccl_tracers,
+                                              tracer_Noise=tracer_Noise,
+                                              do_xi=do_xi,
+                                              two_point_data=two_point_data)
 
                 # if do_xi or two_point_data.metadata['ell_bins'] is not None:
-                #check
+                # check
                 if do_xi or self.ell_bins is not None:
                     cov_ij = cov_ij['final_b']
                 else:
@@ -502,20 +515,20 @@ class CovarianceCalculator():
 
     def create_sacc_cov(output, do_xi=False):
         """ Write created cov to a new sacc object
-        
+
         Parameters:
         ----------
         output (str): filename output
         do_xi (bool): do_xi=True for real space, do_xi=False for harmonic
             space
-        
+
         Returns:
         -------
         None
 
         """
         print("Placeholder...")
-        if do_xi: 
+        if do_xi:
             print(f"Saving xi covariance as \n{output}")
         else:
             print(f"Saving xi covariance as \n{output}")
@@ -527,7 +540,7 @@ if __name__ == "__main__":
         import pickle
         # with open("../tests/data/cosmo_desy1_obj.pkl", 'rb') as ff:
         with open("../tests/data/cosmos_desy1_v2p1p0.pkl", 'rb') as ff:
-                cosmo = pickle.load(ff)
+            cosmo = pickle.load(ff)
         with open("../tests/data/tjpcov_cl.pkl", "rb") as ff:
             cov0cl = pickle.load(ff)
 
@@ -535,7 +548,7 @@ if __name__ == "__main__":
         xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
         cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
         check_yaml = False
-        if check_yaml :
+        if check_yaml:
             # pyccl write_yaml seems to not transcript the transfer_function
             tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
                                        sacc_fn_xi=xi_fn)
@@ -566,8 +579,10 @@ if __name__ == "__main__":
         print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:10])
 
         if check_yaml:
-            print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
-        print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:]/cov0cl.diagonal()[:24])
+            print("from yaml: ", gcov_cl_0['final_b'].diagonal()[
+                  :]/cov0cl.diagonal()[:24])
+        print("from cosmo:", gcov_cl_1['final_b'].diagonal()[
+              :]/cov0cl.diagonal()[:24])
 
         if False:
             covall = tjp2.get_all_cov()
@@ -576,7 +591,4 @@ if __name__ == "__main__":
             #     pickle.dump(covall, ff)
         tjp2.get_all_cov(do_xi=True)
 
-
     tjp3 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
-
-
