@@ -93,6 +93,10 @@ def test_ell():
                                   ref_md_ell_bins)
 
 
+
+def test_set_cosmo():
+		tjp0 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_noCCLCosmo.yaml")
+
 # @pytest.mark.slow
 def test_xi_block():
     tracer_comb1 = ('lens0', 'lens0')
