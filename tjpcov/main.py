@@ -45,16 +45,20 @@ class CovarianceCalculator():
             if dict, the keys are sacc tracer names and values are either HealSparse inverse variance
             maps 
             if float it is assumed to be f_sky value
+
+            TODO: cov_type = gauss
+                  params 
+                  bias 
         """
         config, inp_dat = parse(tjpcov_cfg)
 
         self.do_xi = config['tjpcov'].get('do_xi')
 
-        if self.do_xi is None:
+        if not isinstance(self.do_xi, bool):
             raise Exception("Err: check if you set do_xi: False (Harmonic Space) "
                             + "or do_xi: True in 'tjpcov' field of your yaml")
 
-        print("\nBeginning TJPCov covariance calculator for", end=' ')
+        print("Starting TJPCov covariance calculator for", end=' ')
         print(["Configuration space" if self.do_xi else "Harmonic Space"][0])
 
         if self.do_xi:
@@ -64,9 +68,8 @@ class CovarianceCalculator():
 
         cosmo_fn = config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
+        
         if cosmo_fn is None or cosmo_fn == 'set':
-
-            print("setting from parameters in config")
             self.cosmo = self.set_ccl_cosmo(config)
 
         elif cosmo_fn[-5:] == '.yaml':
@@ -90,9 +93,16 @@ class CovarianceCalculator():
         if self.do_xi:
             self.xi_data = sacc.Sacc.load_fits(
                 config['tjpcov'].get('sacc_file'))
-        else:
-            self.cl_data = sacc.Sacc.load_fits(
-                config['tjpcov'].get('sacc_file'))
+        
+        # TO DO: remove this dependence here 
+        self.cl_data = sacc.Sacc.load_fits(
+                config['tjpcov'].get('cl_file'))
+        # TO DO: remove this dependence here 
+        ell_list = self.get_ell_theta(self.cl_data, # fix this
+                                      'galaxy_density_cl',
+                                      ('lens0', 'lens0'),
+                                      'linear', do_xi=False)
+
 
         # pdb.set_trace()
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
@@ -101,11 +111,8 @@ class CovarianceCalculator():
         ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
 
-        ell_list = self.get_ell_theta(self.cl_data,
-                                      'galaxy_density_cl',
-                                      ('lens0', 'lens0'),
-                                      'linear')
-
+        #if not self.do_xi:
+         
         # fix this for the sacc file case:
         th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
 
@@ -592,4 +599,5 @@ if __name__ == "__main__":
             #     pickle.dump(covall, ff)
         tjp2.get_all_cov(do_xi=True)
 
-    tjp3 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
+    # tjp3 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
+    tjp4 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_cs.yaml")
