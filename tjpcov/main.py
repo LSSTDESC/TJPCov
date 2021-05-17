@@ -1,8 +1,17 @@
-import pdb
+# import pdb
+import sys
+import os
+
+cwd = os.getcwd()
+sys.path.append(os.path.dirname(cwd)+"/tjpcov")
+
 import pyccl as ccl
 import sacc
-from tjpcov import wigner_transform, bin_cov, parse
+
 import numpy as np
+
+from tjpcov import wigner_transform, bin_cov, parse
+
 d2r = np.pi/180
 
 
@@ -544,6 +553,13 @@ class CovarianceCalculator():
 
 
 if __name__ == "__main__":
+    import tjpcov.main as cv
+
+    import sys
+    import os
+    cwd = os.getcwd()
+    sys.path.append(os.path.dirname(cwd)+"/tjpcov")
+
     if False:
         import pickle
         # with open("../tests/data/cosmo_desy1_obj.pkl", 'rb') as ff:
@@ -599,5 +615,20 @@ if __name__ == "__main__":
             #     pickle.dump(covall, ff)
         tjp2.get_all_cov(do_xi=True)
 
-    # tjp3 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
-    tjp4 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_cs.yaml")
+    tjp3 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
+    import pickle
+    with open("tests/data/cosmos_desy1_v2p1p0.pkl", 'rb') as ff:
+        cosmo = pickle.load(ff)
+    with open("tests/data/tjpcov_cl.pkl", "rb") as ff:
+        cov0cl = pickle.load(ff)
+
+    ccl_tracers, tracer_Noise = tjp3.get_tracer_info(tjp3.cl_data)
+    trcs = tjp3.cl_data.get_tracer_combinations()
+
+    gcov_cl_0 = tjp3.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
+                                    tracer_comb2=('lens0', 'lens0'),
+                                    ccl_tracers=ccl_tracers,
+                                    tracer_Noise=tracer_Noise,
+                                    two_point_data=tjp3.cl_data)
+    print( gcov_cl_0['final_b'].shape, tjp3.ell_bins.shape)
+    # tjp4 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_cs.yaml")
