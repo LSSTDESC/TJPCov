@@ -18,10 +18,6 @@ d2r = np.pi/180
 class CovarianceCalculator():
     def __init__(self,
                  tjpcov_cfg=None):
-        # cosmo_fn=None,
-        # sacc_fn_xi=None,  # real space
-        # sacc_fn_cl=None,  # harmonic space
-        # window_fn=None):
         """
         Covariance Calculator object for TJPCov. 
 
@@ -41,19 +37,20 @@ class CovarianceCalculator():
                 - a sacc path
                 - a xi_fn OR cl_fn
                 - ...
+                it contains info from the deprecated files:
 
-        cosmo_fn ( pyccl.object or str ):
-            Receives the cosmo object or a the yaml filename
-            WARNING CCL Cosmo write_yaml seems to not pass 
-                    the transfer_function
-        sacc_fn_xi/cl (None, str):
-            path to sacc file yaml
-            sacc object containing the tracers and binning to be used in covariance calculation
-        window (None, dict, float):
-            If None, used window function specified in the sacc file
-            if dict, the keys are sacc tracer names and values are either HealSparse inverse variance
-            maps 
-            if float it is assumed to be f_sky value
+                cosmo_fn ( pyccl.object or str ):
+                    Receives the cosmo object or a the yaml filename
+                    WARNING CCL Cosmo write_yaml seems to not pass 
+                            the transfer_function
+                sacc_fn_xi/cl (None, str):
+                    path to sacc file yaml
+                    sacc object containing the tracers and binning to be used in covariance calculation
+                window (None, dict, float):
+                    If None, used window function specified in the sacc file
+                    if dict, the keys are sacc tracer names and values are either HealSparse inverse variance
+                    maps 
+                    if float it is assumed to be f_sky value
 
             TODO: cov_type = gauss
                   params 
