@@ -1,14 +1,16 @@
 # import pdb
-from tjpcov import wigner_transform, bin_cov, parse
-import numpy as np
-import sacc
-import pyccl as ccl
 import sys
 import os
 
 cwd = os.getcwd()
 sys.path.append(os.path.dirname(cwd)+"/tjpcov")
 
+import pyccl as ccl
+import sacc
+
+import numpy as np
+
+from tjpcov import wigner_transform, bin_cov, parse
 
 d2r = np.pi/180
 
@@ -16,6 +18,10 @@ d2r = np.pi/180
 class CovarianceCalculator():
     def __init__(self,
                  tjpcov_cfg=None):
+        # cosmo_fn=None,
+        # sacc_fn_xi=None,  # real space
+        # sacc_fn_cl=None,  # harmonic space
+        # window_fn=None):
         """
         Covariance Calculator object for TJPCov. 
 
@@ -36,20 +42,22 @@ class CovarianceCalculator():
                 - a xi_fn OR cl_fn
                 - ...
 
-            it is replacing the parameters cosmo_fn ( pyccl.object or str ):
-                Receives the cosmo object or a the yaml filename
+        cosmo_fn ( pyccl.object or str ):
+            Receives the cosmo object or a the yaml filename
+            WARNING CCL Cosmo write_yaml seems to not pass 
+                    the transfer_function
+        sacc_fn_xi/cl (None, str):
+            path to sacc file yaml
+            sacc object containing the tracers and binning to be used in covariance calculation
+        window (None, dict, float):
+            If None, used window function specified in the sacc file
+            if dict, the keys are sacc tracer names and values are either HealSparse inverse variance
+            maps 
+            if float it is assumed to be f_sky value
 
-
-                sacc_fn_xi/cl (None, str):
-                    path to sacc file yaml
-                    sacc object containing the tracers and binning to be used in covariance calculation
-                window (None, dict, float):
-                    If None, used window function specified in the sacc file
-                if dict, the keys are sacc tracer names and values are either HealSparse inverse variance
-                maps 
-                    if float it is assumed to be f_sky value
-
-
+            TODO: cov_type = gauss
+                  params 
+                  bias 
         """
         config, inp_dat = parse(tjpcov_cfg)
 
@@ -68,7 +76,8 @@ class CovarianceCalculator():
             cl_fn = config['tjpcov'].get('cl_file')
 
         cosmo_fn = config['tjpcov'].get('cosmo')
-
+        # sacc_fn  = config['tjpcov'].get('sacc_file')
+        
         if cosmo_fn is None or cosmo_fn == 'set':
             self.cosmo = self.set_ccl_cosmo(config)
 
@@ -86,30 +95,33 @@ class CovarianceCalculator():
             self.cosmo = cosmo_fn
             # TODO: test if this is ccl object
         else:
-            raise Exception(
-                "Err: File for cosmo field in input not recognized")
+            raise Exception("Err: File for cosmo field in input not recognized")
         # TO DO: remove this hotfix
         self.xi_data, self.cl_data = None, None
 
         if self.do_xi:
             self.xi_data = sacc.Sacc.load_fits(
                 config['tjpcov'].get('sacc_file'))
-
-        # TO DO: remove this dependence here
+        
+        # TO DO: remove this dependence here 
         self.cl_data = sacc.Sacc.load_fits(
-            config['tjpcov'].get('cl_file'))
-        # TO DO: remove this dependence here
-        ell_list = self.get_ell_theta(self.cl_data,  # fix this
+                config['tjpcov'].get('cl_file'))
+        # TO DO: remove this dependence here 
+        ell_list = self.get_ell_theta(self.cl_data, # fix this
                                       'galaxy_density_cl',
                                       ('lens0', 'lens0'),
                                       'linear', do_xi=False)
 
+
+        # pdb.set_trace()
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
 
         # fao Set this inside get_ell_theta ?
         ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
 
+        #if not self.do_xi:
+         
         # fix this for the sacc file case:
         th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
 
@@ -118,9 +130,11 @@ class CovarianceCalculator():
             assert len(self.theta_bins) == 20
             assert len(self.theta_edges) == 21
             assert len(self.theta) == 1199, 'wrong size '
-
+        # self.theta_bins = np.sqrt(self.theta_edges[1:]*self.theta_edges[:-1])
+        # self.theta_bins=self.theta # equal to twopoint_data.metadata['th']
         # FAO redundant
 
+        # ell is the value for WT
         self.ell, self.ell_bins, self.ell_edges = ell_list
 
         # TODO: put this line for  "if =='xi' ". Separate it as an independent method.
@@ -235,6 +249,11 @@ class CovarianceCalculator():
                                             angb_max+del_ang/2,
                                             len(ang_bins),
                                             ang_scale=ang_scale, do_xi=do_xi)
+        # Sanity check
+        if ang_scale == 'linear':
+            assert np.allclose((ang_edges[1:]+ang_edges[:-1])/2, ang_bins), \
+                "differences in produced ell/theta"
+        return ang, ang_bins, ang_edges
 
     def wt_setup(self, ell, theta):
         """
@@ -384,7 +403,7 @@ class CovarianceCalculator():
 
         if do_xi:
             norm = np.pi*4*two_point_data.metadata['fsky']
-        else:
+        else:  # do c_ell
             norm = (2*ell+1)*np.gradient(ell)*two_point_data.metadata['fsky']
 
         coupling_mat = {}
@@ -421,9 +440,10 @@ class CovarianceCalculator():
         cov['final'] /= norm
 
         if do_xi:
+            # pdb.set_trace()
             thb, cov['final_b'] = bin_cov(
                 r=th/d2r, r_bins=self.theta_edges, cov=cov['final'])
-
+            # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
         else:
             # if two_point_data.metadata['ell_bins'] is not None:
             if self.ell_edges is not None:
@@ -591,7 +611,8 @@ if __name__ == "__main__":
         if False:
             covall = tjp2.get_all_cov()
             print(covall.diagonal()/cov0cl.diagonal())
-
+            # with open("../tests/data/produced_covcl.pkl", "wb") as ff:
+            #     pickle.dump(covall, ff)
         tjp2.get_all_cov(do_xi=True)
 
     tjp3 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
@@ -605,8 +626,9 @@ if __name__ == "__main__":
     trcs = tjp3.cl_data.get_tracer_combinations()
 
     gcov_cl_0 = tjp3.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
-                                     tracer_comb2=('lens0', 'lens0'),
-                                     ccl_tracers=ccl_tracers,
-                                     tracer_Noise=tracer_Noise,
-                                     two_point_data=tjp3.cl_data)
-    print(gcov_cl_0['final_b'].shape, tjp3.ell_bins.shape)
+                                    tracer_comb2=('lens0', 'lens0'),
+                                    ccl_tracers=ccl_tracers,
+                                    tracer_Noise=tracer_Noise,
+                                    two_point_data=tjp3.cl_data)
+    print( gcov_cl_0['final_b'].shape, tjp3.ell_bins.shape)
+    # tjp4 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_cs.yaml")
