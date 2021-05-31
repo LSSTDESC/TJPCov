@@ -1,16 +1,14 @@
 # import pdb
+from tjpcov import wigner_transform, bin_cov, parse
+import numpy as np
+import sacc
+import pyccl as ccl
 import sys
 import os
 
 cwd = os.getcwd()
 sys.path.append(os.path.dirname(cwd)+"/tjpcov")
 
-import pyccl as ccl
-import sacc
-
-import numpy as np
-
-from tjpcov import wigner_transform, bin_cov, parse
 
 d2r = np.pi/180
 
@@ -39,9 +37,9 @@ class CovarianceCalculator():
                 - ...
                 it contains info from the deprecated files:
 
-                cosmo_fn ( pyccl.object or str ):
+                cosmo_fn(pyccl.object or str):
                     Receives the cosmo object or a the yaml filename
-                    WARNING CCL Cosmo write_yaml seems to not pass 
+                    WARNING CCL Cosmo write_yaml seems to not pass
                             the transfer_function
                 sacc_fn_xi/cl (None, str):
                     path to sacc file yaml
@@ -74,7 +72,7 @@ class CovarianceCalculator():
 
         cosmo_fn = config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
-        
+
         if cosmo_fn is None or cosmo_fn == 'set':
             self.cosmo = self.set_ccl_cosmo(config)
 
@@ -92,33 +90,32 @@ class CovarianceCalculator():
             self.cosmo = cosmo_fn
             # TODO: test if this is ccl object
         else:
-            raise Exception("Err: File for cosmo field in input not recognized")
+            raise Exception(
+                "Err: File for cosmo field in input not recognized")
         # TO DO: remove this hotfix
         self.xi_data, self.cl_data = None, None
 
         if self.do_xi:
             self.xi_data = sacc.Sacc.load_fits(
                 config['tjpcov'].get('sacc_file'))
-        
-        # TO DO: remove this dependence here 
+
+        # TO DO: remove this dependence here
         self.cl_data = sacc.Sacc.load_fits(
-                config['tjpcov'].get('cl_file'))
-        # TO DO: remove this dependence here 
-        ell_list = self.get_ell_theta(self.cl_data, # fix this
+            config['tjpcov'].get('cl_file'))
+        # TO DO: remove this dependence here
+        ell_list = self.get_ell_theta(self.cl_data,  # fix this
                                       'galaxy_density_cl',
                                       ('lens0', 'lens0'),
                                       'linear', do_xi=False)
 
-
-        # pdb.set_trace()
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
 
         # fao Set this inside get_ell_theta ?
         ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
 
-        #if not self.do_xi:
-         
+        # if not self.do_xi:
+
         # fix this for the sacc file case:
         th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
 
@@ -156,6 +153,7 @@ class CovarianceCalculator():
             with open(output, 'w') as ff:
                 ff.write('....txt')
 
+
     def set_ccl_cosmo(self, config):
         """
         set the ccl cosmo from paramters in config file
@@ -169,6 +167,7 @@ class CovarianceCalculator():
                         for name in cosmo_param_names}
         cosmo = ccl.Cosmology(**cosmo_params)
         return cosmo
+
 
     def set_ell_theta(self, ang_min, ang_max, n_ang,
                       ang_scale='linear', do_xi=False):
@@ -198,7 +197,7 @@ class CovarianceCalculator():
             ang_edges = np.logspace(np.log10(th_min), np.log10(th_max),
                                     n_th_bins+1)
             th = np.logspace(np.log10(th_min*0.98), np.log10(1), n_th_bins*30)
-            # binned covariance can be sensitive to the th values. Make sue
+            # binned covariance can be sensitive to the th values. Make sure
             # you check convergence for your application
             th2 = np.linspace(1, th_max*1.02, n_th_bins*30)
 
@@ -208,6 +207,7 @@ class CovarianceCalculator():
             return ang, ang_bins, ang_edges  # TODO FIXIT
 
         return ang, ang_edges
+
 
     def get_ell_theta(self, two_point_data, data_type, tracer_comb, ang_scale,
                       do_xi=False):
@@ -252,6 +252,7 @@ class CovarianceCalculator():
                 "differences in produced ell/theta"
         return ang, ang_bins, ang_edges
 
+
     def wt_setup(self, ell, theta):
         """
         Set this up once before the covariance evaluations
@@ -289,6 +290,7 @@ class CovarianceCalculator():
         WT = wigner_transform(**WT_kwargs)
         return WT
 
+
     def get_cov_WT_spin(self, tracer_comb=None):
         """
         Parameters:
@@ -308,6 +310,7 @@ class CovarianceCalculator():
             if 'src' in i:
                 tracers += ['source']
         return self.WT_factors[tuple(tracers)]
+
 
     def get_tracer_info(self, two_point_data={}):
         """
@@ -353,6 +356,7 @@ class CovarianceCalculator():
                 ccl_tracers[tracer] = ccl.NumberCountsTracer(
                     self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
         return ccl_tracers, tracer_Noise
+
 
     def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,
@@ -429,7 +433,6 @@ class CovarianceCalculator():
                 s1_s2_1 = s1_s2_1[xi_plus_minus1]
             if isinstance(s1_s2_2, dict):
                 s1_s2_2 = s1_s2_2[xi_plus_minus2]
-            # pdb.set_trace()
             th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
                                                              s1_s2_cross=s1_s2_2,
                                                              cl_cov=cov['final'])
@@ -437,7 +440,6 @@ class CovarianceCalculator():
         cov['final'] /= norm
 
         if do_xi:
-            # pdb.set_trace()
             thb, cov['final_b'] = bin_cov(
                 r=th/d2r, r_bins=self.theta_edges, cov=cov['final'])
             # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
@@ -524,7 +526,6 @@ class CovarianceCalculator():
                          indx_j:indx_j+Nell_bins_j] = cov_ij
                 cov_full[indx_j:indx_j+Nell_bins_i,
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
-                # pdb.set_trace()
         return cov_full
 
     def create_sacc_cov(output, do_xi=False):
@@ -623,9 +624,9 @@ if __name__ == "__main__":
     trcs = tjp3.cl_data.get_tracer_combinations()
 
     gcov_cl_0 = tjp3.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
-                                    tracer_comb2=('lens0', 'lens0'),
-                                    ccl_tracers=ccl_tracers,
-                                    tracer_Noise=tracer_Noise,
-                                    two_point_data=tjp3.cl_data)
-    print( gcov_cl_0['final_b'].shape, tjp3.ell_bins.shape)
+                                     tracer_comb2=('lens0', 'lens0'),
+                                     ccl_tracers=ccl_tracers,
+                                     tracer_Noise=tracer_Noise,
+                                     two_point_data=tjp3.cl_data)
+    print(gcov_cl_0['final_b'].shape, tjp3.ell_bins.shape)
     # tjp4 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_cs.yaml")
