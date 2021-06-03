@@ -39,3 +39,16 @@ python3 setup.py sdist bdist_wheel
 # upload
 python3 -m twine upload  dist/*
 ```
+
+## Environment for development
+If you are working in conda (miniconda or anaconda) you can create a conda environment named **tjpcov** with 
+```
+conda env create --file environment.yml
+```
+
+To activate your new environment use:
+
+```
+source activate tjpcov
+```
+
