@@ -50,7 +50,6 @@ tjpcov:
   # sacc input file 
   sacc_file: examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits
 
-  # sacc_file: ../../examples/des_y1_3x2pt/des_y1_3x2pt_sacc_data.fits
 
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: tests/data/cosmos_desy1_v2p1p0.pkl

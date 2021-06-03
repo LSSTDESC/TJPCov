@@ -114,12 +114,14 @@ class CovarianceCalculator():
         ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
 
+
         # if not self.do_xi:
 
         # fix this for the sacc file case:
         th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
 
         self.theta,  self.theta_bins, self.theta_edges,  = th_list
+        # FAO: remove 
         if False:
             assert len(self.theta_bins) == 20
             assert len(self.theta_edges) == 21

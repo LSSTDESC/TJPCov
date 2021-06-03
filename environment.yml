@@ -8,6 +8,6 @@ dependencies:
   - numpy
   - Jinja2
   - pyyaml
-  - pyccl=2.2.0
+  - pyccl=2.1.0
   - pytest
   - jupyter
