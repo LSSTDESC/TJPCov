@@ -57,7 +57,9 @@ tjpcov:
   # allowed covariance type: gauss, ng (to be implemented)
   cov_type: gauss
 
+  # Setting mask OR fsky approximation
   mask_file:
+  fsky: 0.3
 
 
 
