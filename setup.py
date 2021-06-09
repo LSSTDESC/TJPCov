@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Covariances for LSST DESC
-Copyright (c) 2018 LSST DESC
+Copyright (c) 2021 LSST DESC
 http://opensource.org/licenses/MIT
 """
 from setuptools import setup
@@ -14,7 +14,7 @@ setup(
     version='0.0.1',
     description='Covariances for LSST DESC',
     url='https://github.com/LSSTDESC/tjpcov',
-    author='Sukhdeep Singh',
+    author='Sukhdeep Singh, Felipe Andrade Oliveira',
     long_description=long_description,
     long_description_content_type="text/markdown",
     license='MIT',
@@ -25,6 +25,6 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     packages=['tjpcov'],
-    install_requires=['scipy', 'numpy', 'Jinja2', 'pyyaml'],
+    install_requires=['scipy', 'numpy', 'Jinja2', 'pyyaml','pytest','pyccl==2.1.0','sacc'],
     python_requires='>=3.6',
 )
