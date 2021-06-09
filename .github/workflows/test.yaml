@@ -1,7 +1,7 @@
 name: TJPCov
 on:
    push:
-        branches: [ yaml ]
+        branches: [ master ]
 
 jobs:
      build:
