@@ -129,7 +129,8 @@ def test_cl_block():
                                      ccl_tracers=ccl_tracers,
                                      tracer_Noise=tracer_Noise,
                                      two_point_data=tjp0.cl_data,
-                                     do_xi=False)
+                                     #do_xi=False
+                                     )
     np.testing.assert_allclose(gcov_cl_1['final_b'],
                                ref_cov0cl[:24, :24])
 
@@ -145,8 +146,8 @@ def test_cl_cov():
 @pytest.mark.slow
 def test_xi_cov():
     print("Comparing xi covariance (700 data points)")
-    covall_xi = tjpcov.get_all_cov(do_xi=True)
-    np.testing.assert_allclose(gcov_cl,
+    covall_xi = tjp0.get_all_cov(do_xi=True)
+    np.testing.assert_allclose(covall_xi,
                                ref_cov0xi[:, :])
 
 
