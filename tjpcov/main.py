@@ -67,7 +67,7 @@ class CovarianceCalculator():
                             + "or do_xi: True in 'tjpcov' field of your yaml")
 
         print("Starting TJPCov covariance calculator for", end=' ')
-        print(["Configuration space" if self.do_xi else "Harmonic Space"][0])
+        print("Configuration space" if self.do_xi else "Harmonic Space")
 
         if self.do_xi:
             xi_fn = config['tjpcov'].get('xi_file')
@@ -78,23 +78,22 @@ class CovarianceCalculator():
         # sacc_fn  = config['tjpcov'].get('sacc_file')
 
         # Treating fsky = 1 if no input is given
-        fsky = config['tjpcov'].get('fsky')
-        if fsky is None:
-            print("NOne")
-        else:
-            print(fsky)
-        self.fsky= [ 1 if fsky is None else fsky][0]
-        print(self.fsky)
+        self.fsky = config['tjpcov'].get('fsky')
+        if self.fsky is None:
+            print("No input for fsky. Assuming ", end='')
+            self.fsky=1
+
+        print(f"fsky={self.fsky}")
  
         if cosmo_fn is None or cosmo_fn == 'set':
             self.cosmo = self.set_ccl_cosmo(config)
 
-        elif cosmo_fn[-5:] == '.yaml':
+        elif cosmo_fn.split('.')[-1] == 'yaml':
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
             # TODO: remove this hot fix of ccl
             self.cosmo.config.transfer_function_method = 1
 
-        elif cosmo_fn[-4:] == '.pkl':
+        elif cosmo_fn.split('.')[-1]  == 'pkl':
             import pickle
             with open(cosmo_fn, 'rb') as ccl_cosmo_file:
                 self.cosmo = pickle.load(ccl_cosmo_file)
@@ -126,7 +125,7 @@ class CovarianceCalculator():
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
 
         # fao Set this inside get_ell_theta ?
-        ell, ell_bins, ell_edges = None, None, None
+        # ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
 
 
@@ -152,7 +151,14 @@ class CovarianceCalculator():
         """
         cosmo = self.cosmo
         ell = self.ell
-
+        if self.do_xi:
+            bins = self.theta_bins
+        else:
+            bins = self.ell_bins            
+        run_configuration = {
+        'do_xi': self.do_xi,
+        'bins': bins
+        }
         # TODO: save as yaml output
         if isinstance(output, str):
             with open(output, 'w') as ff:
@@ -380,6 +386,7 @@ class CovarianceCalculator():
         # ell=two_point_data.metadata['ell']
         # fao to discuss: indices
         cosmo = self.cosmo
+        #do_xi=self.do_xi
 
         if not do_xi:
             ell = self.ell
@@ -424,12 +431,11 @@ class CovarianceCalculator():
 
         if do_xi:
             if self.WT is None:  # class modifier of WT initialization
-                # TODO: removing WT initialization from constructor when yaml implemented
                 print("Preparing WT...")
                 self.WT = self.wt_setup(self.ell, self.theta)
                 print("Done!")
 
-            # Fixme: CAN WE SET A CUSTOM ELL FOR do_xi case, in order to use
+            # Fixme: SET A CUSTOM ELL FOR do_xi case, in order to use
             # a single sacc input filefile
             ell = self.ell
             s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
@@ -557,81 +563,33 @@ class CovarianceCalculator():
 
 if __name__ == "__main__":
     import tjpcov.main as cv
-
+    import pickle
     import sys
     import os
+
     cwd = os.getcwd()
     sys.path.append(os.path.dirname(cwd)+"/tjpcov")
-
-    if False:
-        import pickle
-        # with open("../tests/data/cosmo_desy1_obj.pkl", 'rb') as ff:
-        with open("../tests/data/cosmos_desy1_v2p1p0.pkl", 'rb') as ff:
-            cosmo = pickle.load(ff)
-        with open("../tests/data/tjpcov_cl.pkl", "rb") as ff:
-            cov0cl = pickle.load(ff)
-
-        cosmo_filename = "../tests/data/cosmo_desy1.yaml"
-        xi_fn = "../examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
-        cl_fn = "../examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
-        check_yaml = False
-        if check_yaml:
-            # pyccl write_yaml seems to not transcript the transfer_function
-            tjp = CovarianceCalculator(cosmo_fn=cosmo_filename, sacc_fn_cl=cl_fn,
-                                       sacc_fn_xi=xi_fn)
-
-            ccl_tracers, tracer_Noise = tjp.get_tracer_info(tjp.cl_data)
-            trcs = tjp.cl_data.get_tracer_combinations()
-
-            gcov_cl_0 = tjp.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
-                                            tracer_comb2=('lens0', 'lens0'),
-                                            ccl_tracers=ccl_tracers,
-                                            tracer_Noise=tracer_Noise,
-                                            two_point_data=tjp.cl_data)
-
-        tjp2 = CovarianceCalculator(cosmo_fn=cosmo, sacc_fn_cl=cl_fn,
-                                    sacc_fn_xi=xi_fn)
-
-        ccl_tracers, tracer_Noise = tjp2.get_tracer_info(tjp2.cl_data)
-        trcs = tjp2.cl_data.get_tracer_combinations()
-
-        gcov_cl_1 = tjp2.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
-                                         tracer_comb2=('lens0', 'lens0'),
-                                         ccl_tracers=ccl_tracers,
-                                         tracer_Noise=tracer_Noise,
-                                         two_point_data=tjp2.cl_data)
-
-        if check_yaml:
-            print("from yaml: ", gcov_cl_0['final_b'].diagonal()[:10])
-        print("from cosmo:", gcov_cl_1['final_b'].diagonal()[:10])
-
-        if check_yaml:
-            print("from yaml: ", gcov_cl_0['final_b'].diagonal()[
-                  :]/cov0cl.diagonal()[:24])
-        print("from cosmo:", gcov_cl_1['final_b'].diagonal()[
-              :]/cov0cl.diagonal()[:24])
-
-        if False:
-            covall = tjp2.get_all_cov()
-            print(covall.diagonal()/cov0cl.diagonal())
-            # with open("../tests/data/produced_covcl.pkl", "wb") as ff:
-            #     pickle.dump(covall, ff)
-        tjp2.get_all_cov(do_xi=True)
-
-    tjp3 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
-    import pickle
-    with open("tests/data/cosmos_desy1_v2p1p0.pkl", 'rb') as ff:
-        cosmo = pickle.load(ff)
-    with open("tests/data/tjpcov_cl.pkl", "rb") as ff:
+    # reference:
+    with open("./tests/data/tjpcov_cl.pkl", "rb") as ff:
         cov0cl = pickle.load(ff)
 
-    ccl_tracers, tracer_Noise = tjp3.get_tracer_info(tjp3.cl_data)
-    trcs = tjp3.cl_data.get_tracer_combinations()
 
-    gcov_cl_0 = tjp3.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
+    tjp0 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
+    
+    ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
+    trcs = tjp0.cl_data.get_tracer_combinations()
+
+    gcov_cl_0 = tjp0.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
                                      tracer_comb2=('lens0', 'lens0'),
                                      ccl_tracers=ccl_tracers,
                                      tracer_Noise=tracer_Noise,
-                                     two_point_data=tjp3.cl_data)
-    print(gcov_cl_0['final_b'].shape, tjp3.ell_bins.shape)
-    # tjp4 = CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_cs.yaml")
+                                     two_point_data=tjp0.cl_data,
+                                     )
+
+
+    if np.array_equal(gcov_cl_0['final_b'].diagonal()[:], cov0cl.diagonal()[:24]):
+        print("Cov (diagonal):\n", gcov_cl_0['final_b'].diagonal()[:])
+    else:
+        print(gcov_cl_0['final_b'].diagonal()[:], cov0cl.diagonal()[:24])
+    
+    
