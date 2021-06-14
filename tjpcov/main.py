@@ -77,6 +77,11 @@ class CovarianceCalculator():
         cosmo_fn = config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
 
+        # linear lens biases
+        self.lens_bias = {k.replace('bias_',''):v for k,v in config['parameters'].items() 
+                            if 'bias_lens' in k}
+
+
         # Treating fsky = 1 if no input is given
         self.fsky = config['tjpcov'].get('fsky')
         if self.fsky is None:
@@ -84,7 +89,8 @@ class CovarianceCalculator():
             self.fsky=1
 
         print(f"fsky={self.fsky}")
- 
+        
+
         if cosmo_fn is None or cosmo_fn == 'set':
             self.cosmo = self.set_ccl_cosmo(config)
 
@@ -348,10 +354,11 @@ class CovarianceCalculator():
             # FIXME: Following should be read from sacc dataset.--------------
             Ngal = 26.  # arc_min^2
             sigma_e = .26
-            b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
+            #b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
             AI = .5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
             Ngal = Ngal*3600/d2r**2
             # ---------------------------------------------------------------
+            b = { l:bi*np.ones(len(z)) for l, bi in self.lens_bias.items()}
 
             dNdz = tracer_dat.nz
             dNdz /= (dNdz*np.gradient(z)).sum()
@@ -365,7 +372,7 @@ class CovarianceCalculator():
             elif 'lens' in tracer:
                 tracer_Noise[tracer] = 1./Ngal
                 ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                    self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+                    self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b[tracer]))
         return ccl_tracers, tracer_Noise
 
 
@@ -574,7 +581,7 @@ if __name__ == "__main__":
         cov0cl = pickle.load(ff)
 
 
-    tjp0 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov.yaml")
+    tjp0 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_minimal.yaml")
     
     ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
     trcs = tjp0.cl_data.get_tracer_combinations()

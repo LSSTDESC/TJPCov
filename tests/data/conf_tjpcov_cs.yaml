@@ -63,7 +63,7 @@ tjpcov:
   cov_type: gauss
 
   # Setting mask OR fsky approximation
-  mask_file:
+  mask_file:    
   fsky: 0.3
 
 

@@ -23,8 +23,12 @@ parameters:
   {% endfor %}
 
   # linear bias for lenses constant for redshift bin
-  {% for i, val in [(0, 1.4), (1, 1.6), (2, 1.6), (3, 1.9), (4, 2.0)] %}
-  bias_lens{{ i }}: {{ val }}
+  # {% for i, val in [(0, 1.4), (1, 1.6), (2, 1.6), (3, 1.9), (4, 2.0)] %}
+  # bias_lens{{ i }}: {{ val }}
+  # {% endfor %}
+  # DES-Like case
+  {% for i in range(5) %}
+  bias_lens{{ i }}: {{ 1.5 }}
   {% endfor %}
 
   # photoz shifts for the lensing sources
