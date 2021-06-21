@@ -77,10 +77,19 @@ class CovarianceCalculator():
         cosmo_fn = config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
 
-        # linear lens biases
-        self.lens_bias = {k.replace('bias_',''):v for k,v in config['parameters'].items() 
+        # biases
+        # reading values w/o passing the number of tomographic bins
+        # import pdb; pdb.set_trace()
+        self.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
                             if 'bias_lens' in k}
-
+        self.IA = config['tjpcov'].get('IA')
+        self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+                            if 'Ngal' in k}
+        # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        #                     if 'Ngal_src' in k}
+        self.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
+                            if 'sigma_e' in k}
+        
 
         # Treating fsky = 1 if no input is given
         self.fsky = config['tjpcov'].get('fsky')
@@ -347,32 +356,37 @@ class CovarianceCalculator():
         """
         ccl_tracers = {}
         tracer_Noise = {}
+        # b = { l:bi*np.ones(len(z)) for l, bi in self.lens_bias.items()}
+
         for tracer in two_point_data.tracers:
             tracer_dat = two_point_data.get_tracer(tracer)
             z = tracer_dat.z
 
             # FIXME: Following should be read from sacc dataset.--------------
-            Ngal = 26.  # arc_min^2
-            sigma_e = .26
+            #Ngal = 26.  # arc_min^2
+            #sigma_e = .26
             #b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
-            AI = .5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
-            Ngal = Ngal*3600/d2r**2
+            # AI = .5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
+            #Ngal = Ngal*3600/d2r**2
             # ---------------------------------------------------------------
-            b = { l:bi*np.ones(len(z)) for l, bi in self.lens_bias.items()}
 
             dNdz = tracer_dat.nz
             dNdz /= (dNdz*np.gradient(z)).sum()
-            dNdz *= Ngal
-
+            dNdz *= self.Ngal[tracer]
+            #FAO  this should be called by tomographic bin
             if 'source' in tracer or 'src' in tracer:
+                IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
                 ccl_tracers[tracer] = ccl.WeakLensingTracer(
-                    self.cosmo, dndz=(z, dNdz), ia_bias=(z, AI))
+                    self.cosmo, dndz=(z, dNdz), ia_bias=(z, IA_bin))
                 # CCL automatically normalizes dNdz
-                tracer_Noise[tracer] = sigma_e**2/Ngal
+                tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
+
             elif 'lens' in tracer:
-                tracer_Noise[tracer] = 1./Ngal
+                # import pdb; pdb.set_trace()
+                b = self.bias_lens[tracer] * np.ones(len(z))
+                tracer_Noise[tracer] = 1./self.Ngal[tracer]
                 ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                    self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b[tracer]))
+                    self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
         return ccl_tracers, tracer_Noise
 
 
