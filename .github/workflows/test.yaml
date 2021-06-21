@@ -29,8 +29,8 @@ jobs:
              - name: Tests
                run: |
                         # Run harmonic Space
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf.py
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal.py
                         
                         # Run Configuration Space
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_cs.py
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal_cs.py
                
