@@ -23,9 +23,33 @@ tjpcov:
   mask_file:
   fsky: 0.3
 
+  # Survey params:
+  # 5 lens bins
+  {% for i in range(5) %} 
+  Ngal_lens{{ i }}: {{26}} # arc_min^2
+  {% endfor %}
+
+  # 4 source bins
+  {% for i in range(4) %} 
+  Ngal_src{{ i }}: {{26}} # arc_min^2
+  {% endfor %}
+
+  # constant bin sigma_e
+  {% for i in range(4) %} 
+  sigma_e{{ i }}: {{ 0.26 }}
+  {% endfor %}
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  {% for i, val in [(0, 1.5), (1, 1.5), (2, 1.5), (3, 1.5), (4, 1.5)] %}
+  bias_lens{{ i }}: {{ val }}
+  {% endfor %}
+
+  IA: 0.5
+
+
 parameters:
   # Not used for while (read by ccl.cosmo):
-  # Omega_k: 0.0
+  Omega_k: 0.0
   # Omega_b: 0.0485
   # Omega_c: 0.2545
   # w0: -1.0
@@ -48,10 +72,10 @@ parameters:
   # src{{ i }}_mult_bias: 0.0
   # {% endfor %}
 
-  # linear bias for lenses constant for redshift bin (example notebook)
-  {% for i, val in [(0, 1.5), (1, 1.5), (2, 1.5), (3, 1.5), (4, 1.5)] %}
-  bias_lens{{ i }}: {{ val }}
-  {% endfor %}
+  # # linear bias for lenses constant for redshift bin (example notebook)
+  # {% for i, val in [(0, 1.5), (1, 1.5), (2, 1.5), (3, 1.5), (4, 1.5)] %}
+  # bias_lens{{ i }}: {{ val }}
+  # {% endfor %}
 
   # # linear bias for lenses constant for redshift bin
   # {% for i, val in [(0, 1.4), (1, 1.6), (2, 1.6), (3, 1.9), (4, 2.0)] %}
