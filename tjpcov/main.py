@@ -83,7 +83,7 @@ class CovarianceCalculator():
         # reading values w/o passing the number of tomographic bins
         # import pdb; pdb.set_trace()
         self.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items()
-                            if 'bias_lens' in k}
+                            if 'bias_' in k}
         self.IA = config['tjpcov'].get('IA')
         self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items()
                             if 'Ngal' in k}
@@ -134,9 +134,10 @@ class CovarianceCalculator():
         self.cl_data = sacc.Sacc.load_fits(
             config['tjpcov'].get('cl_file'))
         # TO DO: remove this dependence here
+        trcomb = self.cl_data.get_tracer_combinations()[0]
         ell_list = self.get_ell_theta(self.cl_data,  # fix this
                                       'galaxy_density_cl',
-                                      ('lens0', 'lens0'),
+                                      trcomb,
                                       'linear', do_xi=False)
 
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
@@ -373,17 +374,17 @@ class CovarianceCalculator():
             # ---------------------------------------------------------------
 
             dNdz = tracer_dat.nz
-            dNdz /= (dNdz*np.gradient(z)).sum()
-            dNdz *= self.Ngal[tracer]
+            # dNdz /= (dNdz*np.gradient(z)).sum()
+            # dNdz *= self.Ngal[tracer]
             #FAO  this should be called by tomographic bin
-            if 'source' in tracer or 'src' in tracer:
+            if tracer_dat.quantity == 'galaxy_shear':
                 IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
                 ccl_tracers[tracer] = ccl.WeakLensingTracer(
                     self.cosmo, dndz=(z, dNdz), ia_bias=(z, IA_bin))
                 # CCL automatically normalizes dNdz
                 tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
 
-            elif 'lens' in tracer:
+            elif tracer_dat.quantity == 'galaxy_density':
                 # import pdb; pdb.set_trace()
                 b = self.bias_lens[tracer] * np.ones(len(z))
                 tracer_Noise[tracer] = 1./self.Ngal[tracer]
@@ -396,7 +397,7 @@ class CovarianceCalculator():
                         ccl_tracers=None, tracer_Noise=None, coupled=False,
                         cache=None):
         """
-        Compute a single covariance matrix for a given pair of C_ell or xi
+        Compute a single covariance matrix for a given pair of C_ell
 
         Parameters:
         -----------
@@ -421,27 +422,52 @@ class CovarianceCalculator():
                              'implemented yet')
 
         cosmo = self.cosmo
-        ell = np.arange(self.ell.max())
+        if 'lmax' in cache:
+            ell = np.arange(cache['lmax'])
+        else:
+            ell = np.arange(self.ell.max())
 
         tr1, tr2 = tracer_comb1
         tr3, tr4 = tracer_comb2
 
+        dof = {}
+        dof[13] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr1, tr3))
+        dof[24] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr2, tr4))
+        dof[14] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr1, tr4))
+        dof[23] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr2, tr3))
+
+
         cl = {}
-        cl[13] = ccl.angular_cl(cosmo, ccl_tracers[tr1], ccl_tracers[tr3],
+        cl[13] = np.zeros((dof[13], ell.size))
+        cl[13][0] = ccl.angular_cl(cosmo, ccl_tracers[tr1], ccl_tracers[tr3],
                                 ell)
-        cl[24] = ccl.angular_cl(cosmo, ccl_tracers[tr2], ccl_tracers[tr4],
+        cl[24] = np.zeros((dof[24], ell.size))
+        cl[24][0] = ccl.angular_cl(cosmo, ccl_tracers[tr2], ccl_tracers[tr4],
                                 ell)
-        cl[14] = ccl.angular_cl(cosmo, ccl_tracers[tr1], ccl_tracers[tr4],
+        cl[14] = np.zeros((dof[14], ell.size))
+        cl[14][0] = ccl.angular_cl(cosmo, ccl_tracers[tr1], ccl_tracers[tr4],
                                 ell)
-        cl[23] = ccl.angular_cl(cosmo, ccl_tracers[tr2], ccl_tracers[tr3],
+        cl[23] = np.zeros((dof[23], ell.size))
+        cl[23][0] = ccl.angular_cl(cosmo, ccl_tracers[tr2], ccl_tracers[tr3],
                                 ell)
 
         # Coupled noise
         SN = {}
-        SN[13] = tracer_Noise[tr1] if tr1 == tr3 else 0
-        SN[24] = tracer_Noise[tr2] if tr2 == tr4 else 0
-        SN[14] = tracer_Noise[tr1] if tr1 == tr4 else 0
-        SN[23] = tracer_Noise[tr2] if tr2 == tr3 else 0
+        SN[13] = np.zeros((dof[13], ell.size))
+        SN[13][0] = SN[13][-1] = np.ones_like(ell) * tracer_Noise[tr1] \
+            if tr1 == tr3 else 0
+        SN[24] = np.zeros((dof[24], ell.size))
+        SN[24][0] = SN[24][-1] = np.zeros((dof[24], ell.size))
+        SN[24][0] = SN[24][-1] = np.ones_like(ell) * tracer_Noise[tr2] \
+            if tr2 == tr4 else 0
+        SN[14] = np.zeros((dof[14], ell.size))
+        SN[14][0] = SN[14][-1] = np.zeros((dof[14], ell.size))
+        SN[14][0] = SN[14][-1] = np.ones_like(ell) * tracer_Noise[tr1] \
+            if tr1 == tr4 else 0
+        SN[23] = np.zeros((dof[23], ell.size))
+        SN[23][0] = SN[23][-1] = np.zeros((dof[23], ell.size))
+        SN[23][0] = SN[23][-1] = np.ones_like(ell) * tracer_Noise[tr2] \
+            if tr2 == tr3 else 0
 
         if np.any(cl[13]) or np.any(cl[24]) or np.any(cl[14]) or \
                 np.any(cl[23]):
@@ -465,7 +491,8 @@ class CovarianceCalculator():
             w12 = cache['w12']
             w34 = cache['w34']
 
-            cw = nmt_tools.get_covariance_workspace(f1, f2, f3, f4, config={})
+            # TODO; Allow input options as output folder, if recompute, etc.
+            cw = nmt_tools.get_covariance_workspace(f1, f2, f3, f4)
 
             cl_cov = {}
             cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m1, m3, w13)
@@ -473,8 +500,8 @@ class CovarianceCalculator():
             cl_cov[14] = nmt_tools.get_cl_for_cov(cl[14], SN[14], m1, m4, w14)
             cl_cov[24] = nmt_tools.get_cl_for_cov(cl[24], SN[24], m2, m4, w24)
 
-            s1, s2 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
-            s3, s4 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
+            s1, s2 = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb1)
+            s3, s4 = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb2)
 
             cov = nmt.gaussian_covariance(cw, s1, s2, s3, s4,
                                           cl_cov[13], cl_cov[14], cl_cov[23],

@@ -4,6 +4,38 @@ import pymaster as nmt
 import numpy as np
 
 
+
+
+def get_tracer_dof(sacc_data, tracer):
+    tr = sacc_data.get_tracer(tracer)
+    if tr.quantity in ['cmb_convergence', 'galaxy_density']:
+        return 1
+    elif tr.quantity == 'galaxy_shear':
+        return 2
+
+
+def get_tracer_spin(sacc_data, tracer):
+    tr = sacc_data.get_tracer(tracer)
+    if tr.quantity in ['cmb_convergence', 'galaxy_density']:
+        return 0
+    elif tr.quantity == 'galaxy_shear':
+        return 1
+
+
+def get_tracer_comb_spin(sacc_data, tracer_comb):
+    s1 = get_tracer_spin(sacc_data, tracer_comb[0])
+    s2 = get_tracer_spin(sacc_data, tracer_comb[1])
+
+    return s1, s2
+
+
+def get_tracer_comb_dof(sacc_data, tracer_comb):
+    dof1 = get_tracer_dof(sacc_data, tracer_comb[0])
+    dof2 = get_tracer_dof(sacc_data, tracer_comb[1])
+
+    return dof1 * dof2
+
+
 def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
     """
     Computes the coupled Cell that goes into the covariance matrix
@@ -52,7 +84,7 @@ def get_covariance_workspace(f1, f2, f3, f4, **kwards):
     """
     fname = ''  # TODO: Agree on how to store tmp cw
     cw = nmt.NmtCovarianceWorkspace()
-    recompute = config.get('recompute', False)
+    recompute = kwards.get('recompute', False)
     if recompute or (not os.path.isfile(fname)):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
         if fname:
