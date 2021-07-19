@@ -469,43 +469,64 @@ class CovarianceCalculator():
         if np.any(cl[13]) or np.any(cl[24]) or np.any(cl[14]) or \
                 np.any(cl[23]):
 
+            if 'bins' in cache:
+                bins = cache['bins']
+            else:
+                bins = self.bins
+
+            s = {}
+            s[1], s[2] = nmt_tools.get_tracer_comb_spin(self.cl_data,
+                                                        tracer_comb1)
+            s[3], s[4] = nmt_tools.get_tracer_comb_spin(self.cl_data,
+                                                        tracer_comb2)
+
             # TODO: Modify depending on how TXPipe caches things
-            f1 = cache['f1']
-            f2 = cache['f2']
-            f3 = cache['f3']
-            f4 = cache['f4']
+            m = {}
+            f = {}
+            w = {}
+            for i in [1, 2, 3, 4]:
+                # Mask
+                key = f'm{i}'
+                if key in cache:
+                    m[i] = cache[key]
+                else:
+                    m[i] = self.mask_fn[tr[i]]
+                # Field
+                key = f'f{i}'
+                if key in cache:
+                    f[i] = cache[key]
+                else:
+                    f[i] = nmt.NmtField(m[i], None, spin=s[i])
 
-            m1 = cache['m1']
-            m2 = cache['m2']
-            m3 = cache['m3']
-            m4 = cache['m4']
-
-            w13 = cache['w13']
-            w23 = cache['w23']
-            w14 = cache['w14']
-            w24 = cache['w24']
-
-            w12 = cache['w12']
-            w34 = cache['w34']
+            for i in [13, 23, 14, 24, 12, 34]:
+                i1, i2 = [int(j) for j in str(i)]
+                # Workspace
+                key = f'w{i}'
+                if key in cache:
+                    w[i] = cache[key]
+                else:
+                    w[i] = nmt.NmtWorkspace()
+                    w[i].compute_coupling_matrix(f[i1], f[i2], bins)
 
             # TODO; Allow input options as output folder, if recompute, etc.
             if 'cw' in cache:
                 cw = cache['cw']
             else:
-                cw = nmt_tools.get_covariance_workspace(f1, f2, f3, f4)
+                cw = nmt_tools.get_covariance_workspace(f[1], f[2], f[3], f[4])
 
             cl_cov = {}
-            cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m1, m3, w13)
-            cl_cov[23] = nmt_tools.get_cl_for_cov(cl[23], SN[23], m2, m3, w23)
-            cl_cov[14] = nmt_tools.get_cl_for_cov(cl[14], SN[14], m1, m4, w14)
-            cl_cov[24] = nmt_tools.get_cl_for_cov(cl[24], SN[24], m2, m4, w24)
+            cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m[1], m[3],
+                                                  w[13])
+            cl_cov[23] = nmt_tools.get_cl_for_cov(cl[23], SN[23], m[2], m[3],
+                                                  w[23])
+            cl_cov[14] = nmt_tools.get_cl_for_cov(cl[14], SN[14], m[1], m[4],
+                                                  w[14])
+            cl_cov[24] = nmt_tools.get_cl_for_cov(cl[24], SN[24], m[2], m[4],
+                                                  w[24])
 
-            s1, s2 = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb1)
-            s3, s4 = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb2)
-
-            cov = nmt.gaussian_covariance(cw, s1, s2, s3, s4,
+            cov = nmt.gaussian_covariance(cw, s[1], s[2], s[3], s[4],
                                           cl_cov[13], cl_cov[14], cl_cov[23],
-                                          cl_cov[24], w12, w34, coupled)
+                                          cl_cov[24], w[12], w[34], coupled)
         else:
             size1 = cl[12].size
             size2 = cl[34].size
