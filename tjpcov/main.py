@@ -1,6 +1,7 @@
 # import pdb
 from . import wigner_transform, bin_cov, parse
 from . import nmt_tools
+import healpy as hp
 import numpy as np
 import sacc
 import pyccl as ccl
@@ -392,7 +393,6 @@ class CovarianceCalculator():
                     self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
         return ccl_tracers, tracer_Noise
 
-
     def nmt_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None, coupled=False,
                         cache=None):
@@ -424,6 +424,8 @@ class CovarianceCalculator():
         if 'lmax' in cache:
             ell = np.arange(cache['lmax'])
         else:
+            raise ValueError('Not implemented yet: you have to pass a lmax in'
+                             + 'the cache')
             ell = np.arange(self.ell.max())
 
         if 'cosmo' in cache:
@@ -472,6 +474,8 @@ class CovarianceCalculator():
             if 'bins' in cache:
                 bins = cache['bins']
             else:
+                raise ValueError('Not yet implemented: you need to pass a'
+                                 + 'NmtBin instance')
                 bins = self.bins
 
             s = {}
@@ -490,7 +494,8 @@ class CovarianceCalculator():
                 if key in cache:
                     m[i] = cache[key]
                 else:
-                    m[i] = self.mask_fn[tr[i]]
+                    # TODO: Improve this. Very inefficient!
+                    m[i] = hp.read_map(self.mask_fn[tr[i]])
                 # Field
                 key = f'f{i}'
                 if key in cache:
