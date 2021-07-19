@@ -421,53 +421,50 @@ class CovarianceCalculator():
             raise ValueError('Computing coupled covariance matrix not ' +
                              'implemented yet')
 
-        cosmo = self.cosmo
         if 'lmax' in cache:
             ell = np.arange(cache['lmax'])
         else:
             ell = np.arange(self.ell.max())
 
-        tr1, tr2 = tracer_comb1
-        tr3, tr4 = tracer_comb2
+        if 'cosmo' in cache:
+            cosmo = cache['cosmo']
+        else:
+            cosmo = self.cosmo
+
+        tr = {}
+        tr[1], tr[2] = tracer_comb1
+        tr[3], tr[4] = tracer_comb2
 
         dof = {}
-        dof[13] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr1, tr3))
-        dof[24] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr2, tr4))
-        dof[14] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr1, tr4))
-        dof[23] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr2, tr3))
+        dof[13] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[3]))
+        dof[24] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[2], tr[4]))
+        dof[14] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[4]))
+        dof[23] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[2], tr[3]))
 
-
+        # Fiducial cl
         cl = {}
-        cl[13] = np.zeros((dof[13], ell.size))
-        cl[13][0] = ccl.angular_cl(cosmo, ccl_tracers[tr1], ccl_tracers[tr3],
-                                ell)
-        cl[24] = np.zeros((dof[24], ell.size))
-        cl[24][0] = ccl.angular_cl(cosmo, ccl_tracers[tr2], ccl_tracers[tr4],
-                                ell)
-        cl[14] = np.zeros((dof[14], ell.size))
-        cl[14][0] = ccl.angular_cl(cosmo, ccl_tracers[tr1], ccl_tracers[tr4],
-                                ell)
-        cl[23] = np.zeros((dof[23], ell.size))
-        cl[23][0] = ccl.angular_cl(cosmo, ccl_tracers[tr2], ccl_tracers[tr3],
-                                ell)
-
         # Coupled noise
         SN = {}
-        SN[13] = np.zeros((dof[13], ell.size))
-        SN[13][0] = SN[13][-1] = np.ones_like(ell) * tracer_Noise[tr1] \
-            if tr1 == tr3 else 0
-        SN[24] = np.zeros((dof[24], ell.size))
-        SN[24][0] = SN[24][-1] = np.zeros((dof[24], ell.size))
-        SN[24][0] = SN[24][-1] = np.ones_like(ell) * tracer_Noise[tr2] \
-            if tr2 == tr4 else 0
-        SN[14] = np.zeros((dof[14], ell.size))
-        SN[14][0] = SN[14][-1] = np.zeros((dof[14], ell.size))
-        SN[14][0] = SN[14][-1] = np.ones_like(ell) * tracer_Noise[tr1] \
-            if tr1 == tr4 else 0
-        SN[23] = np.zeros((dof[23], ell.size))
-        SN[23][0] = SN[23][-1] = np.zeros((dof[23], ell.size))
-        SN[23][0] = SN[23][-1] = np.ones_like(ell) * tracer_Noise[tr2] \
-            if tr2 == tr3 else 0
+        for i in [13, 24, 14, 23]:
+            # Fiducial cl
+            i1, i2 = [int(j) for j in str(i)]
+            key = f'cl{i}'
+            if key in cache:
+                cl[i] = cache[key]
+            else:
+                cl[i] = np.zeros((dof[i], ell.size))
+                cl[i][0] = ccl.angular_cl(cosmo, ccl_tracers[tr[i1]],
+                                          ccl_tracers[tr[i2]], ell)
+
+            # Coupled noise
+            key = f'SN{i}'
+            if key in cache:
+                SN[i] = cache[key]
+            else:
+                SN[i] = np.zeros((dof[i], ell.size))
+                SN[i][0] = SN[i][-1] = np.ones_like(ell) * \
+                tracer_Noise[tr[i1]] if tr[i1] == tr[i2] else 0
+
 
         if np.any(cl[13]) or np.any(cl[24]) or np.any(cl[14]) or \
                 np.any(cl[23]):
@@ -492,7 +489,10 @@ class CovarianceCalculator():
             w34 = cache['w34']
 
             # TODO; Allow input options as output folder, if recompute, etc.
-            cw = nmt_tools.get_covariance_workspace(f1, f2, f3, f4)
+            if 'cw' in cache:
+                cw = cache['cw']
+            else:
+                cw = nmt_tools.get_covariance_workspace(f1, f2, f3, f4)
 
             cl_cov = {}
             cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m1, m3, w13)
