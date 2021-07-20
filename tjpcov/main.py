@@ -450,6 +450,11 @@ class CovarianceCalculator():
         dof[14] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[4]))
         dof[23] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[2], tr[3]))
 
+        s = {}
+        s[1], s[2] = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb1)
+        s[3], s[4] = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb2)
+
+
         # Fiducial cl
         cl = {}
         # Coupled noise
@@ -473,6 +478,8 @@ class CovarianceCalculator():
                 SN[i] = np.zeros((dof[i], ell.size))
                 SN[i][0] = SN[i][-1] = np.ones_like(ell) * \
                 tracer_Noise[tr[i1]] if tr[i1] == tr[i2] else 0
+                if s[i1] == 2:
+                    SN[i][0, :2] = SN[i][-1, :2] = 0
 
 
         if np.any(cl[13]) or np.any(cl[24]) or np.any(cl[14]) or \
@@ -485,11 +492,6 @@ class CovarianceCalculator():
                                  + 'NmtBin instance')
                 bins = self.bins
 
-            s = {}
-            s[1], s[2] = nmt_tools.get_tracer_comb_spin(self.cl_data,
-                                                        tracer_comb1)
-            s[3], s[4] = nmt_tools.get_tracer_comb_spin(self.cl_data,
-                                                        tracer_comb2)
 
             # TODO: Modify depending on how TXPipe caches things
             m = {}
