@@ -428,11 +428,13 @@ class CovarianceCalculator():
             raise ValueError('Computing coupled covariance matrix not ' +
                              'implemented yet')
 
-        if 'lmax' in cache:
-            ell = np.arange(cache['lmax'])
+        if 'bins' in cache:
+            bins = cache['bins']
+            ell = np.arange(bins.lmax + 1)
         else:
-            raise ValueError('Not implemented yet: you have to pass a lmax in'
-                             + 'the cache')
+            raise ValueError('Not yet implemented: you need to pass a'
+                             + 'NmtBin instance')
+            bins = self.bins
             ell = np.arange(self.ell.max())
 
         if 'cosmo' in cache:
@@ -484,13 +486,6 @@ class CovarianceCalculator():
 
         if np.any(cl[13]) or np.any(cl[24]) or np.any(cl[14]) or \
                 np.any(cl[23]):
-
-            if 'bins' in cache:
-                bins = cache['bins']
-            else:
-                raise ValueError('Not yet implemented: you need to pass a'
-                                 + 'NmtBin instance')
-                bins = self.bins
 
 
             # TODO: Modify depending on how TXPipe caches things
