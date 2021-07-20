@@ -379,11 +379,18 @@ class CovarianceCalculator():
             # dNdz *= self.Ngal[tracer]
             #FAO  this should be called by tomographic bin
             if tracer_dat.quantity == 'galaxy_shear':
-                IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
+                if self.IA is None:
+                    ia_bias = None
+                else:
+                    IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
+                    ia_bias = (z, IA_bin)
                 ccl_tracers[tracer] = ccl.WeakLensingTracer(
-                    self.cosmo, dndz=(z, dNdz), ia_bias=(z, IA_bin))
+                    self.cosmo, dndz=(z, dNdz), ia_bias=ia_bias)
                 # CCL automatically normalizes dNdz
-                tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
+                if tracer in self.sigma_e:
+                    tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
+                else:
+                    tracer_Noise[tracer] = None
 
             elif tracer_dat.quantity == 'galaxy_density':
                 # import pdb; pdb.set_trace()
