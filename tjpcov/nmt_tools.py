@@ -19,7 +19,7 @@ def get_tracer_spin(sacc_data, tracer):
     if tr.quantity in ['cmb_convergence', 'galaxy_density']:
         return 0
     elif tr.quantity == 'galaxy_shear':
-        return 1
+        return 2
 
 
 def get_tracer_comb_spin(sacc_data, tracer_comb):
