@@ -364,7 +364,7 @@ class CovarianceCalculator():
 
         for tracer in two_point_data.tracers:
             tracer_dat = two_point_data.get_tracer(tracer)
-            z = tracer_dat.z
+            # z = tracer_dat.z
 
             # FIXME: Following should be read from sacc dataset.--------------
             #Ngal = 26.  # arc_min^2
@@ -374,11 +374,13 @@ class CovarianceCalculator():
             #Ngal = Ngal*3600/d2r**2
             # ---------------------------------------------------------------
 
-            dNdz = tracer_dat.nz
+            # dNdz = tracer_dat.nz
             # dNdz /= (dNdz*np.gradient(z)).sum()
             # dNdz *= self.Ngal[tracer]
             #FAO  this should be called by tomographic bin
             if tracer_dat.quantity == 'galaxy_shear':
+                z = tracer_dat.z
+                dNdz = tracer_dat.nz
                 if self.IA is None:
                     ia_bias = None
                 else:
@@ -393,11 +395,17 @@ class CovarianceCalculator():
                     tracer_Noise[tracer] = None
 
             elif tracer_dat.quantity == 'galaxy_density':
+                z = tracer_dat.z
+                dNdz = tracer_dat.nz
                 # import pdb; pdb.set_trace()
                 b = self.bias_lens[tracer] * np.ones(len(z))
                 tracer_Noise[tracer] = 1./self.Ngal[tracer]
                 ccl_tracers[tracer] = ccl.NumberCountsTracer(
                     self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+            elif tracer_dat.quantity == 'cmb_convergence':
+                ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
+                                                           z_source=1100)
+
         return ccl_tracers, tracer_Noise
 
     def nmt_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
@@ -431,11 +439,13 @@ class CovarianceCalculator():
         if 'bins' in cache:
             bins = cache['bins']
             ell = np.arange(bins.lmax + 1)
+            ell_eff = bins.get_effective_ells()
         else:
             raise ValueError('Not yet implemented: you need to pass a'
                              + 'NmtBin instance')
             bins = self.bins
             ell = np.arange(self.ell.max())
+            ell_eff = self.ell_bins
 
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
@@ -447,6 +457,8 @@ class CovarianceCalculator():
         tr[3], tr[4] = tracer_comb2
 
         dof = {}
+        dof[12] = nmt_tools.get_tracer_comb_dof(self.cl_data, tracer_comb1)
+        dof[34] = nmt_tools.get_tracer_comb_dof(self.cl_data, tracer_comb2)
         dof[13] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[3]))
         dof[24] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[2], tr[4]))
         dof[14] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[4]))
@@ -537,8 +549,8 @@ class CovarianceCalculator():
                                           cl_cov[13], cl_cov[14], cl_cov[23],
                                           cl_cov[24], w[12], w[34], coupled)
         else:
-            size1 = cl[12].size
-            size2 = cl[34].size
+            size1 = dof[12] * ell_eff.size
+            size2 = dof[34] * ell_eff.size
             cov = np.zeros((size1, size2))
 
         return {'final': cov, 'final_b': cov}
