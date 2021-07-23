@@ -20,6 +20,28 @@ def get_pair_folder_name(tracer_comb):
         bn.append(tr.split('__')[0])
     return '_'.join(bn)
 
+def get_data_cl(tr1, tr2):
+    bn = get_pair_folder_name((tr1, tr2))
+    fname = os.path.join(root, bn, f"cl_{tr1}_{tr2}.npz")
+    return np.load(fname)['cl']
+
+def get_fiducial_cl(s, tr1, tr2):
+    s = s.copy()
+    s.remove_selection(data_type='cl_0b')
+    s.remove_selection(data_type='cl_eb')
+    s.remove_selection(data_type='cl_bb')
+    ix = s.indices(tracers=(tr1, tr2))
+    bpw = s.get_bandpower_windows(ix)
+
+    bn = get_pair_folder_name((tr1, tr2))
+    fname = os.path.join(root, 'fiducial', bn, f"cl_{tr1}_{tr2}.npz")
+    cl = np.load(fname)['cl']
+    cl0_bin = bpw.weight.T.dot(cl[0])
+
+    cl_bin = np.zeros((cl.shape[0], cl0_bin.size))
+    cl_bin[0] = cl0_bin
+    return cl_bin
+
 def get_tracer_noise(tr):
     bn = get_pair_folder_name((tr, tr))
     fname = os.path.join(root, bn, f"cl_{tr}_{tr}.npz")
@@ -56,6 +78,22 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 5e-3
     assert np.max(np.abs(cov / cov_bm - 1)) < 5e-1
+
+    if tracer_comb1 == tracer_comb2:
+        s = tjpcov_class.cl_data
+
+        cl1 = get_data_cl(*tracer_comb1)
+        cl2 = get_data_cl(*tracer_comb2)
+
+        clf1 = get_fiducial_cl(s, *tracer_comb1)
+        clf2 = get_fiducial_cl(s, *tracer_comb2)
+
+        delta1 = (clf1 - cl1).flatten()
+        delta2 = (clf2 - cl2).flatten()
+        chi2 = delta1.dot(np.linalg.inv(cov)).dot(delta2)
+        chi2_bm = delta1.dot(np.linalg.inv(cov_bm)).dot(delta2)
+
+        assert np.abs(chi2 / chi2_bm - 1) < 1e-2
 
 
 # def test_nmt_gaussian_cov_cache():
