@@ -44,6 +44,7 @@ def get_fiducial_cl(s, tr1, tr2, binned=True):
         s = s.copy()
         s.remove_selection(data_type='cl_0b')
         s.remove_selection(data_type='cl_eb')
+        s.remove_selection(data_type='cl_be')
         s.remove_selection(data_type='cl_bb')
         ix = s.indices(tracers=(tr1, tr2))
         bpw = s.get_bandpower_windows(ix)
@@ -222,5 +223,9 @@ def test_get_all_cov_nmt():
     for tr in s.tracers:
         tracer_noise[tr] = get_tracer_noise(tr)
 
-    tjpcov_class.get_all_cov_nmt(tracer_noise=tracer_noise,
-                                 cache={'bins': bins})
+    cov = tjpcov_class.get_all_cov_nmt(tracer_noise=tracer_noise,
+                                       cache={'bins': bins}) + 1e-100
+
+    cov_bm = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
+    assert np.max(np.abs(cov / cov_bm - 1)) < 5e-3
