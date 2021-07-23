@@ -36,6 +36,20 @@ def get_tracer_comb_dof(sacc_data, tracer_comb):
     return dof1 * dof2
 
 
+def get_datatypes_from_dof(dof):
+    # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
+    if dof == 1:
+        cl_types = ['cl_00']
+    elif dof == 2:
+        cl_types = ['cl_0e', 'cl_0b']
+    elif dof == 4:
+        cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
+    else:
+        raise ValueError('dof does not match 1, 2, or 4.')
+
+    return cl_types
+
+
 def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
     """
     Computes the coupled Cell that goes into the covariance matrix

@@ -212,3 +212,15 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     if tracer_comb1 == tracer_comb2:
         s = tjpcov_class.cl_data
         assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-5)
+
+def test_get_all_cov_nmt():
+    tjpcov_class = cv.CovarianceCalculator(input_yml)
+    s = tjpcov_class.cl_data
+    bins = get_nmt_bin()
+
+    tracer_noise = {}
+    for tr in s.tracers:
+        tracer_noise[tr] = get_tracer_noise(tr)
+
+    tjpcov_class.get_all_cov_nmt(tracer_noise=tracer_noise,
+                                 cache={'bins': bins})

@@ -672,6 +672,9 @@ class CovarianceCalculator():
         # FIXME: Only input needed should be two_point_data,
         # which is the sacc data file. Other parameters should be
         # included within sacc and read from there."""
+        if use_nmt:
+            raise ValueError('This function does not work with the NaMaster' +
+                             'wrapper at the moment. Use get_all_cov_nmt.')
 
         two_point_data = self.xi_data if do_xi else self.cl_data
 
@@ -734,6 +737,75 @@ class CovarianceCalculator():
                          indx_j:indx_j+Nell_bins_j] = cov_ij
                 cov_full[indx_j:indx_j+Nell_bins_i,
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
+        return cov_full
+
+    def get_all_cov_nmt(self, tracer_noise, **kwards):
+        """
+        Compute all the covariances and then combine them into one single giant matrix
+        Parameters:
+        -----------
+        two_point_data (sacc obj): sacc object containg two_point data
+        **kwards: The arguments to pass to your chosen covariance estimation
+        method.
+
+        Returns:
+        --------
+        cov_full (Npt x Npt numpy array):
+            Covariance matrix for all combinations.
+            Npt = (number of bins ) * (number of combinations)
+        """
+
+        two_point_data = self.cl_data
+
+        ccl_tracers, tracer_Noise = self.get_tracer_info(
+            two_point_data=two_point_data)
+
+        # Circunvent the impossibility of inputting noise by hand
+        for tracer in tracer_Noise:
+            if tracer in tracer_noise:
+                tracer_Noise[tracer] = tracer_noise[tracer]
+
+        # Covariance construction based on
+        # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
+        s = two_point_data
+        dtype = s.get_data_types()[0]
+        tracers = s.get_tracer_combinations(data_type=dtype)[0]
+        ell, _ = s.get_ell_cl(dtype, *tracers)
+        nbpw = ell.size
+        #
+        ndim = s.mean.size
+        cl_tracers = s.get_tracer_combinations()
+
+        cov_full = -1 * np.ones((ndim, ndim))
+
+        for i, tracer_comb1 in enumerate(cl_tracers):
+            dof1 = nmt_tools.get_tracer_comb_dof(s, tracer_comb1)
+            dtypes1 = nmt_tools.get_datatypes_from_dof(dof1)
+            for tracer_comb2 in cl_tracers[i:]:
+                dof2 = nmt_tools.get_tracer_comb_dof(s, tracer_comb2)
+                dtypes2 = nmt_tools.get_datatypes_from_dof(dof2)
+                print(tracer_comb1, tracer_comb2)
+                cov_ij = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
+                                               tracer_comb2=tracer_comb2,
+                                               ccl_tracers=ccl_tracers,
+                                               tracer_Noise=tracer_Noise,
+                                               **kwards)
+                cov_ij = cov_ij['final']
+
+                cov_ij = cov_ij.reshape((nbpw, dof1, nbpw, dof2))
+
+                for i, dt1 in enumerate(dtypes1):
+                    ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
+                    if len(ix1) == 0:
+                        continue
+                    for j, dt2 in enumerate(dtypes2):
+                        ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
+                        if len(ix2) == 0:
+                            continue
+                        covi = cov_ij[:, i, :, j]
+                        cov_full[np.ix_(ix1, ix2)] = covi
+                        cov_full[np.ix_(ix2, ix1)] = covi.T
+
         return cov_full
 
     def create_sacc_cov(output, do_xi=False):
