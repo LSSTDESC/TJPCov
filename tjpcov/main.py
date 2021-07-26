@@ -548,12 +548,18 @@ class CovarianceCalculator():
                 if key in cache:
                     w[i] = cache[key]
                 else:
+                    # In this case you have to check for m1 x m2 and m2 x m1
                     k = (mn[i1], mn[i2])
-                    if k not in w_by_mn:
+                    if k in w_by_mn:
+                        w[i] = w_by_mn[k]
+                    elif k[::-1] in w_by_mn:
+                        w[i] = w_by_mn[k[::-1]]
+                    else:
                         w_by_mn[k] = nmt_tools.get_workspace(f[i1], f[i2],
                                                              mn[i1], mn[i2],
                                                              bins, self.outdir)
-                    w[i] = w_by_mn[k]
+                        w[i] = w_by_mn[k]
+
 
             # TODO; Allow input options as output folder, if recompute, etc.
             if 'cw' in cache:
