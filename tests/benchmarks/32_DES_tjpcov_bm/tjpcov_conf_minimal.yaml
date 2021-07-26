@@ -25,6 +25,13 @@ tjpcov:
     DESwl__0: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DESwlMETACAL_mask_zbin0_ns32.fits.gz
     DESwl__1: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DESwlMETACAL_mask_zbin1_ns32.fits.gz
 
+  mask_names:
+    DESgc__0: mask_DESgc0
+    DESwl__0: mask_DESwl0
+    DESwl__1: mask_DESwl1
+
+  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+
   fsky: 0.3
 
   # Survey params:

@@ -142,6 +142,7 @@ class CovarianceCalculator():
                                       'linear', do_xi=False)
 
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
+        self.mask_names = config['tjpcov'].get('mask_names')
 
         # fao Set this inside get_ell_theta ?
         # ell, ell_bins, ell_edges = None, None, None
@@ -160,6 +161,11 @@ class CovarianceCalculator():
 
         # Calling WT in method, only if do_xi
         self.WT = None
+
+        # Output directory where to save all the time consuming calculations
+        self.outdir = config['tjpcov'].get('outdir', None)
+        if not os.path.isdir(self.outdir):
+            os.makedirs(self.outdir)
 
         return
 
@@ -503,9 +509,11 @@ class CovarianceCalculator():
 
             # TODO: Modify depending on how TXPipe caches things
             m = {}
+            mn = {}
             f = {}
             w = {}
             for i in [1, 2, 3, 4]:
+                mn[i] = self.mask_names[tr[i]]
                 # Mask
                 key = f'm{i}'
                 if key in cache:
@@ -527,8 +535,8 @@ class CovarianceCalculator():
                 if key in cache:
                     w[i] = cache[key]
                 else:
-                    w[i] = nmt.NmtWorkspace()
-                    w[i].compute_coupling_matrix(f[i1], f[i2], bins)
+                    w[i] = nmt_tools.get_workspace(f[i1], f[i2], mn[i1],
+                                                   mn[i2],  bins, self.outdir)
 
             # TODO; Allow input options as output folder, if recompute, etc.
             if 'cw' in cache:

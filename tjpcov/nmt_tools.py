@@ -77,6 +77,51 @@ def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
     return cl_cp
 
 
+def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
+    """
+    Return the workspace of the fields f1, f2
+
+    Parameters:
+    -----------
+        f1 (NmtField):  Field 1
+        f2 (NmtField):  Field 2
+        m1 (string): Mask name assotiated to the field 1
+        m2 (string): Mask name assotiated to the field 2
+        bins (NmtBin):  NmtBin instance
+        outdir (string): Path to the output folder where to store the
+        workspace
+        mask_names (dict): Dictionary with tracer names as key and maks names
+        as values.
+        **kwards:  Extra arguments to pass to
+        `w.compute_coupling_matrix`. In addition, if recompute=True is
+        passed, the cw will be recomputed even if found in the disk.
+
+    Returns:
+    --------
+        w:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
+
+    """
+    fname = os.path.join(outdir, f'w__{m1}__{m2}.fits')
+    isfile = os.path.isfile(fname)
+
+    # The workspace of m1 x m2 and m2 x m1 is the same.
+    fname2 = os.path.join(outdir, f'w__{m2}__{m1}.fits')
+    isfile2 = os.path.isfile(fname2)
+
+    w = nmt.NmtWorkspace()
+    recompute = kwards.get('recompute', False)
+    if recompute or ((not isfile) and (not isfile2)):
+        w.compute_coupling_matrix(f1, f2, bins, **kwards)
+        if fname:
+            w.write_to(fname)
+    elif isfile:
+        w.read_from(fname)
+    else:
+        w.read_from(fname2)
+
+    return w
+
+
 def get_covariance_workspace(f1, f2, f3, f4, **kwards):
     """
     Return the covariance workspace of the fields f1, f2, f3, f4
