@@ -508,10 +508,18 @@ class CovarianceCalculator():
 
 
             # TODO: Modify depending on how TXPipe caches things
+            # Mask, mask_names, field and workspaces dictionaries
             m = {}
             mn = {}
             f = {}
             w = {}
+            # In order to avoid computing or reading the same thing multiple
+            # times, store the masks, fields and workspaces in dictionaries
+            # whose keys are the mask names and used them to fill the previous
+            # dictionaries (I hope this does not copy things in memory).
+            m_by_mn = {}
+            f_by_mn = {}
+            w_by_mn = {}
             for i in [1, 2, 3, 4]:
                 mn[i] = self.mask_names[tr[i]]
                 # Mask
@@ -519,14 +527,19 @@ class CovarianceCalculator():
                 if key in cache:
                     m[i] = cache[key]
                 else:
-                    # TODO: Improve this. Very inefficient!
-                    m[i] = hp.read_map(self.mask_fn[tr[i]])
+                    k = mn[i]
+                    if k not in m_by_mn:
+                        m_by_mn[k] = hp.read_map(self.mask_fn[tr[i]])
+                    m[i] = m_by_mn[k]
                 # Field
                 key = f'f{i}'
                 if key in cache:
                     f[i] = cache[key]
                 else:
-                    f[i] = nmt.NmtField(m[i], None, spin=s[i])
+                    k = mn[i]
+                    if k not in f_by_mn:
+                        f_by_mn[k] = nmt.NmtField(m[i], None, spin=s[i])
+                    f[i] = f_by_mn[k]
 
             for i in [13, 23, 14, 24, 12, 34]:
                 i1, i2 = [int(j) for j in str(i)]
@@ -535,8 +548,12 @@ class CovarianceCalculator():
                 if key in cache:
                     w[i] = cache[key]
                 else:
-                    w[i] = nmt_tools.get_workspace(f[i1], f[i2], mn[i1],
-                                                   mn[i2],  bins, self.outdir)
+                    k = (mn[i1], mn[i2])
+                    if k not in w_by_mn:
+                        w_by_mn[k] = nmt_tools.get_workspace(f[i1], f[i2],
+                                                             mn[i1], mn[i2],
+                                                             bins, self.outdir)
+                    w[i] = w_by_mn[k]
 
             # TODO; Allow input options as output folder, if recompute, etc.
             if 'cw' in cache:
