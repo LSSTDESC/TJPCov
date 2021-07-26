@@ -112,8 +112,10 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
     recompute = kwards.get('recompute', False)
     if recompute or ((not isfile) and (not isfile2)):
         w.compute_coupling_matrix(f1, f2, bins, **kwards)
-        if fname:
-            w.write_to(fname)
+        w.write_to(fname)
+        if isfile2:
+            # Remove the other to avoid later confusions
+            os.remove(fname2)
     elif isfile:
         w.read_from(fname)
     else:
@@ -122,7 +124,7 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
     return w
 
 
-def get_covariance_workspace(f1, f2, f3, f4, **kwards):
+def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
     """
     Return the covariance workspace of the fields f1, f2, f3, f4
 
@@ -132,6 +134,10 @@ def get_covariance_workspace(f1, f2, f3, f4, **kwards):
         f2 (NmtField):  Field 2
         f3 (NmtField):  Field 3
         f4 (NmtField):  Field 4
+        m1 (string): Mask name assotiated to the field 1
+        m2 (string): Mask name assotiated to the field 2
+        m3 (string): Mask name assotiated to the field 3
+        m4 (string): Mask name assotiated to the field 4
         **kwards:  Extra arguments to pass to
         `nmt.compute_coupling_coefficients`. In addition, if recompute=True is
         passed, the cw will be recomputed even if found in the disk.
@@ -141,14 +147,30 @@ def get_covariance_workspace(f1, f2, f3, f4, **kwards):
         cw:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
-    fname = ''  # TODO: Agree on how to store tmp cw
+    # Any other symmetry?
+    combinations = [(m1, m2, m3, m4), (m2, m1, m3, m4), (m1, m2, m4, m3),
+                    (m2, m1, m4, m3), (m3, m4, m1, m2), (m4, m3, m1, m2),
+                    (m3, m4, m2, m1), (m4, m3, m2, m1)]
+
+    fnames = []
+    isfiles = []
+    for mn1, mn2, mn3, mn4 in combinations:
+        fnames.append(os.path.join(outdir,
+                                   f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits'))
+        isfiles.append(os.path.isfile(fnames[-1]))
+
     cw = nmt.NmtCovarianceWorkspace()
     recompute = kwards.get('recompute', False)
-    if recompute or (not os.path.isfile(fname)):
+    if recompute or (not True in isfiles):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
-        if fname:
-            cw.write_to(fname)
+        cw.write_to(fnames[0])
+        for fn, isf in zip(fnames, isfiles):
+            # This will only be run if they don't exist or recompute = True
+            if isf:
+                # Remove old covariance workspace if you have recomputed it
+                os.remove(fn)
     else:
-        cw.read_from(fname)
+        ix = isfiles.index(True)
+        cw.read_from(fnames[ix])
 
     return cw

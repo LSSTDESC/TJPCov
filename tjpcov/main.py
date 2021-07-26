@@ -542,7 +542,9 @@ class CovarianceCalculator():
             if 'cw' in cache:
                 cw = cache['cw']
             else:
-                cw = nmt_tools.get_covariance_workspace(f[1], f[2], f[3], f[4])
+                cw = nmt_tools.get_covariance_workspace(f[1], f[2], f[3], f[4],
+                                                        mn[1], mn[2], mn[3],
+                                                        mn[4], self.outdir)
 
             cl_cov = {}
             cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m[1], m[3],
