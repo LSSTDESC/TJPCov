@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import healpy as hp
 import os
 import pymaster as nmt
 import numpy as np
@@ -184,3 +185,69 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
         cw.read_from(fnames[ix])
 
     return cw
+
+
+def get_mask_names_dict(mask_names, tracer_names):
+    mn  = {}
+    for i in [1, 2, 3, 4]:
+        mn[i] = mask_names[tracer_names[i]]
+    return mn
+
+
+def get_masks_dict(mask_files, mask_names, tracer_names, cache):
+    mask = {}
+    mask_by_mask_name = {}
+    for i in [1, 2, 3, 4]:
+        # Mask
+        key = f'm{i}'
+        if key in cache:
+            mask[i] = cache[key]
+        else:
+            k = mask_names[i]
+            if k not in mask_by_mask_name:
+                mask_by_mask_name[k] = hp.read_map(mask_files[tracer_names[i]])
+            mask[i] = mask_by_mask_name[k]
+
+    return mask
+
+
+def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
+    f = {}
+    f_by_mask_name = {}
+    for i in [1, 2, 3, 4]:
+        key = f'f{i}'
+        if key in cache:
+            f[i] = cache[key]
+        else:
+            k = mask_names[i]
+            if k not in f_by_mask_name:
+                f_by_mask_name[k] = nmt.NmtField(masks[i], None, spin=spins[i])
+            f[i] = f_by_mask_name[k]
+
+    return f
+
+
+def get_workspaces_dict(fields, mask_names, bins, outdir, nmt_conf, cache):
+    w = {}
+    w_by_mask_name = {}
+    for i in [13, 23, 14, 24, 12, 34]:
+        i1, i2 = [int(j) for j in str(i)]
+        # Workspace
+        key = f'w{i}'
+        if key in cache:
+            w[i] = cache[key]
+        else:
+            # In this case you have to check for m1 x m2 and m2 x m1
+            k = (mask_names[i1], mask_names[i2])
+            if k in w_by_mask_name:
+                w[i] = w_by_mask_name[k]
+            elif k[::-1] in w_by_mask_name:
+                w[i] = w_by_mask_name[k[::-1]]
+            else:
+                w_by_mask_name[k] = get_workspace(fields[i1], fields[i2],
+                                                  mask_names[i1],
+                                                  mask_names[i2], bins,
+                                                  outdir, **nmt_conf)
+                w[i] = w_by_mask_name[k]
+
+    return w

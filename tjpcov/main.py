@@ -511,59 +511,12 @@ class CovarianceCalculator():
 
             # TODO: Modify depending on how TXPipe caches things
             # Mask, mask_names, field and workspaces dictionaries
-            m = {}
-            mn = {}
-            f = {}
-            w = {}
-            # In order to avoid computing or reading the same thing multiple
-            # times, store the masks, fields and workspaces in dictionaries
-            # whose keys are the mask names and used them to fill the previous
-            # dictionaries (I hope this does not copy things in memory).
-            m_by_mn = {}
-            f_by_mn = {}
-            w_by_mn = {}
-            for i in [1, 2, 3, 4]:
-                mn[i] = self.mask_names[tr[i]]
-                # Mask
-                key = f'm{i}'
-                if key in cache:
-                    m[i] = cache[key]
-                else:
-                    k = mn[i]
-                    if k not in m_by_mn:
-                        m_by_mn[k] = hp.read_map(self.mask_fn[tr[i]])
-                    m[i] = m_by_mn[k]
-                # Field
-                key = f'f{i}'
-                if key in cache:
-                    f[i] = cache[key]
-                else:
-                    k = mn[i]
-                    if k not in f_by_mn:
-                        f_by_mn[k] = nmt.NmtField(m[i], None, spin=s[i],
-                                                  **self.nmt_conf['f'])
-                    f[i] = f_by_mn[k]
-
-            for i in [13, 23, 14, 24, 12, 34]:
-                i1, i2 = [int(j) for j in str(i)]
-                # Workspace
-                key = f'w{i}'
-                if key in cache:
-                    w[i] = cache[key]
-                else:
-                    # In this case you have to check for m1 x m2 and m2 x m1
-                    k = (mn[i1], mn[i2])
-                    if k in w_by_mn:
-                        w[i] = w_by_mn[k]
-                    elif k[::-1] in w_by_mn:
-                        w[i] = w_by_mn[k[::-1]]
-                    else:
-                        w_by_mn[k] = nmt_tools.get_workspace(f[i1], f[i2],
-                                                             mn[i1], mn[i2],
-                                                             bins, self.outdir,
-                                                             **self.nmt_conf['w'])
-                        w[i] = w_by_mn[k]
-
+            mn = nmt_tools.get_mask_names_dict(self.mask_names, tr)
+            m = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, cache)
+            f = nmt_tools.get_fields_dict(m, s, mn, tr, self.nmt_conf['f'],
+                                          cache)
+            w = nmt_tools.get_workspaces_dict(f, mn, bins, self.outdir,
+                                              self.nmt_conf['w'], cache)
 
             # TODO; Allow input options as output folder, if recompute, etc.
             if 'cw' in cache:
