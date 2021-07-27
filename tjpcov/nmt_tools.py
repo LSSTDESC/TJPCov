@@ -221,7 +221,8 @@ def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
         else:
             k = mask_names[i]
             if k not in f_by_mask_name:
-                f_by_mask_name[k] = nmt.NmtField(masks[i], None, spin=spins[i])
+                f_by_mask_name[k] = nmt.NmtField(masks[i], None,
+                                                 spin=spins[i], **nmt_conf)
             f[i] = f_by_mask_name[k]
 
     return f
