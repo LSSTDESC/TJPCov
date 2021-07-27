@@ -449,6 +449,7 @@ def test_get_fields_dict(nmt_conf):
     for i in range(1, 5):
         assert f[i] is f2[i]
 
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 @pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
                                      'dl_band': 10, 'n_iter': 0 }])
@@ -457,7 +458,7 @@ def test_get_workspace_dict(kwards):
     f = get_fields_dict_for_cov_as_in_tjpcov()
     mn = get_mask_names_dict_for_cov_as_in_tjpcov()
 
-    w = get_workspaces_dict_for_cov_as_in_tjpcov()
+    w = get_workspaces_dict_for_cov_as_in_tjpcov(**kwards)
     w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards, cache={})
 
     # Check workspaces by comparing the coupled cells
@@ -479,3 +480,8 @@ def test_get_workspace_dict(kwards):
                                        cache=cache)
     for i in [13, 23, 14, 24, 12, 34]:
         assert w[i] is w2[i]
+
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+if os.path.isdir(outdir):
+    os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
