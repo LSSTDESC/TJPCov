@@ -12,6 +12,8 @@ def get_tracer_dof(sacc_data, tracer):
         return 1
     elif tr.quantity == 'galaxy_shear':
         return 2
+    else:
+        raise ValueError(f'tracer.quantity {tr.quantity} not implemented.')
 
 
 def get_tracer_spin(sacc_data, tracer):
