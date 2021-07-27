@@ -22,6 +22,7 @@ if os.path.isdir(outdir):
 os.makedirs(outdir)
 
 sacc_file = sacc.Sacc.load_fits(sacc_path)
+tjpcov_class = cv.CovarianceCalculator(input_yml)
 
 def get_sacc():
     return sacc_file
@@ -38,10 +39,6 @@ def get_dummy_sacc():
     s.add_tracer('misc', 'ForError', quantity='generic')
 
     return s
-
-
-def get_tjpcov():
-    return cv.CovarianceCalculator(input_yml)
 
 
 def get_mask(dtype):
@@ -91,6 +88,28 @@ def get_cl(dtype, fiducial=False):
 def get_nmt_bin():
     bpw_edges = [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
     return  nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
+
+
+def get_tracers_dict_for_cov_as_in_tjpcov():
+    tr = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESwl__0', 4: 'DESwl__1'}
+    return tr
+
+
+def get_mask_names_dict_for_cov_as_in_tjpcov():
+    mask_DESgc = tjpcov_class.mask_names['DESgc__0']
+    mask_DESwl0 = tjpcov_class.mask_names['DESwl__0']
+    mask_DESwl1 = tjpcov_class.mask_names['DESwl__1']
+    m = {1: mask_DESgc, 2: mask_DESgc, 3: mask_DESwl0, 4: mask_DESwl1}
+    return m
+
+
+def get_masks_dict_for_cov_as_in_tjpcov():
+    mask_DESgc = hp.read_map(tjpcov_class.mask_fn['DESgc__0'])
+    mask_DESwl0 = hp.read_map(tjpcov_class.mask_fn['DESwl__0'])
+    mask_DESwl1 = hp.read_map(tjpcov_class.mask_fn['DESwl__1'])
+    m = {1: mask_DESgc, 2: mask_DESgc, 3: mask_DESwl0, 4: mask_DESwl1}
+    return m
+
 
 def remove_file(fname):
     if os.path.isfile(fname):
@@ -303,4 +322,35 @@ def test_get_covariance_workspace(kwards):
     assert os.path.isfile(fname)
 
     remove_file(fname)
+
+
+def test_get_mask_names_dict():
+    tr = get_tracers_dict_for_cov_as_in_tjpcov()
+    mn = nmt_tools.get_mask_names_dict(tjpcov_class.mask_names, tr)
+    assert len(mn) == 4
+    for i in range(4):
+        assert mn[i + 1] == tjpcov_class.mask_names[tr[i + 1]]
+
+
+def test_get_masks_dict():
+    tr = get_tracers_dict_for_cov_as_in_tjpcov()
+    mn = get_mask_names_dict_for_cov_as_in_tjpcov()
+    m = get_masks_dict_for_cov_as_in_tjpcov()
+
+    m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache={})
+
+    for i in range(4):
+        assert np.all(m[i + 1] == m2[i + 1])
+        assert m[i + 1] is not m2[i + 1]
+
+    # Check that DESgc__0 mask is not read twice. tr[1] == tr[2]
+    assert m2[1] is m2[2]
+
+    # Check that cache works and avoid reading the files
+    cache = {f'm{i + 1}': m[i + 1] for i in range(4)}
+    m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache=cache)
+
+    for i in range(4):
+        # Check they are the same object, i.e. have not been read
+        assert m[i + 1] is m2[i + 1]
 
