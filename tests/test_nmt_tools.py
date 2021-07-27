@@ -15,8 +15,11 @@ input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
 outdir = os.path.join(root, "tjpcov_tmp")
 
-# Try to create the tmp folder that should not exist
-os.makedirs(outdir, exist_ok=False)
+# Try to create the tmp folder that should not exist. If for some reason it
+# has not been deleted before, remove it here
+if os.path.isdir(outdir):
+    os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
+os.makedirs(outdir)
 
 sacc_file = sacc.Sacc.load_fits(sacc_path)
 
@@ -59,6 +62,9 @@ def get_workspace(dtype):
     elif dtype == 'galaxy_shear':
         fname = os.path.join(root,
                              'DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits')
+    elif dtype == 'cross':
+        fname = os.path.join(root,
+                             'DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits')
     w.read_from(fname)
 
     return w
@@ -229,5 +235,72 @@ def test_get_workspace(kwards):
     fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
     remove_file(fname)
     fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    remove_file(fname)
+
+
+@pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
+                                     'dl_band': 10, 'n_iter': 0 }])
+def test_get_covariance_workspace(kwards):
+    m1 = m2 = get_mask('galaxy_clustering')
+    m3 = m4 = get_mask('galaxy_shear')
+
+    f1 = f2 = nmt.NmtField(m1, None, spin=0)
+    f3 = f4 = nmt.NmtField(m2, None, spin=2)
+
+    cw = nmt.NmtCovarianceWorkspace()
+    cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
+
+    cl = get_cl('cross', fiducial=False)
+    cl_fid = get_cl('cross', fiducial=True)
+    w13 = get_workspace('cross')
+    cl_cov = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m1, m3, w13)
+    cl13 = cl14 = cl23 = cl24 = cl_cov
+
+    w12 = get_workspace('galaxy_clustering')
+    w34 = get_workspace('galaxy_shear')
+    cov = nmt.gaussian_covariance(cw, 0, 0, 2, 2, cl13, cl14, cl23, cl24,
+                                  w12, w34, coupled=False)
+
+    mn1, mn2, mn3, mn4 = '0', '1', '2', '3'
+
+    combinations = [(f1, f2, f3, f4), (f2, f1, f3, f4), (f1, f2, f4, f3),
+                    (f2, f1, f4, f3), (f3, f4, f1, f2), (f4, f3, f1, f2),
+                    (f3, f4, f2, f1), (f4, f3, f2, f1)]
+
+    combinations_names = [(mn1, mn2, mn3, mn4), (mn2, mn1, mn3, mn4),
+                          (mn1, mn2, mn4, mn3), (mn2, mn1, mn4, mn3),
+                          (mn3, mn4, mn1, mn2), (mn4, mn3, mn1, mn2),
+                          (mn3, mn4, mn2, mn1), (mn4, mn3, mn2, mn1)]
+
+    # Check only the first is written/computed created & that cw is correct
+
+    for fields, masks_names in zip(combinations, combinations_names):
+        cw_code = nmt_tools.get_covariance_workspace(*fields, *masks_names,
+                                                     outdir, **kwards)
+        fname = os.path.join(outdir,
+                             'cw__{}__{}__{}__{}.fits'.format(*masks_names))
+        if masks_names == (mn1, mn2, mn3, mn4):
+            assert os.path.isfile(fname)
+        else:
+            assert not os.path.isfile(fname)
+
+        cov2 = nmt.gaussian_covariance(cw_code, 0, 0, 2, 2, cl13, cl14, cl23,
+                                       cl24, w12, w34, coupled=False)
+
+        assert np.max(np.abs((cov + 1e-100) / (cov2 + 1e-100) - 1)) < 1e-10
+
+    # Check that with recompute it deletes the existing file and creates a new
+    # one
+
+    cw_code = nmt_tools.get_covariance_workspace(f3, f4, f2, f1, mn3, mn4,
+                                                 mn2, mn1, outdir,
+                                                 recompute=True, **kwards)
+
+    fname = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn3}.fits')
+    assert not os.path.isfile(fname)
+
+    fname = os.path.join(outdir, f'cw__{mn3}__{mn4}__{mn2}__{mn1}.fits')
+    assert os.path.isfile(fname)
+
     remove_file(fname)
 

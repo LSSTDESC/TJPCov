@@ -229,3 +229,7 @@ def test_get_all_cov_nmt():
     cov_bm = s.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
     assert np.max(np.abs(cov / cov_bm - 1)) < 5e-3
+
+
+# Clean up after the tests
+os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
