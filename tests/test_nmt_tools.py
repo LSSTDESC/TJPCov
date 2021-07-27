@@ -127,6 +127,43 @@ def get_fields_dict_for_cov_as_in_tjpcov(**nmt_conf):
     return {1: f1, 2: f2, 3: f3, 4: f4}
 
 
+def get_workspaces_dict_for_cov_as_in_tjpcov(**kwards):
+    bins = get_nmt_bin()
+    f = get_fields_dict_for_cov_as_in_tjpcov()
+
+    w12 = nmt.NmtWorkspace()
+    w12.compute_coupling_matrix(f[1], f[2], bins, **kwards)
+
+    w13 = nmt.NmtWorkspace()
+    w13.compute_coupling_matrix(f[1], f[3], bins, **kwards)
+    w23 = w13
+
+    w14 = nmt.NmtWorkspace()
+    w14.compute_coupling_matrix(f[1], f[4], bins, **kwards)
+    w24 = w14.read_from(fname)
+
+    return {13: w13, 23: w23, 14: w14, 24: w24, 12: w12, 34: w34}
+
+
+def get_cl_dict_for_cov_as_in_tjpcov(**kwards):
+    fname = os.path.join(root, subfolder,
+                         'DESgc_DESgc/cl_DESgc__0_DESgc__0.npz')
+    cl12 = np.load(fname)['cl']
+
+    fname = os.path.join(root, subfolder,
+                         'DESwl_DESwl/cl_DESwl__0_DESwl__1.npz')
+    cl34 = np.load(fname)['cl']
+
+    fname = os.path.join(root, subfolder,
+                         'DESgc_DESwl/cl_DESgc__0_DESwl__0.npz')
+    cl13 = cl23 = np.load(fname)['cl']
+
+    fname = os.path.join(root, subfolder,
+                         'DESgc_DESwl/cl_DESgc__0_DESwl__1.npz')
+    cl14 = cl24 = np.load(fname)['cl']
+
+    return {13: cl13, 23: cl23, 14: cl14, 24: cl24, 12: cl12, 34: cl34}
+
 
 def remove_file(fname):
     if os.path.isfile(fname):
@@ -407,3 +444,33 @@ def test_get_fields_dict(nmt_conf):
     f2 = nmt_tools.get_fields_dict(m, s, mn, tr, nmt_conf, cache=cache)
     for i in range(1, 5):
         assert f[i] is f2[i]
+
+
+@pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
+                                     'dl_band': 10, 'n_iter': 0 }])
+def test_get_workspace_dict(kwards):
+    bins = get_nmt_bin()
+    f = get_fields_dict_for_cov_as_in_tjpcov()
+    mn = get_mask_names_dict_for_cov_as_in_tjpcov()
+
+    w = get_workspaces_dict_for_cov_as_in_tjpcov()
+    w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards, cache={})
+
+    # Check workspaces by comparing the coupled cells
+    cl = get_cl_dict_for_cov_as_in_tjpcov()
+
+    for i in [13, 23, 14, 24, 12, 34]:
+        cl1 = w[i].couple_cell(cl[i]) + 1e-100
+        cl2 = w2[i].couple_cell(cl[i]) + 1e-100
+        assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
+
+    # Check that things are not read/computed twice
+    assert w2[13] is w2[23]
+    assert w2[14] is w2[24]
+
+    # Check that cache works
+    cache = {'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24, 'w12': w12,
+             'w34': w34}
+    w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards, cache={})
+    for i in [13, 23, 14, 24, 12, 34]:
+        assert w[i] is w2[i]
