@@ -387,6 +387,8 @@ def test_get_fields_dict(nmt_conf):
     # Check that the DESgc fields are exactly the same (not generated twice)
     assert f2[1] is f2[2]
 
+    # Check fields are the same by computing the workspace and coupling a
+    # fiducial Cell
     cl = {}
     cl[1] = cl[2] = get_cl('galaxy_clustering', fiducial=True)['cl']
     cl[3] = cl[4] = get_cl('galaxy_shear', fiducial=True)['cl']
@@ -399,3 +401,9 @@ def test_get_fields_dict(nmt_conf):
         cl1 = w.couple_cell(cl[i]) + 1e-100
         cl2 = w2.couple_cell(cl[i]) + 1e-100
         assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
+
+    # Check that cache works
+    cache = {'f1': f[1], 'f2': f[2], 'f3': f[3], 'f4': f[4]}
+    f2 = nmt_tools.get_fields_dict(m, s, mn, tr, nmt_conf, cache=cache)
+    for i in range(1, 5):
+        assert f[i] is f2[i]
