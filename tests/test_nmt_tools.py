@@ -13,6 +13,10 @@ root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 sacc_path = os.path.join(root, 'cls_cov.fits')
 input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
+outdir = os.path.join(root, "tjpcov_tmp")
+
+# Try to create the tmp folder that should not exist
+os.makedirs(outdir, exist_ok=False)
 
 sacc_file = sacc.Sacc.load_fits(sacc_path)
 
@@ -71,9 +75,20 @@ def get_cl(dtype, fiducial=False):
     elif dtype == 'galaxy_shear':
         fname = os.path.join(root, subfolder,
                              'DESwl_DESwl/cl_DESwl__0_DESwl__0.npz')
+    elif dtype == 'cross':
+        fname = os.path.join(root, subfolder,
+                             'DESgc_DESwl/cl_DESgc__0_DESwl__0.npz')
 
     return np.load(fname)
 
+
+def get_nmt_bin():
+    bpw_edges = [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
+    return  nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
+
+def remove_file(fname):
+    if os.path.isfile(fname):
+        os.remove(fname)
 
 def test_get_tracer_dof():
     s = get_dummy_sacc()
@@ -158,4 +173,61 @@ def test_get_cl_for_cov():
     with pytest.raises(ValueError):
         nmt_tools.get_cl_for_cov(cl_fid, cl['nl_cp'], m, m, wSh)
 
+
+@pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
+                                     'dl_band': 10, 'n_iter': 0 }])
+def test_get_workspace(kwards):
+    kwards_w = kwards.copy()
+
+    # Compute NmtBins
+    bins = get_nmt_bin()
+
+    # Compute workspace
+    m1 = get_mask('galaxy_clustering')
+    m2 = get_mask('galaxy_shear')
+
+    f1 = nmt.NmtField(m1, None, spin=0)
+    f2 = nmt.NmtField(m2, None, spin=2)
+
+    w = nmt.NmtWorkspace()
+    w.compute_coupling_matrix(f1, f2, bins, **kwards)
+
+    # Compute workspace with nmt_tools
+    mn1 = 'mask_DESgc0'
+    mn2 = 'mask_DESwl0'
+    w_code = nmt_tools.get_workspace(f1, f2, mn1, mn2, bins, outdir, **kwards)
+
+    # Check the file is created
+    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    assert os.path.isfile(fname)
+
+    # Check that you will read the same workspace if input the other way round
+    # and check the symmetric file is not created
+    w_code2 = nmt_tools.get_workspace(f2, f1, mn2, mn1, bins, outdir, **kwards)
+    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    assert not os.path.isfile(fname)
+
+    # Check that with recompute the original file is removed and the symmetric
+    # remains
+    w_code2 = nmt_tools.get_workspace(f2, f1, mn2, mn1, bins, outdir,
+                                      recompute=True, **kwards)
+    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    assert not os.path.isfile(fname)
+    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    assert os.path.isfile(fname)
+
+    # Load cl to apply the workspace on
+    cl = get_cl('cross', fiducial=True)['cl']
+
+    rdev = (w.couple_cell(cl) + 1e-100) / (w_code.couple_cell(cl) + 1e-100) - 1
+    assert np.max(np.abs(rdev)) < 1e-10
+
+    rdev = (w.couple_cell(cl) + 1e-100) / (w_code2.couple_cell(cl) + 1e-100) \
+        - 1
+    assert np.max(np.abs(rdev)) < 1e-10
+
+    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    remove_file(fname)
+    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    remove_file(fname)
 
