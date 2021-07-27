@@ -134,18 +134,22 @@ def get_workspaces_dict_for_cov_as_in_tjpcov(**kwards):
     w12 = nmt.NmtWorkspace()
     w12.compute_coupling_matrix(f[1], f[2], bins, **kwards)
 
+    w34 = nmt.NmtWorkspace()
+    w34.compute_coupling_matrix(f[3], f[4], bins, **kwards)
+
     w13 = nmt.NmtWorkspace()
     w13.compute_coupling_matrix(f[1], f[3], bins, **kwards)
     w23 = w13
 
     w14 = nmt.NmtWorkspace()
     w14.compute_coupling_matrix(f[1], f[4], bins, **kwards)
-    w24 = w14.read_from(fname)
+    w24 = w14
 
     return {13: w13, 23: w23, 14: w14, 24: w24, 12: w12, 34: w34}
 
 
 def get_cl_dict_for_cov_as_in_tjpcov(**kwards):
+    subfolder = 'fiducial'
     fname = os.path.join(root, subfolder,
                          'DESgc_DESgc/cl_DESgc__0_DESgc__0.npz')
     cl12 = np.load(fname)['cl']
@@ -469,8 +473,9 @@ def test_get_workspace_dict(kwards):
     assert w2[14] is w2[24]
 
     # Check that cache works
-    cache = {'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24, 'w12': w12,
-             'w34': w34}
-    w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards, cache={})
+    cache = {'w13': w[13], 'w23': w[23], 'w14': w[14], 'w24': w[24],
+             'w12': w[12], 'w34': w[34]}
+    w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards,
+                                       cache=cache)
     for i in [13, 23, 14, 24, 12, 34]:
         assert w[i] is w2[i]
