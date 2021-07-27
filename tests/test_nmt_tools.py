@@ -95,6 +95,10 @@ def get_tracers_dict_for_cov_as_in_tjpcov():
     return tr
 
 
+def get_spins_dict_for_cov_as_in_tjpcov():
+    return {1: 0, 2: 0, 3: 2, 4: 2}
+
+
 def get_mask_names_dict_for_cov_as_in_tjpcov():
     mask_DESgc = tjpcov_class.mask_names['DESgc__0']
     mask_DESwl0 = tjpcov_class.mask_names['DESwl__0']
@@ -109,6 +113,19 @@ def get_masks_dict_for_cov_as_in_tjpcov():
     mask_DESwl1 = hp.read_map(tjpcov_class.mask_fn['DESwl__1'])
     m = {1: mask_DESgc, 2: mask_DESgc, 3: mask_DESwl0, 4: mask_DESwl1}
     return m
+
+
+def get_fields_dict_for_cov_as_in_tjpcov(**nmt_conf):
+    mask_DESgc = hp.read_map(tjpcov_class.mask_fn['DESgc__0'])
+    mask_DESwl0 = hp.read_map(tjpcov_class.mask_fn['DESwl__0'])
+    mask_DESwl1 = hp.read_map(tjpcov_class.mask_fn['DESwl__1'])
+
+    f1 = f2 = nmt.NmtField(mask_DESgc, None, spin=0, **nmt_conf)
+    f3 = nmt.NmtField(mask_DESwl0, None, spin=2, **nmt_conf)
+    f4 = nmt.NmtField(mask_DESwl1, None, spin=2, **nmt_conf)
+
+    return {1: f1, 2: f2, 3: f3, 4: f4}
+
 
 
 def remove_file(fname):
@@ -339,6 +356,7 @@ def test_get_masks_dict():
 
     m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache={})
 
+    # Check the masks have been read correctly
     for i in range(4):
         assert np.all(m[i + 1] == m2[i + 1])
         assert m[i + 1] is not m2[i + 1]
@@ -354,3 +372,30 @@ def test_get_masks_dict():
         # Check they are the same object, i.e. have not been read
         assert m[i + 1] is m2[i + 1]
 
+
+@pytest.mark.parametrize('nmt_conf', [{}, {'n_iter': 0}])
+def test_get_fields_dict(nmt_conf):
+    m = get_masks_dict_for_cov_as_in_tjpcov()
+    s = get_spins_dict_for_cov_as_in_tjpcov()
+    mn = get_mask_names_dict_for_cov_as_in_tjpcov()
+    tr = get_tracers_dict_for_cov_as_in_tjpcov()
+
+    nmt_conf = {}
+    f = get_fields_dict_for_cov_as_in_tjpcov(**nmt_conf)
+    f2 = nmt_tools.get_fields_dict(m, s, mn, tr, nmt_conf, cache={})
+
+    # Check that the DESgc fields are exactly the same (not generated twice)
+    assert f2[1] is f2[2]
+
+    cl = {}
+    cl[1] = cl[2] = get_cl('galaxy_clustering', fiducial=True)['cl']
+    cl[3] = cl[4] = get_cl('galaxy_shear', fiducial=True)['cl']
+
+    bins = get_nmt_bin()
+    for i in range(1, 5):
+        w = nmt_tools.get_workspace(f[i], f[i], str(i), str(i), bins, outdir)
+        w2 = nmt_tools.get_workspace(f[i], f[i], str(i), str(i), bins, outdir)
+
+        cl1 = w.couple_cell(cl[i]) + 1e-100
+        cl2 = w2.couple_cell(cl[i]) + 1e-100
+        assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
