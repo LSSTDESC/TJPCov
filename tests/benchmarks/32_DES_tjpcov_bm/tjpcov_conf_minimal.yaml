@@ -51,6 +51,24 @@ tjpcov:
 
   # IA: 0.5
 
+NaMaster:
+  module: pymaster
+  f:
+    n_iter: 0
+    lmax_sht: -1
+  w:
+    lmax_mask: -1
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+  cw:
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
 
 parameters:
   # Not used for while (read by ccl.cosmo):

@@ -109,7 +109,11 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
     isfile2 = os.path.isfile(fname2)
 
     w = nmt.NmtWorkspace()
-    recompute = kwards.get('recompute', False)
+    if 'recompute' in kwards:
+        recompute = kwards.pop('recompute')
+    else:
+        recompute = False
+
     if recompute or ((not isfile) and (not isfile2)):
         w.compute_coupling_matrix(f1, f2, bins, **kwards)
         w.write_to(fname)
@@ -155,16 +159,20 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
     fnames = []
     isfiles = []
     for mn1, mn2, mn3, mn4 in combinations:
-        fnames.append(os.path.join(outdir,
-                                   f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits'))
-        isfiles.append(os.path.isfile(fnames[-1]))
+        f = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits')
+        if f not in fnames:
+            fnames.append(f)
+            isfiles.append(os.path.isfile(fnames[-1]))
 
     cw = nmt.NmtCovarianceWorkspace()
-    recompute = kwards.get('recompute', False)
+    if 'recompute' in kwards:
+        recompute = kwards.pop('recompute')
+    else:
+        recompute = False
     if recompute or (not True in isfiles):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
         cw.write_to(fnames[0])
-        for fn, isf in zip(fnames, isfiles):
+        for fn, isf in zip(fnames[1:], isfiles[1:]):
             # This will only be run if they don't exist or recompute = True
             if isf:
                 # Remove old covariance workspace if you have recomputed it

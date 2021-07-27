@@ -167,6 +167,8 @@ class CovarianceCalculator():
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
 
+        self.nmt_conf = config.get('NaMaster', None)
+
         return
 
     def print_setup(self, output=None):
@@ -538,7 +540,8 @@ class CovarianceCalculator():
                 else:
                     k = mn[i]
                     if k not in f_by_mn:
-                        f_by_mn[k] = nmt.NmtField(m[i], None, spin=s[i])
+                        f_by_mn[k] = nmt.NmtField(m[i], None, spin=s[i],
+                                                  **self.nmt_conf['f'])
                     f[i] = f_by_mn[k]
 
             for i in [13, 23, 14, 24, 12, 34]:
@@ -557,7 +560,8 @@ class CovarianceCalculator():
                     else:
                         w_by_mn[k] = nmt_tools.get_workspace(f[i1], f[i2],
                                                              mn[i1], mn[i2],
-                                                             bins, self.outdir)
+                                                             bins, self.outdir,
+                                                             **self.nmt_conf['w'])
                         w[i] = w_by_mn[k]
 
 
@@ -567,7 +571,8 @@ class CovarianceCalculator():
             else:
                 cw = nmt_tools.get_covariance_workspace(f[1], f[2], f[3], f[4],
                                                         mn[1], mn[2], mn[3],
-                                                        mn[4], self.outdir)
+                                                        mn[4], self.outdir,
+                                                        **self.nmt_conf['cw'])
 
             cl_cov = {}
             cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m[1], m[3],
