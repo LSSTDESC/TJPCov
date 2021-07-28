@@ -313,6 +313,10 @@ def test_get_workspace(kwards):
     remove_file(fname)
     fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
     remove_file(fname)
+    # Check that outdir can be None
+    w_code = nmt_tools.get_workspace(f1, f2, mn1, mn2, bins, None, **kwards)
+    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    assert not os.path.isfile(fname)
 
 
 @pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
@@ -380,6 +384,11 @@ def test_get_covariance_workspace(kwards):
     assert os.path.isfile(fname)
 
     remove_file(fname)
+    # Check that outdir can be None
+    cw_code = nmt_tools.get_covariance_workspace(f3, f4, f2, f1, mn3, mn4,
+                                                 mn2, mn1, None,
+                                                 recompute=True, **kwards)
+    assert not os.path.isfile(fname)
 
 
 def test_get_mask_names_dict():

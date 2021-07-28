@@ -161,7 +161,7 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
         m2 (str): Mask name assotiated to the field 2
         bins (NmtBin):  NmtBin instance
         outdir (str): Path to the output folder where to store the
-        workspace
+        workspace. If None, no file will be saved.
         mask_names (dict): Dictionary with tracer names as key and maks names
         as values.
         **kwards:  Extra arguments to pass to
@@ -173,12 +173,15 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
         w:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
-    fname = os.path.join(outdir, f'w__{m1}__{m2}.fits')
-    isfile = os.path.isfile(fname)
+    if outdir is not None:
+        fname = os.path.join(outdir, f'w__{m1}__{m2}.fits')
+        isfile = os.path.isfile(fname)
 
-    # The workspace of m1 x m2 and m2 x m1 is the same.
-    fname2 = os.path.join(outdir, f'w__{m2}__{m1}.fits')
-    isfile2 = os.path.isfile(fname2)
+        # The workspace of m1 x m2 and m2 x m1 is the same.
+        fname2 = os.path.join(outdir, f'w__{m2}__{m1}.fits')
+        isfile2 = os.path.isfile(fname2)
+    else:
+        fname = isfile = fname2 = isfile2 = None
 
     w = nmt.NmtWorkspace()
     if 'recompute' in kwards:
@@ -188,7 +191,8 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
 
     if recompute or ((not isfile) and (not isfile2)):
         w.compute_coupling_matrix(f1, f2, bins, **kwards)
-        w.write_to(fname)
+        if fname:
+            w.write_to(fname)
         if isfile2:
             # Remove the other to avoid later confusions
             os.remove(fname2)
@@ -214,6 +218,8 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
         m2 (str): Mask name assotiated to the field 2
         m3 (str): Mask name assotiated to the field 3
         m4 (str): Mask name assotiated to the field 4
+        outdir (str): Path to the output folder where to store the
+        workspace. If None, no file will be saved.
         **kwards:  Extra arguments to pass to
         `nmt.compute_coupling_coefficients`. In addition, if recompute=True is
         passed, the cw will be recomputed even if found in the disk.
@@ -228,13 +234,17 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
                     (m2, m1, m4, m3), (m3, m4, m1, m2), (m4, m3, m1, m2),
                     (m3, m4, m2, m1), (m4, m3, m2, m1)]
 
-    fnames = []
-    isfiles = []
-    for mn1, mn2, mn3, mn4 in combinations:
-        f = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits')
-        if f not in fnames:
-            fnames.append(f)
-            isfiles.append(os.path.isfile(fnames[-1]))
+    if outdir is not None:
+        fnames = []
+        isfiles = []
+        for mn1, mn2, mn3, mn4 in combinations:
+            f = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits')
+            if f not in fnames:
+                fnames.append(f)
+                isfiles.append(os.path.isfile(fnames[-1]))
+    else:
+        fnames = [None]
+        isfiles = [None]
 
     cw = nmt.NmtCovarianceWorkspace()
     if 'recompute' in kwards:
@@ -243,7 +253,8 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
         recompute = False
     if recompute or (not True in isfiles):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
-        cw.write_to(fnames[0])
+        if fnames[0]:
+            cw.write_to(fnames[0])
         for fn, isf in zip(fnames[1:], isfiles[1:]):
             # This will only be run if they don't exist or recompute = True
             if isf:

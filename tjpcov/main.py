@@ -164,7 +164,7 @@ class CovarianceCalculator():
 
         # Output directory where to save all the time consuming calculations
         self.outdir = config['tjpcov'].get('outdir', None)
-        if not os.path.isdir(self.outdir):
+        if self.outdir and not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
 
         self.nmt_conf = config.get('NaMaster', None)
