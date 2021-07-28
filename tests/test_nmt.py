@@ -9,6 +9,7 @@ import yaml
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
+input_yml_no_nmtc = os.path.join(root, "tjpcov_conf_minimal_no_nmtconf.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
 
 
@@ -126,6 +127,23 @@ def assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, threshold):
 
 
     assert np.abs(chi2 / chi2_bm - 1) < threshold
+
+
+def test_nmt_conf_missing():
+    """
+    Check that input file might not have nmt_conf and it still works
+    """
+    tjpcov_class = cv.CovarianceCalculator(input_yml_no_nmtc)
+
+    ccl_tracers, tracer_noise = tjpcov_class.get_tracer_info(tjpcov_class.cl_data)
+
+    tracer_comb1 = tracer_comb2 = ('DESgc__0', 'DESgc__0')
+
+    cache = {'bins': get_nmt_bin()}
+
+    cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                        ccl_tracers, tracer_noise,
+                                        cache=cache)['final'] + 1e-100
 
 
 

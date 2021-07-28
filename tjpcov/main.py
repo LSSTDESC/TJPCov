@@ -167,7 +167,10 @@ class CovarianceCalculator():
         if self.outdir and not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
 
-        self.nmt_conf = config.get('NaMaster', None)
+        self.nmt_conf = config.get('NaMaster', {})
+        for k in ['f', 'w', 'cw']:
+            if k not in self.nmt_conf:
+                self.nmt_conf[k] = {}
 
         return
 
