@@ -432,7 +432,10 @@ class CovarianceCalculator():
             coupled (bool): True to return the coupled Gaussian covariance
             (default False)
             cache (dict): Dictionary with the necessary workspaces and
-            covariance workspaces.
+            covariance workspaces. It accept masks (keys: 'm1', 'm2', 'm3',
+            'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'), workspaces (keys:
+            'w13', 'w23', 'w14', 'w24', 'w12', 'w34'), the covariance
+            workspace (key: 'cw') and a NmtBin (key: 'bins').
 
         Returns:
         --------
