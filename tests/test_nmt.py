@@ -258,8 +258,8 @@ def test_get_all_cov_nmt():
     cl = s.mean
 
     delta = clf - cl
-    chi2 = delta.dot(cov).dot(delta)
-    chi2_bm = delta.dot(cov_bm).dot(delta)
+    chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
+    chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-5
 
 
