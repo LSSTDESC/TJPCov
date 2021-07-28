@@ -8,6 +8,19 @@ import numpy as np
 
 
 def get_tracer_dof(sacc_data, tracer):
+    """
+    Return the degrees of freedom of a given tracer
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        tracer (str):  Tracer name
+
+    Returns:
+    --------
+        dof (int):  Degrees of freedom
+
+    """
     tr = sacc_data.get_tracer(tracer)
     if tr.quantity in ['cmb_convergence', 'galaxy_density']:
         return 1
@@ -18,6 +31,19 @@ def get_tracer_dof(sacc_data, tracer):
 
 
 def get_tracer_spin(sacc_data, tracer):
+    """
+    Return the spin of a given tracer
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        tracer (str):  Tracer name
+
+    Returns:
+    --------
+        spin (int):  Spin of the given tracer
+
+    """
     tr = sacc_data.get_tracer(tracer)
     if tr.quantity in ['cmb_convergence', 'galaxy_density']:
         return 0
@@ -26,6 +52,20 @@ def get_tracer_spin(sacc_data, tracer):
 
 
 def get_tracer_comb_spin(sacc_data, tracer_comb):
+    """
+    Return the spins of a pair of tracers
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        tracer_comb (tuple):  List or tuple of a pair of tracer names
+
+    Returns:
+    --------
+        s1 (int):  Spin of the first tracer
+        s2 (int):  Spin of the second tracer
+
+    """
     s1 = get_tracer_spin(sacc_data, tracer_comb[0])
     s2 = get_tracer_spin(sacc_data, tracer_comb[1])
 
@@ -33,6 +73,20 @@ def get_tracer_comb_spin(sacc_data, tracer_comb):
 
 
 def get_tracer_comb_dof(sacc_data, tracer_comb):
+    """
+    Return the degrees of freedom of the Cell of a pair of tracers
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        tracer_comb (tuple):  List or tuple of a pair of tracer names
+
+    Returns:
+    --------
+        dof (int):  Degrees of freedom of the Cell of the pair of tracers
+        given
+
+    """
     dof1 = get_tracer_dof(sacc_data, tracer_comb[0])
     dof2 = get_tracer_dof(sacc_data, tracer_comb[1])
 
@@ -40,6 +94,21 @@ def get_tracer_comb_dof(sacc_data, tracer_comb):
 
 
 def get_datatypes_from_dof(dof):
+    """
+    Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
+    of degrees of freedom
+
+    Parameters:
+    -----------
+        dof (int):  Degrees of freedom of the Cell of the pair of tracers
+        given
+
+    Returns:
+    --------
+        datatypes (list):  List of data types assotiated to the given degrees
+        of freedom
+
+    """
     # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
     if dof == 1:
         cl_types = ['cl_00']
@@ -88,10 +157,10 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
     -----------
         f1 (NmtField):  Field 1
         f2 (NmtField):  Field 2
-        m1 (string): Mask name assotiated to the field 1
-        m2 (string): Mask name assotiated to the field 2
+        m1 (str): Mask name assotiated to the field 1
+        m2 (str): Mask name assotiated to the field 2
         bins (NmtBin):  NmtBin instance
-        outdir (string): Path to the output folder where to store the
+        outdir (str): Path to the output folder where to store the
         workspace
         mask_names (dict): Dictionary with tracer names as key and maks names
         as values.
@@ -141,10 +210,10 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
         f2 (NmtField):  Field 2
         f3 (NmtField):  Field 3
         f4 (NmtField):  Field 4
-        m1 (string): Mask name assotiated to the field 1
-        m2 (string): Mask name assotiated to the field 2
-        m3 (string): Mask name assotiated to the field 3
-        m4 (string): Mask name assotiated to the field 4
+        m1 (str): Mask name assotiated to the field 1
+        m2 (str): Mask name assotiated to the field 2
+        m3 (str): Mask name assotiated to the field 3
+        m4 (str): Mask name assotiated to the field 4
         **kwards:  Extra arguments to pass to
         `nmt.compute_coupling_coefficients`. In addition, if recompute=True is
         passed, the cw will be recomputed even if found in the disk.
@@ -188,6 +257,26 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
 
 
 def get_mask_names_dict(mask_names, tracer_names):
+    """
+    Return a dictionary with the mask names assotiated to the fields to be
+    correlated
+
+    Parameters:
+    -----------
+        mask_names (dict):  Dictionary of the masks names assotiated to the
+        fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
+        name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
+        the first and second Cell you are computing the covariance for; i.e.
+        <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
+        tracer_names (dict):  Dictionary of the tracer names of the same form
+        as mask_name.
+
+    Returns:
+    --------
+        masks_names_dict (dict):  Dictionary with the mask names assotiated to the
+        fields to be correlated.
+
+    """
     mn  = {}
     for i in [1, 2, 3, 4]:
         mn[i] = mask_names[tracer_names[i]]
@@ -195,6 +284,31 @@ def get_mask_names_dict(mask_names, tracer_names):
 
 
 def get_masks_dict(mask_files, mask_names, tracer_names, cache):
+    """
+    Return a dictionary with the masks assotiated to the fields to be
+    correlated
+
+    Parameters:
+    -----------
+        mask_files (dict): Dictionary of the masks, with the tracer names as
+        keys and paths to the masks as values. In fact, the tjpcov.mask_fn.
+        mask_names (dict):  Dictionary of the masks names assotiated to the
+        fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
+        name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
+        the first and second Cell you are computing the covariance for; i.e.
+        <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
+        tracer_names (dict):  Dictionary of the tracer names of the same form
+        as mask_name.
+        cache (dict): Dictionary with cached variables. It will use the cached
+        masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4' and the
+        values the loaded maps.
+
+    Returns:
+    --------
+        masks_dict (dict):  Dictionary with the masks assotiated to the fields
+        to be correlated.
+
+    """
     mask = {}
     mask_by_mask_name = {}
     for i in [1, 2, 3, 4]:
@@ -212,6 +326,35 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache):
 
 
 def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
+    """
+    Return a dictionary with the masks assotiated to the fields to be
+    correlated
+
+    Parameters:
+    -----------
+        masks (dict): Dictionary of the masks of the fields correlated with
+        keys 1, 2, 3 or 4 and values the loaded masks.
+        spins (dict): Dictionary of the spins of the fields correlated with
+        keys 1, 2, 3 or 4 and values their spin.
+        mask_names (dict):  Dictionary of the masks names assotiated to the
+        fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
+        name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
+        the first and second Cell you are computing the covariance for; i.e.
+        <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
+        tracer_names (dict):  Dictionary of the tracer names of the same form
+        as mask_name.
+        nmt_conf (dict): Dictionary with extra arguments to pass to NmtField.
+        In fact, tjpcov.nmt_conf['f']
+        cache (dict): Dictionary with cached variables. It will use the cached
+        field if found. The keys must be 'f1', 'f2', 'f3' or 'f4' and the
+        values the corresponding NmtFields.
+
+    Returns:
+    --------
+        fields_dict (dict):  Dictionary with the masks assotiated to the fields
+        to be correlated.
+
+    """
     f = {}
     f_by_mask_name = {}
     for i in [1, 2, 3, 4]:
@@ -229,6 +372,36 @@ def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
 
 
 def get_workspaces_dict(fields, mask_names, bins, outdir, nmt_conf, cache):
+    """
+    Return a dictionary with the masks assotiated to the fields to be
+    correlated
+
+    Parameters:
+    -----------
+        field (dict): Dictionary of the NmtFields of the fields correlated
+        with keys 1, 2, 3 or 4 and values the NmtFields.
+        mask_names (dict):  Dictionary of the masks names assotiated to the
+        fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
+        name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
+        the first and second Cell you are computing the covariance for; i.e.
+        <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
+        bins (NmtBin): NmtBin instance with the desired binning.
+        outdir (str): Path to the directory where to save the computed
+        workspaces.
+        nmt_conf (dict): Dictionary with extra arguments to pass to NmtField.
+        In fact, tjpcov.nmt_conf['w']
+        cache (dict): Dictionary with cached variables. It will use the cached
+        field if found. The keys must be 'w1', 'w2', 'w3' or 'w4' and the
+        values the corresponding NmtFields.
+
+    Returns:
+    --------
+        workspaces_dict (dict):  Dictionary with the workspaces assotiated to
+        the different field combinations needed for the covariance. Its keys
+        are 13, 23, 14, 24, 12, 34; with values the corresponding
+        NmtWorkspaces.
+
+    """
     w = {}
     w_by_mask_name = {}
     for i in [13, 23, 14, 24, 12, 34]:
