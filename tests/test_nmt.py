@@ -30,10 +30,15 @@ def get_pair_folder_name(tracer_comb):
     return '_'.join(bn)
 
 
-def get_data_cl(tr1, tr2):
+def get_data_cl(tr1, tr2, remove_be=False):
     bn = get_pair_folder_name((tr1, tr2))
     fname = os.path.join(root, bn, f"cl_{tr1}_{tr2}.npz")
-    return np.load(fname)['cl']
+    cl = np.load(fname)['cl']
+
+    # Remove redundant terms
+    if remove_be and (tr1 == tr2) and (cl.shape[0] == 4):
+        cl = np.delete(cl, 2, 0)
+    return cl
 
 
 def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
@@ -99,25 +104,20 @@ def get_covariance_workspace(tr1, tr2, tr3, tr4):
 
 
 def assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, threshold):
-    cl1 = get_data_cl(*tracer_comb1)
-    cl2 = get_data_cl(*tracer_comb2)
+    cl1 = get_data_cl(*tracer_comb1, remove_be=True)
+    cl2 = get_data_cl(*tracer_comb2, remove_be=True)
 
-    clf1 = get_fiducial_cl(s, *tracer_comb1)
-    clf2 = get_fiducial_cl(s, *tracer_comb2)
+    clf1 = get_fiducial_cl(s, *tracer_comb1, remove_be=True)
+    clf2 = get_fiducial_cl(s, *tracer_comb2, remove_be=True)
 
     ndim, nbpw = cl1.shape
     # This only runs if tracer_comb1 = tracer_comb2 (when the block covariance
     # is invertible)
-    if (tracer_comb1[0] == tracer_comb1[1]) and (ndim == 4):
-        cl1 = np.delete(cl1, 2, 0)
-        clf1 = np.delete(clf1, 2, 0)
-        cl2 = np.delete(cl2, 2, 0)
-        clf2 = np.delete(clf2, 2, 0)
-
-        cov = np.delete(cov, np.arange(2 * nbpw, 3 * nbpw), 0)
-        cov = np.delete(cov, np.arange(2 * nbpw, 3 * nbpw), 1)
-        cov_bm = np.delete(cov_bm, np.arange(2 * nbpw, 3 * nbpw), 0)
-        cov_bm = np.delete(cov_bm, np.arange(2 * nbpw, 3 * nbpw), 1)
+    if (tracer_comb1[0] == tracer_comb1[1]) and (ndim == 3):
+        cov = cov.reshape((nbpw, 4, nbpw, 4))
+        cov = np.delete(np.delete(cov, 2, 1), 2, 3).reshape(3 * nbpw, -1)
+        cov_bm = cov_bm.reshape((nbpw, 4, nbpw, 4))
+        cov_bm = np.delete(np.delete(cov_bm, 2, 1), 2, 3).reshape(3 * nbpw, -1)
 
     delta1 = (clf1 - cl1).flatten()
     delta2 = (clf2 - cl2).flatten()
