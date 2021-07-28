@@ -36,7 +36,7 @@ def get_data_cl(tr1, tr2):
     return np.load(fname)['cl']
 
 
-def get_fiducial_cl(s, tr1, tr2, binned=True):
+def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
     bn = get_pair_folder_name((tr1, tr2))
     fname = os.path.join(root, 'fiducial', bn, f"cl_{tr1}_{tr2}.npz")
     cl = np.load(fname)['cl']
@@ -53,9 +53,14 @@ def get_fiducial_cl(s, tr1, tr2, binned=True):
 
         cl_bin = np.zeros((cl.shape[0], cl0_bin.size))
         cl_bin[0] = cl0_bin
-        return cl_bin
+        cl = cl_bin
     else:
-        return cl
+        cl
+
+    # Remove redundant terms
+    if remove_be and (tr1 == tr2) and (cl.shape[0] == 4):
+        cl = np.delete(cl, 2, 0)
+    return cl
 
 
 def get_tracer_noise(tr):
@@ -100,12 +105,27 @@ def assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, threshold):
     clf1 = get_fiducial_cl(s, *tracer_comb1)
     clf2 = get_fiducial_cl(s, *tracer_comb2)
 
+    ndim, nbpw = cl1.shape
+    # This only runs if tracer_comb1 = tracer_comb2 (when the block covariance
+    # is invertible)
+    if (tracer_comb1[0] == tracer_comb1[1]) and (ndim == 4):
+        cl1 = np.delete(cl1, 2, 0)
+        clf1 = np.delete(clf1, 2, 0)
+        cl2 = np.delete(cl2, 2, 0)
+        clf2 = np.delete(clf2, 2, 0)
+
+        cov = np.delete(cov, np.arange(2 * nbpw, 3 * nbpw), 0)
+        cov = np.delete(cov, np.arange(2 * nbpw, 3 * nbpw), 1)
+        cov_bm = np.delete(cov_bm, np.arange(2 * nbpw, 3 * nbpw), 0)
+        cov_bm = np.delete(cov_bm, np.arange(2 * nbpw, 3 * nbpw), 1)
+
     delta1 = (clf1 - cl1).flatten()
     delta2 = (clf2 - cl2).flatten()
     chi2 = delta1.dot(np.linalg.inv(cov)).dot(delta2)
     chi2_bm = delta1.dot(np.linalg.inv(cov_bm)).dot(delta2)
 
-    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+    assert np.abs(chi2 / chi2_bm - 1) < threshold
 
 
 
@@ -131,12 +151,12 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
 
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
-    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 5e-3
-    assert np.max(np.abs(cov / cov_bm - 1)) < 5e-1
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
 
     if tracer_comb1 == tracer_comb2:
         s = tjpcov_class.cl_data
-        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-2)
+        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-5)
 
 
 @pytest.mark.parametrize('tracer_comb1,tracer_comb2',
@@ -208,11 +228,11 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
                                         ccl_tracers, tracer_noise,
                                         cache=cache)['final'] + 1e-100
 
-    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-6
     if tracer_comb1 == tracer_comb2:
         s = tjpcov_class.cl_data
-        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-5)
+        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-6)
 
 def test_get_all_cov_nmt():
     tjpcov_class = cv.CovarianceCalculator(input_yml)
@@ -227,8 +247,20 @@ def test_get_all_cov_nmt():
                                        cache={'bins': bins}) + 1e-100
 
     cov_bm = s.covariance.covmat + 1e-100
-    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
-    assert np.max(np.abs(cov / cov_bm - 1)) < 5e-3
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+
+    # Check chi2
+    clf = np.array([])
+    for trs in s.get_tracer_combinations():
+        cl_trs = get_fiducial_cl(s, *trs, remove_be=True)
+        clf = np.concatenate((clf, cl_trs.flatten()))
+    cl = s.mean
+
+    delta = clf - cl
+    chi2 = delta.dot(cov).dot(delta)
+    chi2_bm = delta.dot(cov_bm).dot(delta)
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
 
 
 # Clean up after the tests
