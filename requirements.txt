@@ -7,3 +7,4 @@ pytest
 jupyter
 sacc
 pymaster
+camb
