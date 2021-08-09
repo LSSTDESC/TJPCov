@@ -210,24 +210,24 @@ def test_get_tracer_comb_spin():
     s = get_dummy_sacc()
     tracers = ['PLACv', 'DESgc__0', 'DESwl__0']
 
-    assert nmt_tools.get_tracer_comb_dof(s, ('PLAcv', 'PLAcv')) == 1
-    assert nmt_tools.get_tracer_comb_dof(s, ('PLAcv', 'DESgc__0')) == 1
-    assert nmt_tools.get_tracer_comb_dof(s, ('DESgc__0', 'DESgc__0')) == 1
-    assert nmt_tools.get_tracer_comb_dof(s, ('PLAcv', 'DESwl__0')) == 2
-    assert nmt_tools.get_tracer_comb_dof(s, ('DESgc__0', 'DESwl__0')) == 2
-    assert nmt_tools.get_tracer_comb_dof(s, ('DESwl__0', 'DESwl__0')) == 4
+    assert nmt_tools.get_tracer_comb_ncell(s, ('PLAcv', 'PLAcv')) == 1
+    assert nmt_tools.get_tracer_comb_ncell(s, ('PLAcv', 'DESgc__0')) == 1
+    assert nmt_tools.get_tracer_comb_ncell(s, ('DESgc__0', 'DESgc__0')) == 1
+    assert nmt_tools.get_tracer_comb_ncell(s, ('PLAcv', 'DESwl__0')) == 2
+    assert nmt_tools.get_tracer_comb_ncell(s, ('DESgc__0', 'DESwl__0')) == 2
+    assert nmt_tools.get_tracer_comb_ncell(s, ('DESwl__0', 'DESwl__0')) == 4
 
 
-def test_get_datatypes_from_dof():
+def test_get_datatypes_from_ncell():
     with pytest.raises(ValueError):
-        nmt_tools.get_datatypes_from_dof(0)
+        nmt_tools.get_datatypes_from_ncell(0)
 
     with pytest.raises(ValueError):
-        nmt_tools.get_datatypes_from_dof(3)
+        nmt_tools.get_datatypes_from_ncell(3)
 
-    assert nmt_tools.get_datatypes_from_dof(1) == ['cl_00']
-    assert nmt_tools.get_datatypes_from_dof(2) == ['cl_0e', 'cl_0b']
-    assert nmt_tools.get_datatypes_from_dof(4) == ['cl_ee', 'cl_eb', 'cl_be',
+    assert nmt_tools.get_datatypes_from_ncell(1) == ['cl_00']
+    assert nmt_tools.get_datatypes_from_ncell(2) == ['cl_0e', 'cl_0b']
+    assert nmt_tools.get_datatypes_from_ncell(4) == ['cl_ee', 'cl_eb', 'cl_be',
                                                    'cl_bb']
 
 

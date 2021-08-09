@@ -72,9 +72,10 @@ def get_tracer_comb_spin(sacc_data, tracer_comb):
     return s1, s2
 
 
-def get_tracer_comb_dof(sacc_data, tracer_comb):
+def get_tracer_comb_ncell(sacc_data, tracer_comb):
     """
-    Return the degrees of freedom of the Cell of a pair of tracers
+    Return the number of Cell for a pair of tracers (e.g. for shear-shear,
+    ncell = 4: EE, EB, BE, BB)
 
     Parameters:
     -----------
@@ -83,8 +84,7 @@ def get_tracer_comb_dof(sacc_data, tracer_comb):
 
     Returns:
     --------
-        dof (int):  Degrees of freedom of the Cell of the pair of tracers
-        given
+        ncell (int):  Number of Cell for the pair of tracers given
 
     """
     nmaps1 = get_tracer_nmaps(sacc_data, tracer_comb[0])
@@ -93,16 +93,14 @@ def get_tracer_comb_dof(sacc_data, tracer_comb):
     return nmaps1 * nmaps2
 
 
-def get_datatypes_from_dof(dof):
+def get_datatypes_from_ncell(ncell):
     """
     Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
-    of degrees of freedom
+    of cells for a pair of tracers
 
     Parameters:
     -----------
-        dof (int):  Degrees of freedom of the Cell of the pair of tracers
-        given
-
+        ncell (int):  Number of Cell for a pair of tracers
     Returns:
     --------
         datatypes (list):  List of data types assotiated to the given degrees
@@ -110,14 +108,14 @@ def get_datatypes_from_dof(dof):
 
     """
     # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
-    if dof == 1:
+    if ncell == 1:
         cl_types = ['cl_00']
-    elif dof == 2:
+    elif ncell == 2:
         cl_types = ['cl_0e', 'cl_0b']
-    elif dof == 4:
+    elif ncell == 4:
         cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
     else:
-        raise ValueError('dof does not match 1, 2, or 4.')
+        raise ValueError('ncell does not match 1, 2, or 4.')
 
     return cl_types
 

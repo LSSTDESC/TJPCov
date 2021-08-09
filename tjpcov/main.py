@@ -471,13 +471,13 @@ class CovarianceCalculator():
         tr[1], tr[2] = tracer_comb1
         tr[3], tr[4] = tracer_comb2
 
-        dof = {}
-        dof[12] = nmt_tools.get_tracer_comb_dof(self.cl_data, tracer_comb1)
-        dof[34] = nmt_tools.get_tracer_comb_dof(self.cl_data, tracer_comb2)
-        dof[13] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[3]))
-        dof[24] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[2], tr[4]))
-        dof[14] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[1], tr[4]))
-        dof[23] = nmt_tools.get_tracer_comb_dof(self.cl_data, (tr[2], tr[3]))
+        ncell = {}
+        ncell[12] = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1)
+        ncell[34] = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb2)
+        ncell[13] = nmt_tools.get_tracer_comb_ncell(self.cl_data, (tr[1], tr[3]))
+        ncell[24] = nmt_tools.get_tracer_comb_ncell(self.cl_data, (tr[2], tr[4]))
+        ncell[14] = nmt_tools.get_tracer_comb_ncell(self.cl_data, (tr[1], tr[4]))
+        ncell[23] = nmt_tools.get_tracer_comb_ncell(self.cl_data, (tr[2], tr[3]))
 
         s = {}
         s[1], s[2] = nmt_tools.get_tracer_comb_spin(self.cl_data, tracer_comb1)
@@ -495,7 +495,7 @@ class CovarianceCalculator():
             if key in cache:
                 cl[i] = cache[key]
             else:
-                cl[i] = np.zeros((dof[i], ell.size))
+                cl[i] = np.zeros((ncell[i], ell.size))
                 cl[i][0] = ccl.angular_cl(cosmo, ccl_tracers[tr[i1]],
                                           ccl_tracers[tr[i2]], ell)
 
@@ -504,7 +504,7 @@ class CovarianceCalculator():
             if key in cache:
                 SN[i] = cache[key]
             else:
-                SN[i] = np.zeros((dof[i], ell.size))
+                SN[i] = np.zeros((ncell[i], ell.size))
                 SN[i][0] = SN[i][-1] = np.ones_like(ell) * \
                 tracer_Noise[tr[i1]] if tr[i1] == tr[i2] else 0
                 if s[i1] == 2:
@@ -547,8 +547,8 @@ class CovarianceCalculator():
                                           cl_cov[13], cl_cov[14], cl_cov[23],
                                           cl_cov[24], w[12], w[34], coupled)
         else:
-            size1 = dof[12] * ell_eff.size
-            size2 = dof[34] * ell_eff.size
+            size1 = ncell[12] * ell_eff.size
+            size2 = ncell[34] * ell_eff.size
             cov = np.zeros((size1, size2))
 
         return {'final': cov, 'final_b': cov}
@@ -776,11 +776,11 @@ class CovarianceCalculator():
         cov_full = -1 * np.ones((ndim, ndim))
 
         for i, tracer_comb1 in enumerate(cl_tracers):
-            dof1 = nmt_tools.get_tracer_comb_dof(s, tracer_comb1)
-            dtypes1 = nmt_tools.get_datatypes_from_dof(dof1)
+            ncell1 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb1)
+            dtypes1 = nmt_tools.get_datatypes_from_ncell(ncell1)
             for tracer_comb2 in cl_tracers[i:]:
-                dof2 = nmt_tools.get_tracer_comb_dof(s, tracer_comb2)
-                dtypes2 = nmt_tools.get_datatypes_from_dof(dof2)
+                ncell2 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb2)
+                dtypes2 = nmt_tools.get_datatypes_from_ncell(ncell2)
                 print(tracer_comb1, tracer_comb2)
                 cov_ij = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
                                                tracer_comb2=tracer_comb2,
@@ -789,7 +789,7 @@ class CovarianceCalculator():
                                                **kwargs)
                 cov_ij = cov_ij['final']
 
-                cov_ij = cov_ij.reshape((nbpw, dof1, nbpw, dof2))
+                cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
 
                 for i, dt1 in enumerate(dtypes1):
                     ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
