@@ -149,7 +149,7 @@ def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
     return cl_cp
 
 
-def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
+def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
     """
     Return the workspace of the fields f1, f2
 
@@ -164,7 +164,7 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
         workspace. If None, no file will be saved.
         mask_names (dict): Dictionary with tracer names as key and maks names
         as values.
-        **kwards:  Extra arguments to pass to
+        **kwargs:  Extra arguments to pass to
         `w.compute_coupling_matrix`. In addition, if recompute=True is
         passed, the cw will be recomputed even if found in the disk.
 
@@ -184,13 +184,13 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
         fname = isfile = fname2 = isfile2 = None
 
     w = nmt.NmtWorkspace()
-    if 'recompute' in kwards:
-        recompute = kwards.pop('recompute')
+    if 'recompute' in kwargs:
+        recompute = kwargs.pop('recompute')
     else:
         recompute = False
 
     if recompute or ((not isfile) and (not isfile2)):
-        w.compute_coupling_matrix(f1, f2, bins, **kwards)
+        w.compute_coupling_matrix(f1, f2, bins, **kwargs)
         if fname:
             w.write_to(fname)
         if isfile2:
@@ -204,7 +204,7 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwards):
     return w
 
 
-def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
+def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
     """
     Return the covariance workspace of the fields f1, f2, f3, f4
 
@@ -220,7 +220,7 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
         m4 (str): Mask name assotiated to the field 4
         outdir (str): Path to the output folder where to store the
         workspace. If None, no file will be saved.
-        **kwards:  Extra arguments to pass to
+        **kwargs:  Extra arguments to pass to
         `nmt.compute_coupling_coefficients`. In addition, if recompute=True is
         passed, the cw will be recomputed even if found in the disk.
 
@@ -247,12 +247,12 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwards):
         isfiles = [None]
 
     cw = nmt.NmtCovarianceWorkspace()
-    if 'recompute' in kwards:
-        recompute = kwards.pop('recompute')
+    if 'recompute' in kwargs:
+        recompute = kwargs.pop('recompute')
     else:
         recompute = False
     if recompute or (not True in isfiles):
-        cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
+        cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
         if fnames[0]:
             cw.write_to(fnames[0])
         for fn, isf in zip(fnames[1:], isfiles[1:]):

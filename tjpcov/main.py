@@ -650,13 +650,13 @@ class CovarianceCalculator():
     #     cov[1423]=None #if want to save memory
         return cov
 
-    def get_all_cov(self, do_xi=False, use_nmt=False, **kwards):
+    def get_all_cov(self, do_xi=False, use_nmt=False, **kwargs):
         """
         Compute all the covariances and then combine them into one single giant matrix
         Parameters:
         -----------
         two_point_data (sacc obj): sacc object containg two_point data
-        **kwards: The arguments to pass to your chosen covariance estimation
+        **kwargs: The arguments to pass to your chosen covariance estimation
         method.
 
         Returns:
@@ -714,7 +714,7 @@ class CovarianceCalculator():
                                                    tracer_comb2=tracer_comb2,
                                                    ccl_tracers=ccl_tracers,
                                                    tracer_Noise=tracer_Noise,
-                                                   **kwards)
+                                                   **kwargs)
                 else:
                     cov_ij = self.cl_gaussian_cov(tracer_comb1=tracer_comb1,
                                                   tracer_comb2=tracer_comb2,
@@ -736,13 +736,13 @@ class CovarianceCalculator():
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
         return cov_full
 
-    def get_all_cov_nmt(self, tracer_noise, **kwards):
+    def get_all_cov_nmt(self, tracer_noise, **kwargs):
         """
         Compute all the covariances and then combine them into one single giant matrix
         Parameters:
         -----------
         two_point_data (sacc obj): sacc object containg two_point data
-        **kwards: The arguments to pass to your chosen covariance estimation
+        **kwargs: The arguments to pass to your chosen covariance estimation
         method.
 
         Returns:
@@ -786,7 +786,7 @@ class CovarianceCalculator():
                                                tracer_comb2=tracer_comb2,
                                                ccl_tracers=ccl_tracers,
                                                tracer_Noise=tracer_Noise,
-                                               **kwards)
+                                               **kwargs)
                 cov_ij = cov_ij['final']
 
                 cov_ij = cov_ij.reshape((nbpw, dof1, nbpw, dof2))
