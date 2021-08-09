@@ -7,9 +7,9 @@ import numpy as np
 
 
 
-def get_tracer_dof(sacc_data, tracer):
+def get_tracer_nmaps(sacc_data, tracer):
     """
-    Return the degrees of freedom of a given tracer
+    Return the number of maps assotiated to the given tracer
 
     Parameters:
     -----------
@@ -18,16 +18,14 @@ def get_tracer_dof(sacc_data, tracer):
 
     Returns:
     --------
-        dof (int):  Degrees of freedom
+        nmaps (int):  Number of maps assotiated to the tracer.
 
     """
-    tr = sacc_data.get_tracer(tracer)
-    if tr.quantity in ['cmb_convergence', 'galaxy_density']:
+    s = get_tracer_spin(sacc_data, tracer)
+    if s == 0:
         return 1
-    elif tr.quantity == 'galaxy_shear':
-        return 2
     else:
-        raise ValueError(f'tracer.quantity {tr.quantity} not implemented.')
+        return 2
 
 
 def get_tracer_spin(sacc_data, tracer):
@@ -49,6 +47,8 @@ def get_tracer_spin(sacc_data, tracer):
         return 0
     elif tr.quantity == 'galaxy_shear':
         return 2
+    else:
+        raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')
 
 
 def get_tracer_comb_spin(sacc_data, tracer_comb):
@@ -87,10 +87,10 @@ def get_tracer_comb_dof(sacc_data, tracer_comb):
         given
 
     """
-    dof1 = get_tracer_dof(sacc_data, tracer_comb[0])
-    dof2 = get_tracer_dof(sacc_data, tracer_comb[1])
+    nmaps1 = get_tracer_nmaps(sacc_data, tracer_comb[0])
+    nmaps2 = get_tracer_nmaps(sacc_data, tracer_comb[1])
 
-    return dof1 * dof2
+    return nmaps1 * nmaps2
 
 
 def get_datatypes_from_dof(dof):

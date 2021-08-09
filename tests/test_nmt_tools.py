@@ -173,19 +173,23 @@ def remove_file(fname):
     if os.path.isfile(fname):
         os.remove(fname)
 
-def test_get_tracer_dof():
+def test_get_tracer_nmaps():
     s = get_dummy_sacc()
 
-    with pytest.raises(ValueError):
-        nmt_tools.get_tracer_dof(s, 'ForError')
+    with pytest.raises(NotImplementedError):
+        nmt_tools.get_tracer_nmaps(s, 'ForError')
 
-    assert nmt_tools.get_tracer_dof(s, 'PLAcv') == 1
-    assert nmt_tools.get_tracer_dof(s, 'DESgc__0') == 1
-    assert nmt_tools.get_tracer_dof(s, 'DESwl__0') == 2
+    assert nmt_tools.get_tracer_nmaps(s, 'PLAcv') == 1
+    assert nmt_tools.get_tracer_nmaps(s, 'DESgc__0') == 1
+    assert nmt_tools.get_tracer_nmaps(s, 'DESwl__0') == 2
 
 
 def test_get_tracer_spin():
     s = get_dummy_sacc()
+
+    with pytest.raises(NotImplementedError):
+        nmt_tools.get_tracer_nmaps(s, 'ForError')
+
     assert nmt_tools.get_tracer_spin(s, 'PLAcv') == 0
     assert nmt_tools.get_tracer_spin(s, 'DESgc__0') == 0
     assert nmt_tools.get_tracer_spin(s, 'DESwl__0') == 2
