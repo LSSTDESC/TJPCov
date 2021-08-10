@@ -24,14 +24,22 @@ jobs:
 
              - name: Install dependencies	
                run: |
-                        # pip install -r requirements.txt
-                        # pip install .
+                        # Install non-python NaMaster dependencies
+                        sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
+                        # Update pip 
+                        pip install -U pip
+                        # Install wheel to avoid recompiling packages already
+                        # in the cache.
+                        pip install -U wheel
                         # Use a for loop to avoid NaMaster to be compiled
-                        # before installing its dependencies.
+                        # before installing its dependencies
+                        # (https://github.com/LSSTDESC/NaMaster/issues/138)
                         set -e
                         for i in `cat requirements.txt`; do
                            pip install -U $i;
                         done
+                        # pip install -r requirements.txt
+                        # pip install .
                 
 
              - name: Tests
