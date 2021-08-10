@@ -380,7 +380,8 @@ def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
     return f
 
 
-def get_workspaces_dict(fields, mask_names, bins, outdir, nmt_conf, cache):
+def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
+                        cache):
     """
     Return a dictionary with the masks assotiated to the fields to be
     correlated
@@ -389,6 +390,8 @@ def get_workspaces_dict(fields, mask_names, bins, outdir, nmt_conf, cache):
     -----------
         field (dict): Dictionary of the NmtFields of the fields correlated
         with keys 1, 2, 3 or 4 and values the NmtFields.
+        masks (dict): Dictionary of the masks of the fields correlated with
+        keys 1, 2, 3 or 4 and values the loaded masks.
         mask_names (dict):  Dictionary of the masks names assotiated to the
         fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
         name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
@@ -426,6 +429,9 @@ def get_workspaces_dict(fields, mask_names, bins, outdir, nmt_conf, cache):
                 w[i] = w_by_mask_name[k]
             elif k[::-1] in w_by_mask_name:
                 w[i] = w_by_mask_name[k[::-1]]
+            elif not np.mean(masks[i1] * masks[i2]):
+                w_by_mask_name[k] = None
+                w[i] = w_by_mask_name[k]
             else:
                 w_by_mask_name[k] = get_workspace(fields[i1], fields[i2],
                                                   mask_names[i1],

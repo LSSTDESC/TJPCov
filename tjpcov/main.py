@@ -521,7 +521,7 @@ class CovarianceCalculator():
             m = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, cache)
             f = nmt_tools.get_fields_dict(m, s, mn, tr, self.nmt_conf['f'],
                                           cache)
-            w = nmt_tools.get_workspaces_dict(f, mn, bins, self.outdir,
+            w = nmt_tools.get_workspaces_dict(f, m, mn, bins, self.outdir,
                                               self.nmt_conf['w'], cache)
 
             # TODO; Allow input options as output folder, if recompute, etc.

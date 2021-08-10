@@ -468,11 +468,12 @@ def test_get_fields_dict(nmt_conf):
                                      'dl_band': 10, 'n_iter': 0 }])
 def test_get_workspace_dict(kwards):
     bins = get_nmt_bin()
+    m = get_masks_dict_for_cov_as_in_tjpcov()
     f = get_fields_dict_for_cov_as_in_tjpcov()
     mn = get_mask_names_dict_for_cov_as_in_tjpcov()
 
     w = get_workspaces_dict_for_cov_as_in_tjpcov(**kwards)
-    w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards, cache={})
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards, cache={})
 
     # Check workspaces by comparing the coupled cells
     cl = get_cl_dict_for_cov_as_in_tjpcov()
@@ -489,10 +490,19 @@ def test_get_workspace_dict(kwards):
     # Check that cache works
     cache = {'w13': w[13], 'w23': w[23], 'w14': w[14], 'w24': w[24],
              'w12': w[12], 'w34': w[34]}
-    w2 = nmt_tools.get_workspaces_dict(f, mn, bins, outdir, kwards,
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
                                        cache=cache)
     for i in [13, 23, 14, 24, 12, 34]:
         assert w[i] is w2[i]
+
+    # Check that for non overlapping fields, the workspace is not computed (and
+    # is None)
+    # Create a non overlapping mask: w12 should be None
+    m[1] = np.ones_like(m[2])
+    m[1][m[2] != 0] = 0
+
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards, cache={})
+    assert w2[12] is None
 
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
