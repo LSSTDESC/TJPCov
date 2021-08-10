@@ -497,12 +497,21 @@ def test_get_workspace_dict(kwards):
 
     # Check that for non overlapping fields, the workspace is not computed (and
     # is None)
-    # Create a non overlapping mask: w12 should be None
-    m[1] = np.ones_like(m[2])
-    m[1][m[2] != 0] = 0
+    # Create a non overlapping mask:
+    m[1] = np.zeros_like(m[2])
+    m[1][:1000] = 1
+    m[3] = np.zeros_like(m[4])
+    m[3][1000:2000] = 1
 
     w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards, cache={})
-    assert w2[12] is None
+    # w12, w34 should not be None as they are needed in nmt.gaussian_covariance
+    assert w2[12] is not None
+    assert w2[34] is not None
+    # w13, w14, w23 should be None and w24 should be None because mn1 = mn2
+    assert w2[13] is None
+    assert w2[14] is None
+    assert w2[13] is None
+    assert w2[24] is None
 
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 

@@ -149,6 +149,7 @@ def test_nmt_conf_missing():
 
 @pytest.mark.parametrize('tracer_comb1,tracer_comb2',
                          [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                          (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
                           (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__0')),
                           (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
                           (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
@@ -176,9 +177,20 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
         s = tjpcov_class.cl_data
         assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-5)
 
+    # Check that it runs if one of the masks does not overlap with the others
+    if tracer_comb1 != tracer_comb2:
+        os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+        tjpcov_class.mask_fn[tracer_comb1[0]] = \
+        './tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz'
+        cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                            ccl_tracers, tracer_noise,
+                                            cache=cache)
+        os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
 
 @pytest.mark.parametrize('tracer_comb1,tracer_comb2',
                          [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                          (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
                           (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__0')),
                           (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
                           (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),

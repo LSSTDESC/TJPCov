@@ -416,7 +416,9 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
     """
     w = {}
     w_by_mask_name = {}
-    for i in [13, 23, 14, 24, 12, 34]:
+    # 12 and 34 must be first to avoid asigning them None if their maks do not
+    # overlap
+    for i in [12, 34, 13, 23, 14, 24]:
         i1, i2 = [int(j) for j in str(i)]
         # Workspace
         key = f'w{i}'
@@ -429,7 +431,11 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 w[i] = w_by_mask_name[k]
             elif k[::-1] in w_by_mask_name:
                 w[i] = w_by_mask_name[k[::-1]]
-            elif not np.mean(masks[i1] * masks[i2]):
+            elif (i not in [12, 34]) and (not np.mean(masks[i1] * masks[i2])):
+                # w13, w23, w14, w24 are needed to couple the theoretical Cell
+                # and are not needed if the masks do not overlap. However,
+                # w12 and w34 are needed for nmt.gaussian_covariance, which
+                # will complain if they are None
                 w_by_mask_name[k] = None
                 w[i] = w_by_mask_name[k]
             else:
