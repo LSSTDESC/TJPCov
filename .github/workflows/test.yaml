@@ -1,7 +1,7 @@
 name: TJPCov
 on:
    push:
-        branches: [ master, covG_nmt, covG_nmt_citest]
+        branches: [ master, covG_nmt]
 
 jobs:
      build:
