@@ -28,7 +28,6 @@ jobs:
                         # pip install .
                         # Use a for loop to avoid NaMaster to be compiled
                         # before installing its dependencies.
-                        - >
                         set -e
                         for i in `cat requirements.txt`; do
                            pip install -U $i;
