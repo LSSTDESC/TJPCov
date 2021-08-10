@@ -16,7 +16,11 @@ jobs:
              - name: Cache pip
                uses: actions/cache@v2
                with:
-                     path: ~/.cache/pip
+                     # Based on: https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d
+                     # We need to cache everything as we are compiling some
+                     # packages and their python wrapper look for the source
+                     # files.
+                     path: ${{ env.pythonLocation }}
                      key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
                      restore-keys: |
                                ${{ runner.os }}-pip-
