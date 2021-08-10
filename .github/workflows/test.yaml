@@ -1,7 +1,7 @@
 name: TJPCov
 on:
    push:
-        branches: [ master, covG_nmt]
+        branches: [ master, covG_nmt, covG_nmt_citest]
 
 jobs:
      build:
@@ -24,8 +24,17 @@ jobs:
 
              - name: Install dependencies	
                run: |
-                        pip install -r requirements.txt
-                        pip install .
+                        # pip install -r requirements.txt
+                        # pip install .
+                        # Use a for loop to avoid NaMaster to be compiled
+                        # before installing its dependencies.
+                        - >
+                        set -e
+                        for i in `cat requirements.txt`; do
+                           pip install -U $i;
+                        done
+                
+
              - name: Tests
                run: |
                         # Run harmonic Space
