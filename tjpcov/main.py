@@ -389,7 +389,8 @@ class CovarianceCalculator():
             # dNdz /= (dNdz*np.gradient(z)).sum()
             # dNdz *= self.Ngal[tracer]
             #FAO  this should be called by tomographic bin
-            if (tracer_dat.quantity == 'galaxy_shear') or ('src' in tracer):
+            if (tracer_dat.quantity == 'galaxy_shear') or ('src' in tracer) \
+                    or ('source' in tracer):
                 z = tracer_dat.z
                 dNdz = tracer_dat.nz
                 if self.IA is None:
