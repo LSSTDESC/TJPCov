@@ -431,7 +431,7 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 w[i] = w_by_mask_name[k]
             elif k[::-1] in w_by_mask_name:
                 w[i] = w_by_mask_name[k[::-1]]
-            elif (i not in [12, 34]) and (not np.mean(masks[i1] * masks[i2])):
+            elif (i not in [12, 34]) and (np.mean(masks[i1] * masks[i2]) == 0):
                 # w13, w23, w14, w24 are needed to couple the theoretical Cell
                 # and are not needed if the masks do not overlap. However,
                 # w12 and w34 are needed for nmt.gaussian_covariance, which
