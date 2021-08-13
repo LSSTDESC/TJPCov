@@ -139,7 +139,7 @@ def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
 
     """
     mean_mamb = np.mean(ma * mb)
-    if not mean_mamb:
+    if mean_mamb == 0:
         cl_cp = np.zeros_like(nlab_cp)
     else:
         cl_cp = (w.couple_cell(clab) + nlab_cp) / mean_mamb
@@ -249,7 +249,7 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         recompute = kwargs.pop('recompute')
     else:
         recompute = False
-    if recompute or (not True in isfiles):
+    if recompute or (not np.any(isfiles)):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
         if fnames[0]:
             cw.write_to(fnames[0])
