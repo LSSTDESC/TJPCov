@@ -249,23 +249,16 @@ def test_get_cl_for_cov():
     assert np.abs(cl_cp / cl_cp_code - 1).max() < 1e-10
 
     # Inputting uncoupled noise.
-    # For some reason this does not work. So using interp1d.
-    # bins = get_nmt_bin()
-    # nl_unbin = bins.unbin_cell(cl['nl'])
-    nlfill = interp1d(cl['ell'], cl['nl'], fill_value='extrapolate',
-                      kind='quadratic',
-                      bounds_error=False)(cl_fid['ell'])
+    nlfill = np.ones_like(cl_fid['ell']) * cl['nl'][0, 0]
     cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], nlfill, m, m, w,
                                           nl_is_cp=False)
-    # Just compare the usable range of scales. The others are dominated by edge
-    # effects
-    assert np.abs(cl_cp[0, :64] / cl_cp_code[0, :64] - 1).max() < 1e-4
+    assert np.abs(cl_cp[0] / cl_cp_code[0] - 1).max() < 1e-2
 
     # Check that if I input the coupled but nl_is_cp is False, we don't recover
     # cl_cp
     cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m, m, w,
                                           nl_is_cp=False)
-    assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.5
+    assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.4
 
     # Check that if I input the uncoupled but nl_is_cp is True, assert fails
     cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], nlfill, m, m, w,

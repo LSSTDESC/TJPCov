@@ -144,7 +144,7 @@ def get_cl_for_cov(clab, nlab, ma, mb, w, nl_is_cp):
     elif nl_is_cp:
         cl_cp = (w.couple_cell(clab) + nlab) / mean_mamb
     else:
-        cl_cp = w.couple_cell(clab + nlab) / mean_mamb
+        cl_cp = (w.couple_cell(clab) + np.mean(ma) * nlab) / mean_mamb
 
     return cl_cp
 
