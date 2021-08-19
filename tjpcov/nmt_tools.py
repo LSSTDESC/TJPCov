@@ -120,7 +120,7 @@ def get_datatypes_from_ncell(ncell):
     return cl_types
 
 
-def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
+def get_cl_for_cov(clab, nlab, ma, mb, w, nl_is_cp):
     """
     Computes the coupled Cell that goes into the covariance matrix
 
@@ -128,11 +128,11 @@ def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
     -----------
         clab (array): Fiducial Cell for the tracers a and b, used for in the
         covariance estimation
-        nlab_cp (array): Coupled noise for the tracers a and b
+        nlab (array): Coupled noise for the tracers a and b
         ma (array): Mask of the field a
         mb (array): Mask of the field b
         w (NmtWorkspace): NmtWorkspace of the fields a and b
-
+        nl_is_cp (bool): True if nlab is coupled. False otherwise.
     Returns:
     --------
         cl:  Coupled Cell with signal and noise
@@ -140,9 +140,11 @@ def get_cl_for_cov(clab, nlab_cp, ma, mb, w):
     """
     mean_mamb = np.mean(ma * mb)
     if mean_mamb == 0:
-        cl_cp = np.zeros_like(nlab_cp)
+        cl_cp = np.zeros_like(nlab)
+    elif nl_is_cp:
+        cl_cp = (w.couple_cell(clab) + nlab) / mean_mamb
     else:
-        cl_cp = (w.couple_cell(clab) + nlab_cp) / mean_mamb
+        cl_cp = w.couple_cell(clab + nlab) / mean_mamb
 
     return cl_cp
 

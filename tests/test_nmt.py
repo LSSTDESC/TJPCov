@@ -69,10 +69,14 @@ def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
     return cl
 
 
-def get_tracer_noise(tr):
+def get_tracer_noise(tr, cp=True):
     bn = get_pair_folder_name((tr, tr))
     fname = os.path.join(root, bn, f"cl_{tr}_{tr}.npz")
-    return np.load(fname)['nl_cp'][0, -1]
+    clfile = np.load(fname)
+    if cp:
+        return clfile['nl_cp'][0, -1]
+    else:
+        return clfile['nl'][0, 0]
 
 
 def get_benchmark_cov(tracer_comb1, tracer_comb2):
@@ -164,14 +168,28 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
 
     cache = {'bins': get_nmt_bin()}
 
+    # Test error with uncoupled and coupled noise provided
+    with pytest.raises(ValueError):
+        cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                            ccl_tracers,
+                                            tracer_Noise=tracer_noise,
+                                            tracer_Noise_coupled=tracer_noise,
+                                            cache=cache)['final']
+
+    # Cov with coupled noise (as in benchmark)
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
-                                        ccl_tracers, tracer_noise,
+                                        ccl_tracers,
+                                        tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
 
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
     assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
+
+    # Cov with uncoupled noise cannot be used for benchmark as tracer_noise is
+    # assumed to be flat but it is not when computed from the coupled due to
+    # edge effects
 
     if tracer_comb1 == tracer_comb2:
         s = tjpcov_class.cl_data
@@ -183,7 +201,8 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
         tjpcov_class.mask_fn[tracer_comb1[0]] = \
         './tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz'
         cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
-                                            ccl_tracers, tracer_noise,
+                                            ccl_tracers,
+                                            tracer_Noise_coupled=tracer_noise,
                                             cache=cache)
         os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
@@ -223,7 +242,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     }
 
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
-                                        ccl_tracers, tracer_noise,
+                                        ccl_tracers, tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
 
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
@@ -255,7 +274,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     }
 
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
-                                        ccl_tracers, tracer_noise,
+                                        ccl_tracers, tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
@@ -273,7 +292,13 @@ def test_get_all_cov_nmt():
     for tr in s.tracers:
         tracer_noise[tr] = get_tracer_noise(tr)
 
-    cov = tjpcov_class.get_all_cov_nmt(tracer_noise=tracer_noise,
+    # Test error with uncoupled and coupled noise provided
+    with pytest.raises(ValueError):
+        cov = tjpcov_class.get_all_cov_nmt(tracer_noise=tracer_noise,
+                                           tracer_noise_coupled=tracer_noise,
+                                           cache={'bins': bins})
+
+    cov = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise,
                                        cache={'bins': bins}) + 1e-100
 
     cov_bm = s.covariance.covmat + 1e-100

@@ -422,8 +422,8 @@ class CovarianceCalculator():
         return ccl_tracers, tracer_Noise
 
     def nmt_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
-                        ccl_tracers=None, tracer_Noise=None, coupled=False,
-                        cache=None):
+                        ccl_tracers=None, tracer_Noise=None,
+                        tracer_Noise_coupled=None, coupled=False, cache=None):
         """
         Compute a single covariance matrix for a given pair of C_ell
 
@@ -431,8 +431,13 @@ class CovarianceCalculator():
         -----------
             tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
             tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            ccl_tracers ():
-            tracer_Noise ():
+            ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
+            the tracer names
+            tracer_Noise (dict): Dictionary with necessary (uncoupled) noise
+            with keys the tracer names. The values must be a float or int, not
+            an array
+            tracer_Noise_coupled (dict): As tracer_Noise but with coupled
+            noise.
             coupled (bool): True to return the coupled Gaussian covariance
             (default False)
             cache (dict): Dictionary with the necessary workspaces and
@@ -448,6 +453,9 @@ class CovarianceCalculator():
             both cases.
 
         """
+        if (tracer_Noise is not None) and (tracer_Noise_coupled is not None):
+            raise ValueError('Only one tracer_Noise or tracer_Noise_coupled ' +
+                             'can be given')
         if coupled:
             raise ValueError('Computing coupled covariance matrix not ' +
                              'implemented yet')
@@ -487,8 +495,8 @@ class CovarianceCalculator():
 
         # Fiducial cl
         cl = {}
-        # Coupled noise
-        SN = {}
+        # Noise (coupled or not)
+        SN = {'coupled': tracer_Noise is None}
         for i in [13, 24, 14, 23]:
             # Fiducial cl
             i1, i2 = [int(j) for j in str(i)]
@@ -500,14 +508,18 @@ class CovarianceCalculator():
                 cl[i][0] = ccl.angular_cl(cosmo, ccl_tracers[tr[i1]],
                                           ccl_tracers[tr[i2]], ell)
 
-            # Coupled noise
+            # Noise
+            auto = tr[i1] == tr[i2]
             key = f'SN{i}'
             if key in cache:
                 SN[i] = cache[key]
             else:
                 SN[i] = np.zeros((ncell[i], ell.size))
-                SN[i][0] = SN[i][-1] = np.ones_like(ell) * \
-                tracer_Noise[tr[i1]] if tr[i1] == tr[i2] else 0
+                SN[i][0] = SN[i][-1] = np.ones_like(ell)
+                if SN['coupled']:
+                    SN[i] *= tracer_Noise_coupled[tr[i1]] if auto else 0
+                else:
+                    SN[i] *= tracer_Noise[tr[i1]] if auto else 0
                 if s[i1] == 2:
                     SN[i][0, :2] = SN[i][-1, :2] = 0
 
@@ -536,13 +548,13 @@ class CovarianceCalculator():
 
             cl_cov = {}
             cl_cov[13] = nmt_tools.get_cl_for_cov(cl[13], SN[13], m[1], m[3],
-                                                  w[13])
+                                                  w[13], nl_is_cp=SN['coupled'])
             cl_cov[23] = nmt_tools.get_cl_for_cov(cl[23], SN[23], m[2], m[3],
-                                                  w[23])
+                                                  w[23], nl_is_cp=SN['coupled'])
             cl_cov[14] = nmt_tools.get_cl_for_cov(cl[14], SN[14], m[1], m[4],
-                                                  w[14])
+                                                  w[14], nl_is_cp=SN['coupled'])
             cl_cov[24] = nmt_tools.get_cl_for_cov(cl[24], SN[24], m[2], m[4],
-                                                  w[24])
+                                                  w[24], nl_is_cp=SN['coupled'])
 
             cov = nmt.gaussian_covariance(cw, s[1], s[2], s[3], s[4],
                                           cl_cov[13], cl_cov[14], cl_cov[23],
@@ -737,12 +749,17 @@ class CovarianceCalculator():
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
         return cov_full
 
-    def get_all_cov_nmt(self, tracer_noise, **kwargs):
+    def get_all_cov_nmt(self, tracer_noise=None, tracer_noise_coupled=None,
+                        **kwargs):
         """
         Compute all the covariances and then combine them into one single giant matrix
         Parameters:
         -----------
-        two_point_data (sacc obj): sacc object containg two_point data
+        tracer_noise (dict): Dictionary with necessary (uncoupled) noise
+        with keys the tracer names. The values must be a float or int, not
+        an array
+        tracer_noise_coupled (dict): As tracer_Noise but with coupled
+        noise.
         **kwargs: The arguments to pass to your chosen covariance estimation
         method.
 
@@ -753,15 +770,27 @@ class CovarianceCalculator():
             Npt = (number of bins ) * (number of combinations)
         """
 
+        if (tracer_noise is not None) and (tracer_noise_coupled is not None):
+            raise ValueError('Only one of tracer_nose or ' +
+                             'tracer_noise_coupled can be given')
+
         two_point_data = self.cl_data
 
         ccl_tracers, tracer_Noise = self.get_tracer_info(
             two_point_data=two_point_data)
 
+        if tracer_noise_coupled is not None:
+            tracer_Noise_coupled = tracer_Noise.copy()
+            tracer_Noise = None
+        else:
+            tracer_Noise_coupled = None
+
         # Circunvent the impossibility of inputting noise by hand
-        for tracer in tracer_Noise:
-            if tracer in tracer_noise:
+        for tracer in ccl_tracers:
+            if tracer_noise and tracer in tracer_noise:
                 tracer_Noise[tracer] = tracer_noise[tracer]
+            elif tracer_noise_coupled and tracer in tracer_noise_coupled:
+                tracer_Noise_coupled[tracer] = tracer_noise_coupled[tracer]
 
         # Covariance construction based on
         # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
@@ -787,6 +816,7 @@ class CovarianceCalculator():
                                                tracer_comb2=tracer_comb2,
                                                ccl_tracers=ccl_tracers,
                                                tracer_Noise=tracer_Noise,
+                                               tracer_Noise_coupled=tracer_Noise_coupled,
                                                **kwargs)
                 cov_ij = cov_ij['final']
 

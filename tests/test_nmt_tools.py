@@ -8,6 +8,7 @@ import sacc
 import yaml
 import tjpcov.main as cv
 from tjpcov import nmt_tools
+from scipy.interpolate import interp1d
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 sacc_path = os.path.join(root, 'cls_cov.fits')
@@ -243,22 +244,49 @@ def test_get_cl_for_cov():
     cl_fid_Sh = get_cl('galaxy_shear', fiducial=True)
 
     cl_cp = (w.couple_cell(cl_fid['cl']) + cl['nl_cp']) / np.mean(m**2)
-    cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m, m, w)
+    cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m, m, w,
+                                          nl_is_cp=True)
     assert np.abs(cl_cp / cl_cp_code - 1).max() < 1e-10
+
+    # Inputting uncoupled noise.
+    # For some reason this does not work. So using interp1d.
+    # bins = get_nmt_bin()
+    # nl_unbin = bins.unbin_cell(cl['nl'])
+    nlfill = interp1d(cl['ell'], cl['nl'], fill_value='extrapolate',
+                      kind='quadratic',
+                      bounds_error=False)(cl_fid['ell'])
+    cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], nlfill, m, m, w,
+                                          nl_is_cp=False)
+    # Just compare the usable range of scales. The others are dominated by edge
+    # effects
+    assert np.abs(cl_cp[0, :64] / cl_cp_code[0, :64] - 1).max() < 1e-4
+
+    # Check that if I input the coupled but nl_is_cp is False, we don't recover
+    # cl_cp
+    cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m, m, w,
+                                          nl_is_cp=False)
+    assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.5
+
+    # Check that if I input the uncoupled but nl_is_cp is True, assert fails
+    cl_cp_code = nmt_tools.get_cl_for_cov(cl_fid['cl'], nlfill, m, m, w,
+                                          nl_is_cp=True)
+    assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.5
 
     # Create a non overlapping mask
     m2 = np.ones_like(m)
     m2[m != 0] = 0
-    assert not np.all(nmt_tools.get_cl_for_cov(cl, cl['nl_cp'], m, m2, w))
+    assert not np.all(nmt_tools.get_cl_for_cov(cl, cl['nl_cp'], m, m2, w,
+                                               nl_is_cp=True))
 
     with pytest.raises(ValueError):
-        nmt_tools.get_cl_for_cov(cl_fid_Sh, cl['nl_cp'], m, m, w)
+        nmt_tools.get_cl_for_cov(cl_fid_Sh, cl['nl_cp'], m, m, w, nl_is_cp=True)
 
     with pytest.raises(ValueError):
-        nmt_tools.get_cl_for_cov(cl_fid, cl['nl'], m, m, w)
+        # Uncoupled binned noise
+        nmt_tools.get_cl_for_cov(cl_fid, cl['nl'], m, m, w, nl_is_cp=True)
 
     with pytest.raises(ValueError):
-        nmt_tools.get_cl_for_cov(cl_fid, cl['nl_cp'], m, m, wSh)
+        nmt_tools.get_cl_for_cov(cl_fid, cl['nl_cp'], m, m, wSh, nl_is_cp=True)
 
 
 @pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
@@ -338,7 +366,8 @@ def test_get_covariance_workspace(kwards):
     cl = get_cl('cross', fiducial=False)
     cl_fid = get_cl('cross', fiducial=True)
     w13 = get_workspace('cross')
-    cl_cov = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m1, m3, w13)
+    cl_cov = nmt_tools.get_cl_for_cov(cl_fid['cl'], cl['nl_cp'], m1, m3, w13,
+                                      nl_is_cp=True)
     cl13 = cl14 = cl23 = cl24 = cl_cov
 
     w12 = get_workspace('galaxy_clustering')
