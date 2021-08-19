@@ -13,18 +13,21 @@ jobs:
                with:
                         python-version: '3.6'
 
-             - name: Cache pip
-               uses: actions/cache@v2
-               with:
-                     # Based on: https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d
-                     # We need to cache everything as we are compiling some
-                     # packages and their python wrapper look for the source
-                     # files.
-                     path: ${{ env.pythonLocation }}
-                     key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-                     restore-keys: |
-                               ${{ runner.os }}-pip-
-                               ${{ runner.os }}-
+            # TODO: Fix cache
+            # Commented out because cache makes the actions to fail
+            # 
+            #  - name: Cache pip
+            #    uses: actions/cache@v2
+            #    with:
+            #          # Based on: https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d
+            #          # We need to cache everything as we are compiling some
+            #          # packages and their python wrapper look for the source
+            #          # files.
+            #          path: ${{ env.pythonLocation }}
+            #          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+            #          restore-keys: |
+            #                    ${{ runner.os }}-pip-
+            #                    ${{ runner.os }}-
 
              - name: Install dependencies	
                run: |
