@@ -8,6 +8,7 @@ import pyccl as ccl
 import sys
 import os
 import pymaster as nmt
+import warnings
 
 cwd = os.getcwd()
 sys.path.append(os.path.dirname(cwd)+"/tjpcov")
@@ -497,6 +498,11 @@ class CovarianceCalculator():
         cl = {}
         # Noise (coupled or not)
         SN = {'coupled': tracer_Noise is None}
+
+        if SN['coupled'] is False:
+            warnings.warn("Computing the coupled noise from the uncoupled " +
+                          "noise. This assumes the noise is white")
+
         for i in [13, 24, 14, 23]:
             # Fiducial cl
             i1, i2 = [int(j) for j in str(i)]
