@@ -6,3 +6,6 @@ pyccl==2.1.0
 pytest
 jupyter
 sacc
+camb
+healpy
+pymaster

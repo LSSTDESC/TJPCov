@@ -1,7 +1,7 @@
 name: TJPCov
 on:
    push:
-        branches: [ master ]
+        branches: [ master, covG_nmt]
 
 jobs:
      build:
@@ -13,19 +13,42 @@ jobs:
                with:
                         python-version: '3.6'
 
-             - name: Cache pip
-               uses: actions/cache@v2
-               with:
-                     path: ~/.cache/pip
-                     key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-                     restore-keys: |
-                               ${{ runner.os }}-pip-
-                               ${{ runner.os }}-
+            # TODO: Fix cache
+            # Commented out because cache makes the actions to fail
+            # 
+            #  - name: Cache pip
+            #    uses: actions/cache@v2
+            #    with:
+            #          # Based on: https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d
+            #          # We need to cache everything as we are compiling some
+            #          # packages and their python wrapper look for the source
+            #          # files.
+            #          path: ${{ env.pythonLocation }}
+            #          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+            #          restore-keys: |
+            #                    ${{ runner.os }}-pip-
+            #                    ${{ runner.os }}-
 
              - name: Install dependencies	
                run: |
-                        pip install -r requirements.txt
-                        pip install .
+                        # Install non-python NaMaster dependencies
+                        sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
+                        # Update pip 
+                        pip install -U pip
+                        # Install wheel to avoid recompiling packages already
+                        # in the cache.
+                        pip install -U wheel
+                        # Use a for loop to avoid NaMaster to be compiled
+                        # before installing its dependencies
+                        # (https://github.com/LSSTDESC/NaMaster/issues/138)
+                        set -e
+                        for i in `cat requirements.txt`; do
+                           pip install -U $i;
+                        done
+                        # pip install -r requirements.txt
+                        # pip install .
+                
+
              - name: Tests
                run: |
                         # Run harmonic Space
@@ -33,4 +56,8 @@ jobs:
                         
                         # Run Configuration Space
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal_cs.py
-               
+                        
+                        # Run Namaster tests
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt_tools.py
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt.py
+
