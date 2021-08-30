@@ -62,7 +62,10 @@ class CovarianceCalculator():
                   bias
                   fsky/mask
         """
-        config, inp_dat = parse(tjpcov_cfg)
+        if isinstance(tjpcov_cfg, dict):
+            config = tjpcov_cfg
+        else:
+            config, _ = parse(tjpcov_cfg)
 
         self.do_xi = config['tjpcov'].get('do_xi')
 
@@ -106,6 +109,8 @@ class CovarianceCalculator():
 
         if cosmo_fn is None or cosmo_fn == 'set':
             self.cosmo = self.set_ccl_cosmo(config)
+        elif isinstance(cosmo_fn, ccl.core.Cosmology):
+            self.cosmo = cosmo_fn
 
         elif cosmo_fn.split('.')[-1] == 'yaml':
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
@@ -118,8 +123,6 @@ class CovarianceCalculator():
                 self.cosmo = pickle.load(ccl_cosmo_file)
 
 
-        elif isinstance(cosmo_fn, ccl.core.Cosmology):
-            self.cosmo = cosmo_fn
         else:
             raise Exception(
                 "Err: File for cosmo field in input not recognized")
@@ -133,8 +136,11 @@ class CovarianceCalculator():
 
         # TO DO: remove this dependence here
         #elif not do_xi:
-        self.cl_data = sacc.Sacc.load_fits(
-            config['tjpcov'].get('cl_file'))
+        cl_data = config['tjpcov'].get('cl_file')
+        if isinstance(cl_data, sacc.Sacc):
+            self.cl_data = cl_data
+        else:
+            self.cl_data = sacc.Sacc.load_fits(cl_data)
         # TO DO: remove this dependence here
         trcomb = self.cl_data.get_tracer_combinations()[0]
         ell_list = self.get_ell_theta(self.cl_data,  # fix this
