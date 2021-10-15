@@ -43,9 +43,10 @@ def get_tracer_spin(sacc_data, tracer):
 
     """
     tr = sacc_data.get_tracer(tracer)
-    if tr.quantity in ['cmb_convergence', 'galaxy_density']:
+    if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
+       ('lens' in tracer):
         return 0
-    elif tr.quantity == 'galaxy_shear':
+    elif (tr.quantity == 'galaxy_shear') or ('source' in tracer):
         return 2
     else:
         raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')
@@ -330,7 +331,11 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache):
         else:
             k = mask_names[i]
             if k not in mask_by_mask_name:
-                mask_by_mask_name[k] = hp.read_map(mask_files[tracer_names[i]])
+                mf = mask_files[tracer_names[i]]
+                if isinstance(mf, np.ndarray):
+                    mask_by_mask_name[k] = mf
+                else:
+                    mask_by_mask_name[k] = hp.read_map(mf)
             mask[i] = mask_by_mask_name[k]
 
     return mask
