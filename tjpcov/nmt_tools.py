@@ -410,8 +410,9 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
         nmt_conf (dict): Dictionary with extra arguments to pass to NmtField.
         In fact, tjpcov.nmt_conf['w']
         cache (dict): Dictionary with cached variables. It will use the cached
-        field if found. The keys must be 'w1', 'w2', 'w3' or 'w4' and the
-        values the corresponding NmtFields.
+        field if found. The keys must be 'w12', 'w34', 'w13', 'w23', 'w14' or
+        'w24' and the values the corresponding NmtWorkspaces. Alternatively,
+        you can pass a dictionary with keys as (mask_name1, mask_name2).
 
     Returns:
     --------
@@ -445,6 +446,16 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 # will complain if they are None
                 w_by_mask_name[k] = None
                 w[i] = w_by_mask_name[k]
+            elif ('workspaces' in cache) and ((k in cache['workspaces']) or
+                                              k[::-1] in cache['workspaces']):
+                cache_wsp = cache['workspaces']
+                if k in cache_wsp:
+                    fname = cache_wsp[k]
+                else:
+                    fname = cache_wsp[k::-1]
+                wsp = nmt.NmtWorkspace()
+                wsp.read_from(fname)
+                w[i] = w_by_mask_name[k] = wsp
             else:
                 w_by_mask_name[k] = get_workspace(fields[i1], fields[i2],
                                                   mask_names[i1],
