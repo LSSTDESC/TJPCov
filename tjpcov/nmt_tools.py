@@ -452,7 +452,7 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 if k in cache_wsp:
                     fname = cache_wsp[k]
                 else:
-                    fname = cache_wsp[k::-1]
+                    fname = cache_wsp[k[::-1]]
                 wsp = nmt.NmtWorkspace()
                 wsp.read_from(fname)
                 w[i] = w_by_mask_name[k] = wsp
