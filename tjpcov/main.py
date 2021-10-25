@@ -94,7 +94,7 @@ class CovarianceCalculator():
                             if 'Ngal' in k}
         # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items()
         #                     if 'Ngal_src' in k}
-        self.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items()
+        self.sigma_e = {k.replace('sigma_e_',''):v for k, v in config['tjpcov'].items()
                             if 'sigma_e' in k}
 
 
