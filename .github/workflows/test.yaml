@@ -1,7 +1,9 @@
 name: TJPCov
 on:
    push:
-        branches: [ master, covG_nmt]
+        branches: [ master ]
+   pull-request:
+        branches: [ master ]
 
 jobs:
      build:
