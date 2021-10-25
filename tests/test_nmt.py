@@ -4,6 +4,7 @@ import os
 import pymaster as nmt
 import pytest
 import tjpcov.main as cv
+from tjpcov.parser import parse
 import yaml
 
 
@@ -159,14 +160,19 @@ def test_nmt_conf_missing():
                           (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
                           ])
 def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
-    tjpcov_class = cv.CovarianceCalculator(input_yml)
+    # tjpcov_class = cv.CovarianceCalculator(input_yml)
+    # cache = {'bins': get_nmt_bin()}
+
+    config, _= parse(input_yml)
+    config['tjpcov']['binning_info'] = get_nmt_bin()
+    tjpcov_class = cv.CovarianceCalculator(config)
+    cache = None
 
     ccl_tracers, tracer_noise = tjpcov_class.get_tracer_info(tjpcov_class.cl_data)
 
     for tr in tracer_comb1 + tracer_comb2:
         tracer_noise[tr] = get_tracer_noise(tr)
 
-    cache = {'bins': get_nmt_bin()}
 
     # Test error with uncoupled and coupled noise provided
     with pytest.raises(ValueError):

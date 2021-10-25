@@ -141,30 +141,34 @@ class CovarianceCalculator():
             self.cl_data = cl_data
         else:
             self.cl_data = sacc.Sacc.load_fits(cl_data)
-        # TO DO: remove this dependence here
-        trcomb = self.cl_data.get_tracer_combinations()[0]
-        ell_list = self.get_ell_theta(self.cl_data,  # fix this
-                                      'galaxy_density_cl',
-                                      trcomb,
-                                      'linear', do_xi=False)
+
+        self.binning_info = config['tjpcov'].get('binning_info', None)
+        if self.binning_info is None:
+            # TO DO: remove this dependence here
+            trcomb = self.cl_data.get_tracer_combinations()[0]
+            ell_list = self.get_ell_theta(self.cl_data,  # fix this
+                                          'galaxy_density_cl',
+                                          trcomb,
+                                          'linear', do_xi=False)
+            # fao Set this inside get_ell_theta ?
+            # ell, ell_bins, ell_edges = None, None, None
+            theta, theta_bins, theta_edges = None, None, None
+
+            # fix this for getting from the sacc file:
+            th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
+
+            self.theta,  self.theta_bins, self.theta_edges,  = th_list
+
+
+            # ell is the value for WT
+            self.ell, self.ell_bins, self.ell_edges = ell_list
+        elif not isinstance(self.binning_info, nmt.NmtBin):
+            raise ValueError('If passed, binning_info has to be a NmtBin ' +
+                             'instance')
 
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
         self.mask_names = config['tjpcov'].get('mask_names')
 
-        # fao Set this inside get_ell_theta ?
-        # ell, ell_bins, ell_edges = None, None, None
-        theta, theta_bins, theta_edges = None, None, None
-
-
-
-        # fix this for getting from the sacc file:
-        th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
-
-        self.theta,  self.theta_bins, self.theta_edges,  = th_list
-
-
-        # ell is the value for WT
-        self.ell, self.ell_bins, self.ell_edges = ell_list
 
         # Calling WT in method, only if do_xi
         self.WT = None
@@ -467,16 +471,21 @@ class CovarianceCalculator():
             raise ValueError('Computing coupled covariance matrix not ' +
                              'implemented yet')
 
-        if 'bins' in cache:
+        if cache is None:
+            cache = {}
+
+        if  'bins' in cache:
+            warnings.warn('Reading binning from cache. You will ignore the one'
+                          + 'passed through binning_info at initialization')
             bins = cache['bins']
-            ell = np.arange(bins.lmax + 1)
-            ell_eff = bins.get_effective_ells()
+        elif self.binning_info is not None:
+            bins = self.binning_info
         else:
-            raise ValueError('Not yet implemented: you need to pass a'
-                             + 'NmtBin instance')
-            bins = self.bins
-            ell = np.arange(self.ell.max())
-            ell_eff = self.ell_bins
+            raise ValueError('You must pass a NmtBin instance through the ' +
+                             'cache or at initialization')
+
+        ell = np.arange(bins.lmax + 1)
+        ell_eff = bins.get_effective_ells()
 
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
