@@ -3,8 +3,7 @@ import healpy as hp
 import os
 import pymaster as nmt
 import numpy as np
-
-
+import sacc
 
 
 def get_tracer_nmaps(sacc_data, tracer):
@@ -464,3 +463,51 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 w[i] = w_by_mask_name[k]
 
     return w
+
+
+def get_sacc_with_concise_dtypes(sacc_data):
+    """
+    Return a copy of the sacc file with concise data types
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        sacc_data (Sacc): Data Sacc instance with concise data types
+    """
+
+    s = sacc_data.copy()
+    dtypes = s.get_data_types()
+
+    dt_long = []
+    for dt in dtypes:
+        if len(dt.split('_')) > 2:
+            dt_long.append(dt)
+
+    for dt in dt_long:
+        pd = sacc.parse_data_type_name(dt)
+
+        if pd.statistic != 'cl':
+            raise ValueError(f'data_type {dt} not recognized. Is it a Cell?')
+
+        if pd.subtype is None:
+            dc = 'cl_00'
+        elif pd.subtype is 'e':
+            dc = 'cl_0e'
+        elif pd.subtype is 'b':
+            dc = 'cl_0b'
+        elif pd.subtype is 'ee':
+            dc = 'cl_ee'
+        elif pd.subtype is 'bb':
+            dc = 'cl_bb'
+        else:
+            raise ValueError(f'Data type subtype {pd.subtype} not recognized')
+
+
+        # Change the data_type to its concise versio
+        for dp in s.get_data_points(dt):
+            dp.data_type = dc
+
+    return s

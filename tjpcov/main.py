@@ -815,7 +815,7 @@ class CovarianceCalculator():
 
         # Covariance construction based on
         # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
-        s = two_point_data
+        s = nmt_tools.get_sacc_with_concise_dtypes(two_point_data)
         dtype = s.get_data_types()[0]
         tracers = s.get_tracer_combinations(data_type=dtype)[0]
         ell, _ = s.get_ell_cl(dtype, *tracers)
