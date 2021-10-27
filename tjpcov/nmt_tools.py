@@ -494,13 +494,13 @@ def get_sacc_with_concise_dtypes(sacc_data):
 
         if pd.subtype is None:
             dc = 'cl_00'
-        elif pd.subtype is 'e':
+        elif pd.subtype == 'e':
             dc = 'cl_0e'
-        elif pd.subtype is 'b':
+        elif pd.subtype == 'b':
             dc = 'cl_0b'
-        elif pd.subtype is 'ee':
+        elif pd.subtype == 'ee':
             dc = 'cl_ee'
-        elif pd.subtype is 'bb':
+        elif pd.subtype == 'bb':
             dc = 'cl_bb'
         else:
             raise ValueError(f'Data type subtype {pd.subtype} not recognized')
