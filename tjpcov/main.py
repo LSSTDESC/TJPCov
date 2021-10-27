@@ -855,6 +855,10 @@ class CovarianceCalculator():
                         cov_full[np.ix_(ix1, ix2)] = covi
                         cov_full[np.ix_(ix2, ix1)] = covi.T
 
+        if np.any(cov_full == -1):
+            raise Exception('Something went wrong. Probably related to the ' +
+                            'data types')
+
         return cov_full
 
     def create_sacc_cov(output, do_xi=False):
