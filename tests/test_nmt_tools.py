@@ -535,6 +535,28 @@ def test_get_workspace_dict(kwards):
     assert w2[13] is None
     assert w2[24] is None
 
+    # Check that 'workspaces' cache also works. In this case, one will pass
+    # paths, not instances
+    gc0gc0 = os.path.join(root, 'DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits')
+    gc0wl0 = os.path.join(root, 'DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits')
+    gc0wl1 = os.path.join(root, 'DESgc_DESwl/w__mask_DESgc__mask_DESwl1.fits')
+    wl0wl0 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits')
+    wl0wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits')
+    wl1wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits')
+    cache = {'workspaces': {('mask_DESgc0', 'mask_DESgc0'): gc0gc0,
+                            ('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
+                            ('mask_DESgc0', 'mask_DESwl1'): gc0wl1,
+                            ('mask_DESwl0', 'mask_DESwl0'): wl0wl0,
+                            ('mask_DESwl0', 'mask_DESwl1'): wl0wl1,
+                            ('mask_DESwl1', 'mask_DESwl1'): wl1wl1}}
+    # fields to None to force it fail if it does not uses the cache
+    w2 = nmt_tools.get_workspaces_dict(None, m, mn, bins, outdir, kwards,
+                                       cache=cache)
+    # Check that it will compute the workspaces if one is missing
+    del cache['workspaces'][('mask_DESgc0', 'mask_DESwl1')]
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
+                                       cache=cache)
+
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 if os.path.isdir(outdir):
