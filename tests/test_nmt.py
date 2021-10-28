@@ -6,6 +6,7 @@ import pytest
 import tjpcov.main as cv
 from tjpcov.parser import parse
 import yaml
+import sacc
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
@@ -323,6 +324,30 @@ def test_get_all_cov_nmt():
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-5
 
+    # Check that it also works if they don't use concise data_types
+    s2 = s.copy()
+    for dp in s2.data:
+        dt = dp.data_type
+
+        if dt == 'cl_00':
+            dp.data_type = sacc.standard_types.galaxy_density_cl
+        elif dt == 'cl_0e':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_e
+        elif dt == 'cl_0b':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_b
+        elif dt == 'cl_ee':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_ee
+        elif dt == 'cl_eb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_eb
+        elif dt == 'cl_be':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_be
+        elif dt == 'cl_bb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
+
+    tjpcov_class.cl_data = s2
+    cov2 = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise,
+                                        cache={'bins': bins}) + 1e-100
+    assert np.all(cov == cov2)
 
 # Clean up after the tests
 os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")

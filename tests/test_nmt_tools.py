@@ -559,5 +559,41 @@ def test_get_workspace_dict(kwards):
 
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
+def test_get_sacc_with_concise_dtypes():
+    s = sacc_file.copy()
+    for dp in s.data:
+        dt = dp.data_type
+
+        if dt == 'cl_00':
+            dp.data_type = sacc.standard_types.galaxy_density_cl
+        elif dt == 'cl_0e':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_e
+        elif dt == 'cl_0b':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_b
+        elif dt == 'cl_ee':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_ee
+        elif dt == 'cl_eb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_eb
+        elif dt == 'cl_be':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_be
+        elif dt == 'cl_bb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
+
+    s2 = nmt_tools.get_sacc_with_concise_dtypes(s)
+    dtypes = sacc_file.get_data_types()
+    dtypes2 = s2.get_data_types()
+    assert dtypes == dtypes2
+
+    for dp, dp2 in zip(sacc_file.data, s2.data):
+        assert dp.data_type == dp2.data_type
+        assert dp.value == dp2.value
+        assert dp.tracers == dp2.tracers
+        for k in dp.tags:
+            if k == 'window':
+                # Don't check window as it points to a different memory address
+                continue
+            assert dp.tags[k] == dp2.tags[k]
+
+
 if os.path.isdir(outdir):
     os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
