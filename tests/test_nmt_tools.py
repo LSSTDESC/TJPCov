@@ -578,6 +578,8 @@ def test_get_sacc_with_concise_dtypes():
             dp.data_type = sacc.standard_types.galaxy_shear_cl_be
         elif dt == 'cl_bb':
             dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
+        else:
+            raise ValueError('Something went wrong. Data type not recognized')
 
     s2 = nmt_tools.get_sacc_with_concise_dtypes(s)
     dtypes = sacc_file.get_data_types()

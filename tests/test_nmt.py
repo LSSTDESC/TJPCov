@@ -361,6 +361,8 @@ def test_get_all_cov_nmt():
             dp.data_type = sacc.standard_types.galaxy_shear_cl_be
         elif dt == 'cl_bb':
             dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
+        else:
+            raise ValueError('Something went wrong. Data type not recognized')
 
     tjpcov_class.cl_data = s2
     cov2 = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise,
