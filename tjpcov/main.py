@@ -94,7 +94,7 @@ class CovarianceCalculator():
                             if 'Ngal' in k}
         # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items()
         #                     if 'Ngal_src' in k}
-        self.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items()
+        self.sigma_e = {k.replace('sigma_e_',''):v for k, v in config['tjpcov'].items()
                             if 'sigma_e' in k}
 
 
@@ -141,30 +141,34 @@ class CovarianceCalculator():
             self.cl_data = cl_data
         else:
             self.cl_data = sacc.Sacc.load_fits(cl_data)
-        # TO DO: remove this dependence here
-        trcomb = self.cl_data.get_tracer_combinations()[0]
-        ell_list = self.get_ell_theta(self.cl_data,  # fix this
-                                      'galaxy_density_cl',
-                                      trcomb,
-                                      'linear', do_xi=False)
+
+        self.binning_info = config['tjpcov'].get('binning_info', None)
+        if self.binning_info is None:
+            # TO DO: remove this dependence here
+            trcomb = self.cl_data.get_tracer_combinations()[0]
+            ell_list = self.get_ell_theta(self.cl_data,  # fix this
+                                          'galaxy_density_cl',
+                                          trcomb,
+                                          'linear', do_xi=False)
+            # fao Set this inside get_ell_theta ?
+            # ell, ell_bins, ell_edges = None, None, None
+            theta, theta_bins, theta_edges = None, None, None
+
+            # fix this for getting from the sacc file:
+            th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
+
+            self.theta,  self.theta_bins, self.theta_edges,  = th_list
+
+
+            # ell is the value for WT
+            self.ell, self.ell_bins, self.ell_edges = ell_list
+        elif not isinstance(self.binning_info, nmt.NmtBin):
+            raise ValueError('If passed, binning_info has to be a NmtBin ' +
+                             'instance')
 
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
         self.mask_names = config['tjpcov'].get('mask_names')
 
-        # fao Set this inside get_ell_theta ?
-        # ell, ell_bins, ell_edges = None, None, None
-        theta, theta_bins, theta_edges = None, None, None
-
-
-
-        # fix this for getting from the sacc file:
-        th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
-
-        self.theta,  self.theta_bins, self.theta_edges,  = th_list
-
-
-        # ell is the value for WT
-        self.ell, self.ell_bins, self.ell_edges = ell_list
 
         # Calling WT in method, only if do_xi
         self.WT = None
@@ -467,16 +471,24 @@ class CovarianceCalculator():
             raise ValueError('Computing coupled covariance matrix not ' +
                              'implemented yet')
 
-        if 'bins' in cache:
+        if cache is None:
+            cache = {}
+
+        if  'bins' in cache:
             bins = cache['bins']
-            ell = np.arange(bins.lmax + 1)
-            ell_eff = bins.get_effective_ells()
+            if (self.binning_info is not None) and \
+               (bins is not self.binning_info):
+                raise ValueError('Binning passed through cache is not the ' +
+                                 'same as the one passed during ' +
+                                 'initialization.')
+        elif self.binning_info is not None:
+            bins = self.binning_info
         else:
-            raise ValueError('Not yet implemented: you need to pass a'
-                             + 'NmtBin instance')
-            bins = self.bins
-            ell = np.arange(self.ell.max())
-            ell_eff = self.ell_bins
+            raise ValueError('You must pass a NmtBin instance through the ' +
+                             'cache or at initialization')
+
+        ell = np.arange(bins.lmax + 1)
+        ell_eff = bins.get_effective_ells()
 
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
@@ -806,7 +818,7 @@ class CovarianceCalculator():
 
         # Covariance construction based on
         # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
-        s = two_point_data
+        s = nmt_tools.get_sacc_with_concise_dtypes(two_point_data)
         dtype = s.get_data_types()[0]
         tracers = s.get_tracer_combinations(data_type=dtype)[0]
         ell, _ = s.get_ell_cl(dtype, *tracers)
@@ -845,6 +857,10 @@ class CovarianceCalculator():
                         covi = cov_ij[:, i, :, j]
                         cov_full[np.ix_(ix1, ix2)] = covi
                         cov_full[np.ix_(ix2, ix1)] = covi.T
+
+        if np.any(cov_full == -1):
+            raise Exception('Something went wrong. Probably related to the ' +
+                            'data types')
 
         return cov_full
 

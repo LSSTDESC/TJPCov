@@ -535,7 +535,67 @@ def test_get_workspace_dict(kwards):
     assert w2[13] is None
     assert w2[24] is None
 
+    # Check that 'workspaces' cache also works. In this case, one will pass
+    # paths, not instances
+    gc0gc0 = os.path.join(root, 'DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits')
+    gc0wl0 = os.path.join(root, 'DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits')
+    gc0wl1 = os.path.join(root, 'DESgc_DESwl/w__mask_DESgc__mask_DESwl1.fits')
+    wl0wl0 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits')
+    wl0wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits')
+    wl1wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits')
+    cache = {'workspaces': {('mask_DESgc0', 'mask_DESgc0'): gc0gc0,
+                            ('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
+                            ('mask_DESgc0', 'mask_DESwl1'): gc0wl1,
+                            ('mask_DESwl0', 'mask_DESwl0'): wl0wl0,
+                            ('mask_DESwl0', 'mask_DESwl1'): wl0wl1,
+                            ('mask_DESwl1', 'mask_DESwl1'): wl1wl1}}
+    # fields to None to force it fail if it does not uses the cache
+    w2 = nmt_tools.get_workspaces_dict(None, m, mn, bins, outdir, kwards,
+                                       cache=cache)
+    # Check that it will compute the workspaces if one is missing
+    del cache['workspaces'][('mask_DESgc0', 'mask_DESwl1')]
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
+                                       cache=cache)
+
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+def test_get_sacc_with_concise_dtypes():
+    s = sacc_file.copy()
+    for dp in s.data:
+        dt = dp.data_type
+
+        if dt == 'cl_00':
+            dp.data_type = sacc.standard_types.galaxy_density_cl
+        elif dt == 'cl_0e':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_e
+        elif dt == 'cl_0b':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_b
+        elif dt == 'cl_ee':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_ee
+        elif dt == 'cl_eb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_eb
+        elif dt == 'cl_be':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_be
+        elif dt == 'cl_bb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
+        else:
+            raise ValueError('Something went wrong. Data type not recognized')
+
+    s2 = nmt_tools.get_sacc_with_concise_dtypes(s)
+    dtypes = sacc_file.get_data_types()
+    dtypes2 = s2.get_data_types()
+    assert dtypes == dtypes2
+
+    for dp, dp2 in zip(sacc_file.data, s2.data):
+        assert dp.data_type == dp2.data_type
+        assert dp.value == dp2.value
+        assert dp.tracers == dp2.tracers
+        for k in dp.tags:
+            if k == 'window':
+                # Don't check window as it points to a different memory address
+                continue
+            assert dp.tags[k] == dp2.tags[k]
+
 
 if os.path.isdir(outdir):
     os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")

@@ -3,8 +3,7 @@ import healpy as hp
 import os
 import pymaster as nmt
 import numpy as np
-
-
+import sacc
 
 
 def get_tracer_nmaps(sacc_data, tracer):
@@ -43,9 +42,10 @@ def get_tracer_spin(sacc_data, tracer):
 
     """
     tr = sacc_data.get_tracer(tracer)
-    if tr.quantity in ['cmb_convergence', 'galaxy_density']:
+    if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
+       ('lens' in tracer):
         return 0
-    elif tr.quantity == 'galaxy_shear':
+    elif (tr.quantity == 'galaxy_shear') or ('source' in tracer):
         return 2
     else:
         raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')
@@ -330,7 +330,11 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache):
         else:
             k = mask_names[i]
             if k not in mask_by_mask_name:
-                mask_by_mask_name[k] = hp.read_map(mask_files[tracer_names[i]])
+                mf = mask_files[tracer_names[i]]
+                if isinstance(mf, np.ndarray):
+                    mask_by_mask_name[k] = mf
+                else:
+                    mask_by_mask_name[k] = hp.read_map(mf)
             mask[i] = mask_by_mask_name[k]
 
     return mask
@@ -405,8 +409,9 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
         nmt_conf (dict): Dictionary with extra arguments to pass to NmtField.
         In fact, tjpcov.nmt_conf['w']
         cache (dict): Dictionary with cached variables. It will use the cached
-        field if found. The keys must be 'w1', 'w2', 'w3' or 'w4' and the
-        values the corresponding NmtFields.
+        field if found. The keys must be 'w12', 'w34', 'w13', 'w23', 'w14' or
+        'w24' and the values the corresponding NmtWorkspaces. Alternatively,
+        you can pass a dictionary with keys as (mask_name1, mask_name2).
 
     Returns:
     --------
@@ -440,6 +445,16 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 # will complain if they are None
                 w_by_mask_name[k] = None
                 w[i] = w_by_mask_name[k]
+            elif ('workspaces' in cache) and ((k in cache['workspaces']) or
+                                              k[::-1] in cache['workspaces']):
+                cache_wsp = cache['workspaces']
+                if k in cache_wsp:
+                    fname = cache_wsp[k]
+                else:
+                    fname = cache_wsp[k[::-1]]
+                wsp = nmt.NmtWorkspace()
+                wsp.read_from(fname)
+                w[i] = w_by_mask_name[k] = wsp
             else:
                 w_by_mask_name[k] = get_workspace(fields[i1], fields[i2],
                                                   mask_names[i1],
@@ -448,3 +463,55 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 w[i] = w_by_mask_name[k]
 
     return w
+
+
+def get_sacc_with_concise_dtypes(sacc_data):
+    """
+    Return a copy of the sacc file with concise data types
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        sacc_data (Sacc): Data Sacc instance with concise data types
+    """
+
+    s = sacc_data.copy()
+    dtypes = s.get_data_types()
+
+    dt_long = []
+    for dt in dtypes:
+        if len(dt.split('_')) > 2:
+            dt_long.append(dt)
+
+    for dt in dt_long:
+        pd = sacc.parse_data_type_name(dt)
+
+        if pd.statistic != 'cl':
+            raise ValueError(f'data_type {dt} not recognized. Is it a Cell?')
+
+        if pd.subtype is None:
+            dc = 'cl_00'
+        elif pd.subtype == 'e':
+            dc = 'cl_0e'
+        elif pd.subtype == 'b':
+            dc = 'cl_0b'
+        elif pd.subtype == 'ee':
+            dc = 'cl_ee'
+        elif pd.subtype == 'bb':
+            dc = 'cl_bb'
+        elif pd.subtype == 'eb':
+            dc = 'cl_eb'
+        elif pd.subtype == 'be':
+            dc = 'cl_be'
+        else:
+            raise ValueError(f'Data type subtype {pd.subtype} not recognized')
+
+
+        # Change the data_type to its concise versio
+        for dp in s.get_data_points(dt):
+            dp.data_type = dc
+
+    return s

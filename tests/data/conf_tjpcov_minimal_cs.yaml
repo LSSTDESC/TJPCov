@@ -36,7 +36,7 @@ tjpcov:
 
   # constant bin sigma_e
   {% for i in range(4) %} 
-  sigma_e{{ i }}: {{ 0.26 }}
+  sigma_e_src{{ i }}: {{ 0.26 }}
   {% endfor %}
 
   # linear bias for lenses constant for redshift bin (example notebook)
