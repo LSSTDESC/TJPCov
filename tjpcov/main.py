@@ -475,9 +475,12 @@ class CovarianceCalculator():
             cache = {}
 
         if  'bins' in cache:
-            warnings.warn('Reading binning from cache. You will ignore the one'
-                          + 'passed through binning_info at initialization')
             bins = cache['bins']
+            if (self.binning_info is not None) and \
+               (bins is not self.binning_info):
+                raise ValueError('Binning passed through cache is not the ' +
+                                 'same as the one passed during ' +
+                                 'initialization.')
         elif self.binning_info is not None:
             bins = self.binning_info
         else:

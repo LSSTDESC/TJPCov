@@ -165,7 +165,8 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
     # cache = {'bins': get_nmt_bin()}
 
     config, _= parse(input_yml)
-    config['tjpcov']['binning_info'] = get_nmt_bin()
+    bins = get_nmt_bin()
+    config['tjpcov']['binning_info'] = bins
     tjpcov_class = cv.CovarianceCalculator(config)
     cache = None
 
@@ -173,7 +174,6 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
 
     for tr in tracer_comb1 + tracer_comb2:
         tracer_noise[tr] = get_tracer_noise(tr)
-
 
     # Test error with uncoupled and coupled noise provided
     with pytest.raises(ValueError):
@@ -193,6 +193,24 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
     assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
+
+    # Test error with 'bins' in cache different to that at initialization
+    with pytest.raises(ValueError):
+        cache2 = {'bins': nmt.NmtBin.from_nside_linear(32, bins.get_n_bands())}
+        cov2 = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                             ccl_tracers,
+                                             tracer_Noise=tracer_noise,
+                                             tracer_Noise_coupled=tracer_noise,
+                                             cache=cache2)['final']
+
+    # Test it runs with 'bins' in cache if they are the same
+    cache2 = {'bins': bins}
+    cov2 = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                         ccl_tracers,
+                                         tracer_Noise_coupled=tracer_noise,
+                                         cache=cache2)['final'] + 1e-100
+
+    assert np.all(cov == cov2)
 
     # Cov with uncoupled noise cannot be used for benchmark as tracer_noise is
     # assumed to be flat but it is not when computed from the coupled due to
