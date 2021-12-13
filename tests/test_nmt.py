@@ -326,7 +326,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
-    assert np.max(np.abs(cov / cov_bm - 1)) < 5e-6
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-6
     if tracer_comb1 == tracer_comb2:
         s = tjpcov_class.cl_data
         assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-6)
