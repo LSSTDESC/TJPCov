@@ -150,6 +150,7 @@ def test_nmt_conf_missing():
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
                                         ccl_tracers, tracer_noise,
                                         cache=cache)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
 
 
@@ -289,6 +290,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
                                         ccl_tracers, tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
@@ -321,6 +323,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
                                         ccl_tracers, tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
     assert np.max(np.abs(cov / cov_bm - 1)) < 5e-6
