@@ -436,7 +436,10 @@ class CovarianceCalculator():
                         ccl_tracers=None, tracer_Noise=None,
                         tracer_Noise_coupled=None, coupled=False, cache=None):
         """
-        Compute a single covariance matrix for a given pair of C_ell
+        Compute a single covariance matrix for a given pair of C_ell. If outdir
+        is set, it will save the covariance to a file called
+        `cov_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
+        returned if found.
 
         Parameters:
         -----------
@@ -464,6 +467,12 @@ class CovarianceCalculator():
             both cases.
 
         """
+        fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+        fname = os.path.join(self.outdir, fname)
+        if os.path.isfile(fname):
+            cf = np.load(fname)
+            return {'final': cf['final'], 'final_b': cf['final_b']}
+
         if (tracer_Noise is not None) and (tracer_Noise_coupled is not None):
             raise ValueError('Only one tracer_Noise or tracer_Noise_coupled ' +
                              'can be given')
@@ -587,6 +596,8 @@ class CovarianceCalculator():
             size1 = ncell[12] * ell_eff.size
             size2 = ncell[34] * ell_eff.size
             cov = np.zeros((size1, size2))
+
+        np.savez_compressed(fname, cov=cov, final=cov, final_b=cov)
 
         return {'final': cov, 'final_b': cov}
 
