@@ -76,14 +76,17 @@ jobs:
                         
                         # Uninstall openmpi
                         sudo apt remove -y openmpi-bin libopenmpi-dev
+                        pip uninstall mpi4py
 
              - name: Test mpi (mpich)
                run: |
                         # Install mpich
                         sudo apt install -y mpich libmpich-dev
+                        pip install -U mpi4py
 
                         # Run MPI tests
                         mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
                         
                         # Uninstall mpich
                         sudo apt remove -y mpich libmpich-dev
+                        pip uninstall mpi4py
