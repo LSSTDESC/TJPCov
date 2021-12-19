@@ -40,9 +40,6 @@ jobs:
                         # Install wheel to avoid recompiling packages already
                         # in the cache.
                         pip install -U wheel
-                        # Install mpi4py. Not included in requirements as one
-                        # can run the code in serial
-                        pip install -U mpi4py
                         # Use a for loop to avoid NaMaster to be compiled
                         # before installing its dependencies
                         # (https://github.com/LSSTDESC/NaMaster/issues/138)
@@ -70,6 +67,9 @@ jobs:
                run: |
                         # Install openmpi
                         sudo apt install -y openmpi-bin libopenmpi-dev
+                        # Install mpi4py. Not included in requirements as one
+                        # can run the code in serial
+                        pip install -U mpi4py
 
                         # Run MPI tests
                         mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
