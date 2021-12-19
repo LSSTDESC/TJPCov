@@ -33,9 +33,6 @@ jobs:
 
              - name: Install dependencies	
                run: |
-                        # Install mpi
-                        # sudo apt install -y mpich libmpich-dev
-                        sudo apt install -y openmpi-bin libopenmpi-dev
                         # Install non-python NaMaster dependencies
                         sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
                         # Update pip 
@@ -69,6 +66,24 @@ jobs:
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt_tools.py
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt.py
 
+             - name: Test mpi (openmpi)
+               run: |
+                        # Install openmpi
+                        sudo apt install -y openmpi-bin libopenmpi-dev
+
                         # Run MPI tests
                         mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
+                        
+                        # Uninstall openmpi
+                        sudo apt remove -y openmpi-bin libopenmpi-dev
 
+             - name: Test mpi (mpich)
+               run: |
+                        # Install mpich
+                        sudo apt install -y mpich libmpich-dev
+
+                        # Run MPI tests
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
+                        
+                        # Uninstall mpich
+                        sudo apt remove -y mpich libmpich-dev
