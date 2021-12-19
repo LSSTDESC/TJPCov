@@ -76,7 +76,7 @@ jobs:
                         
                         # Uninstall openmpi
                         sudo apt remove -y openmpi-bin libopenmpi-dev
-                        pip uninstall mpi4py
+                        pip uninstall -y mpi4py
 
              - name: Test mpi (mpich)
                run: |
@@ -89,4 +89,4 @@ jobs:
                         
                         # Uninstall mpich
                         sudo apt remove -y mpich libmpich-dev
-                        pip uninstall mpi4py
+                        pip uninstall -y mpi4py
