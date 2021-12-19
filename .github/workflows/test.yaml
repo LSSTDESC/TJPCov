@@ -82,7 +82,7 @@ jobs:
                run: |
                         # Install mpich
                         sudo apt install -y mpich libmpich-dev
-                        pip install -U mpi4py
+                        pip install -U mpi4py --no-binary
 
                         # Run MPI tests
                         mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
