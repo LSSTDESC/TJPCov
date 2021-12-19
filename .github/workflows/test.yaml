@@ -35,7 +35,7 @@ jobs:
                run: |
                         # Install mpi
                         # sudo apt install -y mpich libmpich-dev
-                        sudo apt install -y openmpi libopenmpi-dev
+                        sudo apt install -y openmpi-bin libopenmpi-dev
                         # Install non-python NaMaster dependencies
                         sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
                         # Update pip 
