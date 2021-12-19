@@ -67,6 +67,21 @@ class CovarianceCalculator():
         else:
             config, _ = parse(tjpcov_cfg)
 
+        use_mpi = config['tjpcov'].get('use_mpi', False)
+        if use_mpi:
+            try:
+                import mpi4py.MPI
+            except ImportError:
+                raise ValueError("MPI option requires mpi4py to be installed")
+
+            self.comm = mpi4py.MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.size = self.comm.Get_size()
+        else:
+            self.comm = None
+            self.rank = None
+            self.size = None
+
         self.do_xi = config['tjpcov'].get('do_xi')
 
         if not isinstance(self.do_xi, bool):
@@ -184,6 +199,23 @@ class CovarianceCalculator():
                 self.nmt_conf[k] = {}
 
         return
+
+    def split_tasks_by_rank(self, tasks):
+        """
+        Iterate through a list of items, yielding ones this process is responsible for/
+        Tasks are allocated in a round-robin way.
+        Parameters
+        ----------
+        tasks: iterable
+            Tasks to split up
+        """
+        # Copied from https://github.com/LSSTDESC/ceci/blob/7043ae5776d9b2c210a26dde6f84bcc2366c56e7/ceci/stage.py#L586
+
+        for i, task in enumerate(tasks):
+            if self.rank is None:
+                yield task
+            elif i % self.size == self.rank:
+                yield task
 
     def print_setup(self, output=None):
         """
@@ -650,9 +682,12 @@ class CovarianceCalculator():
             for tracer_comb2 in cl_tracers[i:]:
                 tracers_cov.append((tracer_comb1, tracer_comb2))
 
-        # TODO: Paralellize this
+        # Save blocks and the corresponding tracers, as comm.gather does not
+        # return the blocks in the original order.
         blocks = []
-        for tracer_comb1, tracer_comb2 in tracers_cov:
+        tracers_blocks = []
+        print('Computing independent covariance blocks')
+        for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(tracers_cov):
             print(tracer_comb1, tracer_comb2)
             cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
                                         tracer_comb2=tracer_comb2,
@@ -661,8 +696,9 @@ class CovarianceCalculator():
                                         tracer_Noise_coupled=tracer_Noise_coupled,
                                         **kwargs)['final']
             blocks.append(cov)
+            tracers_blocks.append((tracer_comb1, tracer_comb2))
 
-        return blocks
+        return blocks, tracers_blocks
 
     def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,
@@ -867,9 +903,21 @@ class CovarianceCalculator():
             Npt = (number of bins ) * (number of combinations)
         """
 
-        blocks = iter(self.compute_all_blocks_nmt(tracer_noise,
-                                                  tracer_noise_coupled,
-                                                  **kwargs))
+        blocks, tracers_cov = self.compute_all_blocks_nmt(tracer_noise,
+                                             tracer_noise_coupled, **kwargs)
+
+        if self.comm is not None:
+            blocks = self.comm.gather(blocks, root=0)
+            tracers_cov = self.comm.gather(tracers_cov, root=0)
+            print(tracers_cov)
+
+            if self.rank == 0:
+                blocks = sum(blocks, [])
+                tracers_cov = sum(tracers_cov, [])
+            else:
+                return
+
+        blocks = iter(blocks)
 
         two_point_data = self.cl_data
         # Covariance construction based on
@@ -885,12 +933,6 @@ class CovarianceCalculator():
 
         cov_full = -1 * np.ones((ndim, ndim))
 
-        # Make a list of all pair of tracer combinations
-        tracers_cov = []
-        for i, tracer_comb1 in enumerate(cl_tracers):
-            for tracer_comb2 in cl_tracers[i:]:
-                tracers_cov.append((tracer_comb1, tracer_comb2))
-
         for tracer_comb1, tracer_comb2 in tracers_cov:
             # Although these two variables do not vary as ncell2 and dtypes2,
             # it is cleaner to tho the loop this way
@@ -899,9 +941,10 @@ class CovarianceCalculator():
 
             ncell2 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb2)
             dtypes2 = nmt_tools.get_datatypes_from_ncell(ncell2)
-            print(tracer_comb1, tracer_comb2)
+            print(tracer_comb1, tracer_comb2, ncell1, ncell2)
 
             cov_ij = next(blocks)
+            print(cov_ij.shape)
             cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
 
             for i, dt1 in enumerate(dtypes1):

@@ -191,7 +191,8 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
 
     if recompute or ((not isfile) and (not isfile2)):
         w.compute_coupling_matrix(f1, f2, bins, **kwargs)
-        if fname:
+        # Recheck that the file has not been written by other proccess
+        if fname and not os.path.isfile(fname):
             w.write_to(fname)
         if isfile2:
             # Remove the other to avoid later confusions
@@ -253,7 +254,8 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         recompute = False
     if recompute or (not np.any(isfiles)):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
-        if fnames[0]:
+        # Recheck that the file has not been written by other proccess
+        if fnames[0] and not os.path.isfile(fnames[0]):
             cw.write_to(fnames[0])
         for fn, isf in zip(fnames[1:], isfiles[1:]):
             # This will only be run if they don't exist or recompute = True
