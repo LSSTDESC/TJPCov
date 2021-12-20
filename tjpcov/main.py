@@ -933,7 +933,9 @@ class CovarianceCalculator():
 
         cov_full = -1 * np.ones((ndim, ndim))
 
+        print('Building the covariance: placing blocks in their place')
         for tracer_comb1, tracer_comb2 in tracers_cov:
+            print(tracer_comb1, tracer_comb2)
             # Although these two variables do not vary as ncell2 and dtypes2,
             # it is cleaner to tho the loop this way
             ncell1 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb1)
@@ -941,10 +943,8 @@ class CovarianceCalculator():
 
             ncell2 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb2)
             dtypes2 = nmt_tools.get_datatypes_from_ncell(ncell2)
-            print(tracer_comb1, tracer_comb2, ncell1, ncell2)
 
             cov_ij = next(blocks)
-            print(cov_ij.shape)
             cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
 
             for i, dt1 in enumerate(dtypes1):
