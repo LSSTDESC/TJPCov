@@ -909,7 +909,6 @@ class CovarianceCalculator():
         if self.comm is not None:
             blocks = self.comm.gather(blocks, root=0)
             tracers_cov = self.comm.gather(tracers_cov, root=0)
-            print(tracers_cov)
 
             if self.rank == 0:
                 blocks = sum(blocks, [])
