@@ -67,6 +67,21 @@ class CovarianceCalculator():
         else:
             config, _ = parse(tjpcov_cfg)
 
+        use_mpi = config['tjpcov'].get('use_mpi', False)
+        if use_mpi:
+            try:
+                import mpi4py.MPI
+            except ImportError:
+                raise ValueError("MPI option requires mpi4py to be installed")
+
+            self.comm = mpi4py.MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.size = self.comm.Get_size()
+        else:
+            self.comm = None
+            self.rank = None
+            self.size = None
+
         self.do_xi = config['tjpcov'].get('do_xi')
 
         if not isinstance(self.do_xi, bool):
@@ -184,6 +199,23 @@ class CovarianceCalculator():
                 self.nmt_conf[k] = {}
 
         return
+
+    def split_tasks_by_rank(self, tasks):
+        """
+        Iterate through a list of items, yielding ones this process is responsible for/
+        Tasks are allocated in a round-robin way.
+        Parameters
+        ----------
+        tasks: iterable
+            Tasks to split up
+        """
+        # Copied from https://github.com/LSSTDESC/ceci/blob/7043ae5776d9b2c210a26dde6f84bcc2366c56e7/ceci/stage.py#L586
+
+        for i, task in enumerate(tasks):
+            if self.rank is None:
+                yield task
+            elif i % self.size == self.rank:
+                yield task
 
     def print_setup(self, output=None):
         """
@@ -436,7 +468,10 @@ class CovarianceCalculator():
                         ccl_tracers=None, tracer_Noise=None,
                         tracer_Noise_coupled=None, coupled=False, cache=None):
         """
-        Compute a single covariance matrix for a given pair of C_ell
+        Compute a single covariance matrix for a given pair of C_ell. If outdir
+        is set, it will save the covariance to a file called
+        `cov_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
+        returned if found.
 
         Parameters:
         -----------
@@ -464,6 +499,12 @@ class CovarianceCalculator():
             both cases.
 
         """
+        fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+        fname = os.path.join(self.outdir, fname)
+        if os.path.isfile(fname):
+            cf = np.load(fname)
+            return {'final': cf['final'], 'final_b': cf['final_b']}
+
         if (tracer_Noise is not None) and (tracer_Noise_coupled is not None):
             raise ValueError('Only one tracer_Noise or tracer_Noise_coupled ' +
                              'can be given')
@@ -588,8 +629,76 @@ class CovarianceCalculator():
             size2 = ncell[34] * ell_eff.size
             cov = np.zeros((size1, size2))
 
+        np.savez_compressed(fname, cov=cov, final=cov, final_b=cov)
+
         return {'final': cov, 'final_b': cov}
 
+    def compute_all_blocks_nmt(self, tracer_noise, tracer_noise_coupled,
+                               **kwargs):
+        """
+        Compute all the independent covariance blocks.
+        Parameters:
+        -----------
+        tracer_noise (dict): Dictionary with necessary (uncoupled) noise
+        with keys the tracer names. The values must be a float or int, not
+        an array
+        tracer_noise_coupled (dict): As tracer_Noise but with coupled
+        noise.
+        **kwargs: The arguments to pass to your chosen covariance estimation
+        method.
+
+        Returns:
+        --------
+        blocks (list):
+            List of all the independent covariance blocks.
+        """
+
+        if (tracer_noise is not None) and (tracer_noise_coupled is not None):
+            raise ValueError('Only one of tracer_nose or ' +
+                             'tracer_noise_coupled can be given')
+
+        two_point_data = self.cl_data
+        cl_tracers = two_point_data.get_tracer_combinations()
+
+        ccl_tracers, tracer_Noise = self.get_tracer_info(
+            two_point_data=two_point_data)
+
+        if tracer_noise_coupled is not None:
+            tracer_Noise_coupled = tracer_Noise.copy()
+            tracer_Noise = None
+        else:
+            tracer_Noise_coupled = None
+
+        # Circunvent the impossibility of inputting noise by hand
+        for tracer in ccl_tracers:
+            if tracer_noise and tracer in tracer_noise:
+                tracer_Noise[tracer] = tracer_noise[tracer]
+            elif tracer_noise_coupled and tracer in tracer_noise_coupled:
+                tracer_Noise_coupled[tracer] = tracer_noise_coupled[tracer]
+
+        # Make a list of all pair of tracer combinations
+        tracers_cov = []
+        for i, tracer_comb1 in enumerate(cl_tracers):
+            for tracer_comb2 in cl_tracers[i:]:
+                tracers_cov.append((tracer_comb1, tracer_comb2))
+
+        # Save blocks and the corresponding tracers, as comm.gather does not
+        # return the blocks in the original order.
+        blocks = []
+        tracers_blocks = []
+        print('Computing independent covariance blocks')
+        for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(tracers_cov):
+            print(tracer_comb1, tracer_comb2)
+            cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
+                                        tracer_comb2=tracer_comb2,
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        tracer_Noise_coupled=tracer_Noise_coupled,
+                                        **kwargs)['final']
+            blocks.append(cov)
+            tracers_blocks.append((tracer_comb1, tracer_comb2))
+
+        return blocks, tracers_blocks
 
     def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,
@@ -794,28 +903,22 @@ class CovarianceCalculator():
             Npt = (number of bins ) * (number of combinations)
         """
 
-        if (tracer_noise is not None) and (tracer_noise_coupled is not None):
-            raise ValueError('Only one of tracer_nose or ' +
-                             'tracer_noise_coupled can be given')
+        blocks, tracers_cov = self.compute_all_blocks_nmt(tracer_noise,
+                                             tracer_noise_coupled, **kwargs)
+
+        if self.comm is not None:
+            blocks = self.comm.gather(blocks, root=0)
+            tracers_cov = self.comm.gather(tracers_cov, root=0)
+
+            if self.rank == 0:
+                blocks = sum(blocks, [])
+                tracers_cov = sum(tracers_cov, [])
+            else:
+                return
+
+        blocks = iter(blocks)
 
         two_point_data = self.cl_data
-
-        ccl_tracers, tracer_Noise = self.get_tracer_info(
-            two_point_data=two_point_data)
-
-        if tracer_noise_coupled is not None:
-            tracer_Noise_coupled = tracer_Noise.copy()
-            tracer_Noise = None
-        else:
-            tracer_Noise_coupled = None
-
-        # Circunvent the impossibility of inputting noise by hand
-        for tracer in ccl_tracers:
-            if tracer_noise and tracer in tracer_noise:
-                tracer_Noise[tracer] = tracer_noise[tracer]
-            elif tracer_noise_coupled and tracer in tracer_noise_coupled:
-                tracer_Noise_coupled[tracer] = tracer_noise_coupled[tracer]
-
         # Covariance construction based on
         # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
         s = nmt_tools.get_sacc_with_concise_dtypes(two_point_data)
@@ -829,34 +932,31 @@ class CovarianceCalculator():
 
         cov_full = -1 * np.ones((ndim, ndim))
 
-        for i, tracer_comb1 in enumerate(cl_tracers):
+        print('Building the covariance: placing blocks in their place')
+        for tracer_comb1, tracer_comb2 in tracers_cov:
+            print(tracer_comb1, tracer_comb2)
+            # Although these two variables do not vary as ncell2 and dtypes2,
+            # it is cleaner to tho the loop this way
             ncell1 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb1)
             dtypes1 = nmt_tools.get_datatypes_from_ncell(ncell1)
-            for tracer_comb2 in cl_tracers[i:]:
-                ncell2 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb2)
-                dtypes2 = nmt_tools.get_datatypes_from_ncell(ncell2)
-                print(tracer_comb1, tracer_comb2)
-                cov_ij = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
-                                               tracer_comb2=tracer_comb2,
-                                               ccl_tracers=ccl_tracers,
-                                               tracer_Noise=tracer_Noise,
-                                               tracer_Noise_coupled=tracer_Noise_coupled,
-                                               **kwargs)
-                cov_ij = cov_ij['final']
 
-                cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
+            ncell2 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb2)
+            dtypes2 = nmt_tools.get_datatypes_from_ncell(ncell2)
 
-                for i, dt1 in enumerate(dtypes1):
-                    ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
-                    if len(ix1) == 0:
+            cov_ij = next(blocks)
+            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
+
+            for i, dt1 in enumerate(dtypes1):
+                ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
+                if len(ix1) == 0:
+                    continue
+                for j, dt2 in enumerate(dtypes2):
+                    ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
+                    if len(ix2) == 0:
                         continue
-                    for j, dt2 in enumerate(dtypes2):
-                        ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
-                        if len(ix2) == 0:
-                            continue
-                        covi = cov_ij[:, i, :, j]
-                        cov_full[np.ix_(ix1, ix2)] = covi
-                        cov_full[np.ix_(ix2, ix1)] = covi.T
+                    covi = cov_ij[:, i, :, j]
+                    cov_full[np.ix_(ix1, ix2)] = covi
+                    cov_full[np.ix_(ix2, ix1)] = covi.T
 
         if np.any(cov_full == -1):
             raise Exception('Something went wrong. Probably related to the ' +

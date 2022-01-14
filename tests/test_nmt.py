@@ -150,6 +150,7 @@ def test_nmt_conf_missing():
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
                                         ccl_tracers, tracer_noise,
                                         cache=cache)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
 
 
@@ -182,6 +183,7 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
                                             tracer_Noise=tracer_noise,
                                             tracer_Noise_coupled=tracer_noise,
                                             cache=cache)['final']
+        os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     # Cov with coupled noise (as in benchmark)
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
@@ -194,6 +196,23 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
     assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
 
+    # Test cov_tr1_tr2_tr3_tr4.npz cache
+    fname = os.path.join('./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/',
+                         'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1,
+                                                      *tracer_comb2))
+    assert os.path.isfile(fname)
+    cf = np.load(fname)
+    for k in ['cov', 'final', 'final_b']:
+        assert np.all(cf[k] + 1e-100 == cov)
+
+    # Test you read it independently of what other arguments you pass
+    cov2 = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                        None,
+                                        tracer_Noise_coupled=None,
+                                        cache=None)['final'] + 1e-100
+    assert np.all(cov2 == cov)
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
+
     # Test error with 'bins' in cache different to that at initialization
     with pytest.raises(ValueError):
         cache2 = {'bins': nmt.NmtBin.from_nside_linear(32, bins.get_n_bands())}
@@ -202,6 +221,7 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
                                              tracer_Noise=tracer_noise,
                                              tracer_Noise_coupled=tracer_noise,
                                              cache=cache2)['final']
+        os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     # Test it runs with 'bins' in cache if they are the same
     cache2 = {'bins': bins}
@@ -209,6 +229,7 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
                                          ccl_tracers,
                                          tracer_Noise_coupled=tracer_noise,
                                          cache=cache2)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     assert np.all(cov == cov2)
 
@@ -269,6 +290,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
                                         ccl_tracers, tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
@@ -301,6 +323,7 @@ def test_nmt_gaussian_cov_cache(tracer_comb1, tracer_comb2):
     cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
                                         ccl_tracers, tracer_Noise_coupled=tracer_noise,
                                         cache=cache)['final'] + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
     assert np.max(np.abs(cov / cov_bm - 1)) < 1e-6

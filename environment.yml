@@ -12,3 +12,5 @@ dependencies:
   - pyccl=2.1.0
   - pytest
   - jupyter
+  - healpy
+  - mpi4py

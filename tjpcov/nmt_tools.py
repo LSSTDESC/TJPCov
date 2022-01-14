@@ -191,10 +191,13 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
 
     if recompute or ((not isfile) and (not isfile2)):
         w.compute_coupling_matrix(f1, f2, bins, **kwargs)
-        if fname:
+        # Recheck that the file has not been written by other proccess
+        if fname and not os.path.isfile(fname):
             w.write_to(fname)
-        if isfile2:
-            # Remove the other to avoid later confusions
+        # Check if the other files exist. Recheck in case other process has
+        # removed it in the mean time.
+        if isfile2 and os.path.isfile(fname2):
+            # Remove the other to avoid later confusions.
             os.remove(fname2)
     elif isfile:
         w.read_from(fname)
@@ -253,11 +256,14 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         recompute = False
     if recompute or (not np.any(isfiles)):
         cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
-        if fnames[0]:
+        # Recheck that the file has not been written by other proccess
+        if fnames[0] and not os.path.isfile(fnames[0]):
             cw.write_to(fnames[0])
         for fn, isf in zip(fnames[1:], isfiles[1:]):
             # This will only be run if they don't exist or recompute = True
-            if isf:
+            # Recheck the file exist in case other process has removed it in
+            # the mean time.
+            if isf and os.path.isfile(fn):
                 # Remove old covariance workspace if you have recomputed it
                 os.remove(fn)
     else:
