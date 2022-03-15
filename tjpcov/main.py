@@ -470,8 +470,9 @@ class CovarianceCalculator():
         """
         Compute a single covariance matrix for a given pair of C_ell. If outdir
         is set, it will save the covariance to a file called
-        `cov_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
-        returned if found.
+        `cov_tr1_tr2_tr3_tr4.npz` or `cov_tr1_tr2_tr3_tr4_coupled.npz` if
+        `coupled` is True. This file will be read and its output returned if
+        found.
 
         Parameters:
         -----------
@@ -485,7 +486,7 @@ class CovarianceCalculator():
             tracer_Noise_coupled (dict): As tracer_Noise but with coupled
             noise.
             coupled (bool): True to return the coupled Gaussian covariance
-            (default False)
+            (default False).
             cache (dict): Dictionary with the necessary workspaces and
             covariance workspaces. It accept masks (keys: 'm1', 'm2', 'm3',
             'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'), workspaces (keys:
@@ -497,9 +498,12 @@ class CovarianceCalculator():
             cov (dict):  Gaussian covariance matrix for a pair of C_ell. keys
             are 'final' and 'final_b'. The covariance stored is the same in
             both cases.
-
         """
-        fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+        if coupled:
+            fname = 'cov_{}_{}_{}_{}_coupled.npz'.format(*tracer_comb1, *tracer_comb2)
+        else:
+            fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+
         fname = os.path.join(self.outdir, fname)
         if os.path.isfile(fname):
             cf = np.load(fname)
@@ -508,9 +512,6 @@ class CovarianceCalculator():
         if (tracer_Noise is not None) and (tracer_Noise_coupled is not None):
             raise ValueError('Only one tracer_Noise or tracer_Noise_coupled ' +
                              'can be given')
-        if coupled:
-            raise ValueError('Computing coupled covariance matrix not ' +
-                             'implemented yet')
 
         if cache is None:
             cache = {}
@@ -632,6 +633,76 @@ class CovarianceCalculator():
         np.savez_compressed(fname, cov=cov, final=cov, final_b=cov)
 
         return {'final': cov, 'final_b': cov}
+
+    def real_space_gaussian_cov_nmt(self, tracer_comb1=None, tracer_comb2=None,
+                        ccl_tracers=None, tracer_Noise=None, tracer_Noise_coupled=None,
+                        two_point_data=None, do_xi=False,
+                        xi_plus_minus1='plus', xi_plus_minus2='plus',
+                                    cache=None):
+        """
+        Compute a single covariance matrix for a given pair of xi. If outdir
+        is set, it will save the covariance to a file called
+        `cov_tr1_tr2_tr3_tr4_xi.npz`. This file will be read and its output
+        returned if found.
+
+        Parameters:
+        -----------
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
+            the tracer names
+            tracer_Noise (dict): Dictionary with necessary (uncoupled) noise
+            with keys the tracer names. The values must be a float or int, not
+            an array
+            tracer_Noise_coupled (dict): As tracer_Noise but with coupled
+            noise.
+            coupled (bool): True to return the coupled Gaussian covariance
+            (default False)
+            cache (dict): Dictionary with the necessary workspaces and
+            covariance workspaces. It accept masks (keys: 'm1', 'm2', 'm3',
+            'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'), workspaces (keys:
+            'w13', 'w23', 'w14', 'w24', 'w12', 'w34'), the covariance
+            workspace (key: 'cw') and a NmtBin (key: 'bins').
+
+        Returns:
+        --------
+            cov (dict):  Gaussian covariance matrix for a pair of xi. keys
+            are 'final' and 'final_b'. The covariance stored is the same in
+            both cases.
+        """
+        fname = 'cov_{}_{}_{}_{}_xi.npz'.format(*tracer_comb1, *tracer_comb2)
+        fname = os.path.join(self.outdir, fname)
+        if os.path.isfile(fname):
+            cf = np.load(fname)
+            return {'final': cf['final'], 'final_b': cf['final_b']}
+
+        cov = self.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                    ccl_tracers=None, tracer_Noise=None,
+                                    tracer_Noise_coupled=None, coupled=True,
+                                    cache=None)
+
+        if self.WT is None:  # class modifier of WT initialization
+            print("Preparing WT...")
+            self.WT = self.wt_setup(self.ell, self.theta)
+            print("Done!")
+
+        s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
+        s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
+        if isinstance(s1_s2_1, dict):
+            s1_s2_1 = s1_s2_1[xi_plus_minus1]
+        if isinstance(s1_s2_2, dict):
+            s1_s2_2 = s1_s2_2[xi_plus_minus2]
+        th, cov = self.WT.projected_covariance2(s1_s2=s1_s2_1,
+                                                s1_s2_cross=s1_s2_2,
+                                                cl_cov=cov)
+
+        thb, cov_b = bin_cov(
+            r=th/d2r, r_bins=self.theta_edges, cov=cov)
+        # r=th/d2r, r_bins=two_point_data.metadata['th_bins'], cov=cov['final'])
+
+        np.savez_compressed(fname, final=cov, final_b=cov_b)
+
+        return {'final': cov, 'final_b': cov_b}
 
     def compute_all_blocks_nmt(self, tracer_noise, tracer_noise_coupled,
                                **kwargs):
