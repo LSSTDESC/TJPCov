@@ -252,6 +252,32 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
                                             cache=cache)
         os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
+@pytest.mark.parametrize('tracer_comb1,tracer_comb2',
+                         [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                          (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                          (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__0')),
+                          (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                          (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
+                          ])
+def test_real_space_gaussian_cov_nmt(tracer_comb1, tracer_comb2):
+    config, _= parse(input_yml)
+    bins = get_nmt_bin()
+    config['tjpcov']['binning_info'] = bins
+    tjpcov_class = cv.CovarianceCalculator(config)
+    cache = None
+
+    ccl_tracers, tracer_noise = tjpcov_class.get_tracer_info(tjpcov_class.cl_data)
+
+    for tr in tracer_comb1 + tracer_comb2:
+        tracer_noise[tr] = get_tracer_noise(tr)
+
+    # Cov with coupled noise (as in benchmark)
+    cov = tjpcov_class.nmt_gaussian_cov(tracer_comb1, tracer_comb2,
+                                        ccl_tracers,
+                                        tracer_Noise_coupled=tracer_noise,
+                                        cache=cache)['final'] + 1e-100
+
+    # cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
 @pytest.mark.parametrize('tracer_comb1,tracer_comb2',
                          [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
