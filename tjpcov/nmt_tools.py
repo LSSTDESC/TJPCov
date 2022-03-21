@@ -1,9 +1,9 @@
 #!/usr/bin/python
-import healpy as hp
 import os
 import pymaster as nmt
 import numpy as np
 import sacc
+import tools
 
 
 def get_tracer_nmaps(sacc_data, tracer):
@@ -300,7 +300,7 @@ def get_mask_names_dict(mask_names, tracer_names):
     return mn
 
 
-def get_masks_dict(mask_files, mask_names, tracer_names, cache):
+def get_masks_dict(mask_files, mask_names, tracer_names, cache, nside=None):
     """
     Return a dictionary with the masks assotiated to the fields to be
     correlated
@@ -340,7 +340,7 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache):
                 if isinstance(mf, np.ndarray):
                     mask_by_mask_name[k] = mf
                 else:
-                    mask_by_mask_name[k] = hp.read_map(mf)
+                    mask_by_mask_name[k] = tools.read_map(mf, k, nside)
             mask[i] = mask_by_mask_name[k]
 
     return mask

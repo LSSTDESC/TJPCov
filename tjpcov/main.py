@@ -184,6 +184,9 @@ class CovarianceCalculator():
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
         self.mask_names = config['tjpcov'].get('mask_names')
 
+        # nside is needed if mask_fn is a hdf5 file
+        self.nside = config['tjpcov'].get('nside', None)
+
 
         # Calling WT in method, only if do_xi
         self.WT = None
@@ -596,7 +599,8 @@ class CovarianceCalculator():
             # TODO: Modify depending on how TXPipe caches things
             # Mask, mask_names, field and workspaces dictionaries
             mn = nmt_tools.get_mask_names_dict(self.mask_names, tr)
-            m = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, cache)
+            m = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, cache,
+                                         self.nside)
             f = nmt_tools.get_fields_dict(m, s, mn, tr, self.nmt_conf['f'],
                                           cache)
             w = nmt_tools.get_workspaces_dict(f, m, mn, bins, self.outdir,
