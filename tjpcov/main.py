@@ -1022,8 +1022,9 @@ class CovarianceCalculator():
         else:
             cov = self.get_all_cov_nmt(**kwargs)
 
-        self.cl_data.add_covariance(cov)
-        self.cl_data.save_fits(output, overwrite=True)
+        s = self.cl_data.copy()
+        s.add_covariance(cov)
+        s.save_fits(output, overwrite=True)
 
 
 if __name__ == "__main__":
