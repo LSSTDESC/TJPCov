@@ -1,0 +1,53 @@
+tjpcov:
+  # False: harmonic space; True: configuration space
+  do_xi: False
+
+  # harmonic space sacc input
+  cl_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/summary_statistics_fourier_TJPCov.sacc
+
+  # 'set' from parameters OR pass CCL cosmology object OR yaml file
+  cosmo: examples/gaussian_sims_txpipe/fiducial_cosmology.yml
+
+  # allowed covariance type: gauss, ng (to be implemented)
+  cov_type: gauss
+
+  # Setting mask OR fsky approximation
+  mask_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/TXPipe_inputs/mask.hdf5
+
+  mask_names:
+    {% for i in range(5) %} 
+    source_{{ i }}: {{mask}} # arc_min^2
+    lens_{{ i }}: {{mask}} # arc_min^2
+    {% endfor %}
+
+  outdir: ./cosmodc2_outdir/ 
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  {% for i in range(5) %} 
+  bias_lens__{{ i }}: 1
+  {% endfor %}
+
+  # IA: 0.5
+
+NaMaster:
+  module: pymaster
+  f:
+    n_iter: 0
+    lmax_sht: -1
+  w:
+    lmax_mask: -1
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+  cw:
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+
+cache:
+  workspaces:
+    !! python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_10386599691946767095762939280732896122.dat
