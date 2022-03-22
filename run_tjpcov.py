@@ -9,7 +9,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute the covariance matrix",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('INPUT', type=str, help='Input YAML data file')
-    parser.add_argument('output', type=str, default='summary_statistics.sacc',
+    parser.add_argument('-o', '--output', type=str,
+                        default='summary_statistics.sacc',
                         help='Output file name')
     args = parser.parse_args()
 
