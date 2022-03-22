@@ -1,4 +1,4 @@
-#Original copied from firecrown. 
+#Original copied from firecrown.
 import importlib
 import yaml
 import jinja2
@@ -26,17 +26,19 @@ def parse(filename):
     config = yaml.load(config_str, Loader=yaml.Loader)
     data = yaml.load(config_str, Loader=yaml.Loader)
 
-    params = {}
-    for p, val in data['parameters'].items():
-        if isinstance(val, list) and not isinstance(val, str):
-            params[p] = val[1]
-        else:
-            params[p] = val
-    data['parameters'] = params
+    if 'parameters' in data:
+        params = {}
+        for p, val in data['parameters'].items():
+            if isinstance(val, list) and not isinstance(val, str):
+                params[p] = val[1]
+            else:
+                params[p] = val
+        data['parameters'] = params
 
     analyses = list(
         set(list(data.keys())) -
-        set(['parameters', 'cosmosis', 'emcee', 'tjpcov']))
+        set(['parameters', 'tjpcov', 'cache']))
+
     for analysis in analyses:
         new_keys = {}
 
@@ -45,17 +47,6 @@ def parse(filename):
         except Exception:
             print("Module '%s' for analysis '%s' cannot be imported!" % (
                 data[analysis]['module'], analysis))
-#            raise
-
-        new_keys = {}
-        """if hasattr(mod, 'parse_config'):
-            new_keys['data'] = getattr(mod, 'parse_config')(data[analysis])
-            new_keys['eval'] = getattr(mod, 'compute_loglike')
-            new_keys['write'] = getattr(mod, 'write_stats')
-        else:
-            pass
- #           raise ValueError("Analsis '%s' could not be parsed!" % (analysis))
-"""
-        data[analysis] = new_keys
+            raise
 
     return config, data
