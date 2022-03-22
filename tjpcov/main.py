@@ -1003,26 +1003,27 @@ class CovarianceCalculator():
 
         return cov_full
 
-    def create_sacc_cov(output, do_xi=False):
+    def create_sacc_cov(self, output, **kwargs):
         """ Write created cov to a new sacc object
 
         Parameters:
         ----------
         output (str): filename output
-        do_xi (bool): do_xi=True for real space, do_xi=False for harmonic
-            space
+        **kwargs: The arguments to pass to your chosen covariance estimation
+        method.
 
         Returns:
         -------
         None
 
         """
-        print("Placeholder...")
-        if do_xi:
-            print(f"Saving xi covariance as \n{output}")
+        if self.do_xi:
+            cov = self.get_all_cov(**kwargs)
         else:
-            print(f"Saving xi covariance as \n{output}")
-        pass
+            cov = self.get_all_cov_nmt(**kwargs)
+
+        self.cl_data.add_covariance(cov)
+        self.cl_data.save_fits(output, overwrite=True)
 
 
 if __name__ == "__main__":
