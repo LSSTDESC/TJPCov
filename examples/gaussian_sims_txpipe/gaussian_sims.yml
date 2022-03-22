@@ -50,4 +50,4 @@ NaMaster:
 
 cache:
   workspaces:
-    !! python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_10386599691946767095762939280732896122.dat
+    !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_10386599691946767095762939280732896122.dat
