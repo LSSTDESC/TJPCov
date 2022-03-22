@@ -425,7 +425,6 @@ class CovarianceCalculator():
         ccl_tracers = {}
         tracer_Noise = {}
         tracer_Noise_coupled = {}
-        # b = { l:bi*np.ones(len(z)) for l, bi in self.lens_bias.items()}
 
         for tracer in two_point_data.tracers:
             tracer_dat = two_point_data.get_tracer(tracer)
@@ -467,9 +466,12 @@ class CovarianceCalculator():
                 dNdz = tracer_dat.nz
                 # import pdb; pdb.set_trace()
                 b = self.bias_lens[tracer] * np.ones(len(z))
-                tracer_Noise[tracer] = 1./self.Ngal[tracer]
                 ccl_tracers[tracer] = ccl.NumberCountsTracer(
                     self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+                if tracer in self.Ngal:
+                    tracer_Noise[tracer] = 1./self.Ngal[tracer]
+                else:
+                    tracer_Noise[tracer] = None
             elif tracer_dat.quantity == 'cmb_convergence':
                 ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
                                                            z_source=1100)
