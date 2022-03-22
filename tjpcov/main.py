@@ -399,7 +399,7 @@ class CovarianceCalculator():
         return self.WT_factors[tuple(tracers)]
 
 
-    def get_tracer_info(self, two_point_data={}):
+    def get_tracer_info(self, two_point_data={}, return_noise_coupled=False):
         """
         Creates CCL tracer objects and computes the noise for all the tracers
         Check usage: Can we call all the tracer at once?
@@ -408,19 +408,28 @@ class CovarianceCalculator():
         -----------
             two_point_data (sacc obj):
 
+            return_noise_coupled (bool): If True, also return
+            tracers_Noise_coupled. Default False.
+
         Returns:
         --------
             ccl_tracers: dict, ccl obj
                 ccl.WeakLensingTracer or ccl.NumberCountsTracer
             tracer_Noise ({dict: float}):
                 shot (shape) noise for lens (sources)
+            tracer_Noise_coupled ({dict: float}):
+                coupled shot (shape) noise for lens (sources). Returned if
+                retrun_noise_coupled is True.
+
         """
         ccl_tracers = {}
         tracer_Noise = {}
+        tracer_Noise_coupled = {}
         # b = { l:bi*np.ones(len(z)) for l, bi in self.lens_bias.items()}
 
         for tracer in two_point_data.tracers:
             tracer_dat = two_point_data.get_tracer(tracer)
+            tracer_Noise_coupled[tracer] = tracer_dat.metadata.get('n_ell_coupled', None)
             # z = tracer_dat.z
 
             # FIXME: Following should be read from sacc dataset.--------------
@@ -464,6 +473,13 @@ class CovarianceCalculator():
             elif tracer_dat.quantity == 'cmb_convergence':
                 ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
                                                            z_source=1100)
+
+        if return_noise_coupled:
+            if not np.all(list(tracer_Noise_coupled.values())):
+                warnings.warn('Missing n_ell_coupled info for some tracers in '
+                              + 'the sacc file. Not using them')
+                tracer_Noise_coupled = None
+            return ccl_tracers, tracer_Noise, tracer_Noise_coupled
 
         return ccl_tracers, tracer_Noise
 
@@ -664,11 +680,11 @@ class CovarianceCalculator():
         two_point_data = self.cl_data
         cl_tracers = two_point_data.get_tracer_combinations()
 
-        ccl_tracers, tracer_Noise = self.get_tracer_info(
-            two_point_data=two_point_data)
+        ccl_tracers, tracer_Noise, tracer_Noise_coupled = \
+                self.get_tracer_info(two_point_data, return_noise_coupled=True)
 
-        if tracer_noise_coupled is not None:
-            tracer_Noise_coupled = tracer_Noise.copy()
+        if (tracer_noise_coupled is not None) or \
+                (tracer_Noise_coupled is not None) :
             tracer_Noise = None
         else:
             tracer_Noise_coupled = None
