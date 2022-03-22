@@ -201,6 +201,10 @@ class CovarianceCalculator():
             if k not in self.nmt_conf:
                 self.nmt_conf[k] = {}
 
+        # Read cache from input file. It will update the cache passed as an
+        # argument of the different methods
+        self.cache = config.get('cache', {})
+
         return
 
     def split_tasks_by_rank(self, tasks):
@@ -542,6 +546,7 @@ class CovarianceCalculator():
 
         if cache is None:
             cache = {}
+        cache.update(self.cache)
 
         if 'bins' in cache:
             bins = cache['bins']
