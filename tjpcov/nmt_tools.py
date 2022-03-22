@@ -3,7 +3,7 @@ import os
 import pymaster as nmt
 import numpy as np
 import sacc
-import tools
+from . import tools
 
 
 def get_tracer_nmaps(sacc_data, tracer):
@@ -173,6 +173,10 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
         w:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
+    if not isinstance(bins, nmt.NmtBin):
+        raise ValueError('You must pass a NmtBin instance through the ' +
+                         'cache or at initialization')
+
     if outdir is not None:
         fname = os.path.join(outdir, f'w__{m1}__{m2}.fits')
         isfile = os.path.isfile(fname)

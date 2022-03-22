@@ -476,11 +476,18 @@ class CovarianceCalculator():
                 ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
                                                            z_source=1100)
 
+        if not np.all(list(tracer_Noise.values())):
+            warnings.warn('Missing noise for some tracers in file. You will ' +
+                          'have to pass it with the cache')
+
         if return_noise_coupled:
-            if not np.all(list(tracer_Noise_coupled.values())):
-                warnings.warn('Missing n_ell_coupled info for some tracers in '
-                              + 'the sacc file. Not using them')
+            vals = list(tracer_Noise_coupled.values())
+            if not np.any(vals):
                 tracer_Noise_coupled = None
+            elif not np.all(vals):
+                warnings.warn('Missing n_ell_coupled info for some tracers in '
+                              + 'the sacc file. You will have to pass it with'
+                              + 'the cache')
             return ccl_tracers, tracer_Noise, tracer_Noise_coupled
 
         return ccl_tracers, tracer_Noise
@@ -536,21 +543,23 @@ class CovarianceCalculator():
         if cache is None:
             cache = {}
 
-        if  'bins' in cache:
+        if 'bins' in cache:
             bins = cache['bins']
             if (self.binning_info is not None) and \
                (bins is not self.binning_info):
                 raise ValueError('Binning passed through cache is not the ' +
                                  'same as the one passed during ' +
                                  'initialization.')
-        elif self.binning_info is not None:
-            bins = self.binning_info
         else:
-            raise ValueError('You must pass a NmtBin instance through the ' +
-                             'cache or at initialization')
+            bins = self.binning_info
 
-        ell = np.arange(bins.lmax + 1)
-        ell_eff = bins.get_effective_ells()
+        # Get ell_effective and ell arrays.
+        dtype = self.cl_data.get_data_types()[0]
+        tracers = self.cl_data.get_tracer_combinations(data_type=dtype)[0]
+        ix = self.cl_data.indices(data_type=dtype, tracers=tracers)
+        bpw = self.cl_data.get_bandpower_windows(ix)
+        ell = np.arange(bpw.nell)
+        nbpw = bpw.nv
 
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
@@ -647,8 +656,8 @@ class CovarianceCalculator():
                                           cl_cov[13], cl_cov[14], cl_cov[23],
                                           cl_cov[24], w[12], w[34], coupled)
         else:
-            size1 = ncell[12] * ell_eff.size
-            size2 = ncell[34] * ell_eff.size
+            size1 = ncell[12] * nbpw
+            size2 = ncell[34] * nbpw
             cov = np.zeros((size1, size2))
 
         np.savez_compressed(fname, cov=cov, final=cov, final_b=cov)
@@ -686,10 +695,13 @@ class CovarianceCalculator():
                 self.get_tracer_info(two_point_data, return_noise_coupled=True)
 
         if (tracer_noise_coupled is not None) or \
-                (tracer_Noise_coupled is not None) :
+                (tracer_Noise_coupled is not None):
             tracer_Noise = None
+            if tracer_Noise_coupled is None:
+                tracer_Noise_coupled = {}
         else:
             tracer_Noise_coupled = None
+
 
         # Circunvent the impossibility of inputting noise by hand
         for tracer in ccl_tracers:
