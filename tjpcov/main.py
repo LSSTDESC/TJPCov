@@ -173,6 +173,10 @@ class CovarianceCalculator():
 
             # ell is the value for WT
             self.ell, self.ell_bins, self.ell_edges = ell_list
+        elif self.binning_info == 'ignore':
+            # Dirty trick to avoid inputting binning and not computing anything
+            # of the above
+            self.binning_info = None
         elif not isinstance(self.binning_info, nmt.NmtBin):
             raise ValueError('If passed, binning_info has to be a NmtBin ' +
                              'instance')

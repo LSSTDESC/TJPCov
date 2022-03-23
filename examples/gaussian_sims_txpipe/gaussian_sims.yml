@@ -29,6 +29,8 @@ tjpcov:
 
   # IA: 0.5
 
+  binning_info: ignore
+
 NaMaster:
   module: pymaster
   f:
