@@ -31,6 +31,10 @@ tjpcov:
 
   binning_info: ignore
 
+  # Needed to read the masks and to generate nell because the window functions
+  # in the sacc file seems to be wrong
+  nside: 2048
+
 NaMaster:
   module: pymaster
   f:
