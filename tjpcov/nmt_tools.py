@@ -312,8 +312,10 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache, nside=None):
 
     Parameters:
     -----------
-        mask_files (dict): Dictionary of the masks, with the tracer names as
-        keys and paths to the masks as values. In fact, the tjpcov.mask_fn.
+        mask_files (dict or str): Dictionary of the masks, with the tracer
+        names as keys and paths to the masks as values. In fact, the
+        tjpcov.mask_fn. If str, it has to be a hdf5 file with keys the mask
+        names in mask_names.
         mask_names (dict):  Dictionary of the masks names assotiated to the
         fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
         name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
@@ -341,7 +343,10 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache, nside=None):
         else:
             k = mask_names[i]
             if k not in mask_by_mask_name:
-                mf = mask_files[tracer_names[i]]
+                if type(mask_files) is str:
+                    mf = mask_files
+                else:
+                    mf = mask_files[tracer_names[i]]
                 if isinstance(mf, np.ndarray):
                     mask_by_mask_name[k] = mf
                 else:
