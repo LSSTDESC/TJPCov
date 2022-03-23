@@ -4,6 +4,7 @@ import pymaster as nmt
 import numpy as np
 import sacc
 from . import tools
+import warnings
 
 
 def get_tracer_nmaps(sacc_data, tracer):
@@ -525,3 +526,64 @@ def get_sacc_with_concise_dtypes(sacc_data):
             dp.data_type = dc
 
     return s
+
+def get_nbpw(sacc_data):
+    """
+    Return the number of bandpowers in which the data has been binned
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        nbpw (int): Number of bandpowers; i.e. ell_effective.size
+    """
+    dtype = sacc_data.get_data_types()[0]
+    tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
+    ix = sacc_data.indices(data_type=dtype, tracers=tracers)
+    nbpw = ix.size
+
+    return nbpw
+
+
+def get_nell(sacc_data, bins=None, nside=None, cache=None):
+    """
+    Return the number of ells for the fiducial Cells
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        nell (int): Number of ells for the fidicual Cells; i.e. 3*nside
+    """
+    try:
+        dtype = sacc_data.get_data_types()[0]
+        tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
+        ix = sacc_data.indices(data_type=dtype, tracers=tracers)
+        bpw = sacc_data.get_bandpower_windows(ix)
+        nell = bpw.nell
+    except ValueError as e:
+        # If the window functions are wrong. Do magic
+        warnings.warn('The window functions in the sacc file are wrong: ')
+        warnings.warn(str(e))
+        warnings.warn('Circunventing this error')
+
+        if bins is not None:
+            nell = bins.lmax + 1
+        elif nside is not None:
+            nell = 3*nside
+        elif 'workspaces' in cache:
+            w = list(cache['workspaces'].values())[0]
+            if isinstance(w, nmt.NmtWorkspace):
+                bpw = w.get_bandpower_windows()
+                nell = bpw.nell
+            else:
+                raise ValueError("We don't want to read the workspace " +
+                                 "just to get the ells. Better set nside")
+        else:
+            raise ValueError('nside, NmtBin or NmtWorkspace instances ' +
+                             'must be passed')
+    return nell

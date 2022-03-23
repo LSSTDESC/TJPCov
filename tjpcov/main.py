@@ -565,17 +565,12 @@ class CovarianceCalculator():
         else:
             bins = self.binning_info
 
-        # Get nbpw and ell arrays.
-        if bins is not None:
-            nbpw = bins.get_effective_ells().size
-            ell = np.arange(bins.lmax + 1)
-        elif 'workspaces' in cache:
-            w = list(cache['workspaces'].values())[0]
-            bpw = w.get_bandpower_windows()
-            nbpw = bpw.shape[1]
-            ell = np.arange(bpw.shape[3])
-        else:
-            raise ValueError('NmtBin instance or workspaces must be passed')
+        # Get nbpw and ell arrays. Doing all this stuff because the window
+        # function in the sacc file might be wrong.
+        nbpw = nmt_tools.get_nbpw(self.cl_data)
+        nell = nmt_tools.get_nell(self.cl_data, bins, self.nside, cache)
+
+        ell = np.arange(nell)
 
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
