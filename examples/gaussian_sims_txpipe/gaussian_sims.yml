@@ -16,8 +16,8 @@ tjpcov:
 
   mask_names:
     {% for i in range(5) %} 
-    source_{{ i }}: {{mask}} # arc_min^2
-    lens_{{ i }}: {{mask}} # arc_min^2
+    source_{{ i }}: mask
+    lens_{{ i }}: mask
     {% endfor %}
 
   outdir: ./cosmodc2_outdir/ 
