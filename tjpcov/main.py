@@ -126,18 +126,14 @@ class CovarianceCalculator():
             self.cosmo = self.set_ccl_cosmo(config)
         elif isinstance(cosmo_fn, ccl.core.Cosmology):
             self.cosmo = cosmo_fn
-
-        elif cosmo_fn.split('.')[-1] == 'yaml':
+        elif cosmo_fn.split('.')[-1] in ['yaml', 'yml']:
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
             # TODO: remove this hot fix of ccl
-            self.cosmo.config.transfer_function_method = 1
-
+            # self.cosmo.config.transfer_function_method = 1
         elif cosmo_fn.split('.')[-1]  == 'pkl':
             import pickle
             with open(cosmo_fn, 'rb') as ccl_cosmo_file:
                 self.cosmo = pickle.load(ccl_cosmo_file)
-
-
         else:
             raise Exception(
                 "Err: File for cosmo field in input not recognized")
