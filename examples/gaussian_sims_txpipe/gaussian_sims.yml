@@ -24,7 +24,7 @@ tjpcov:
 
   # linear bias for lenses constant for redshift bin (example notebook)
   {% for i in range(5) %} 
-  bias_lens__{{ i }}: 1
+  bias_lens_{{ i }}: 1
   {% endfor %}
 
   # IA: 0.5

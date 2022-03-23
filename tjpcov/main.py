@@ -456,8 +456,15 @@ class CovarianceCalculator():
                 else:
                     IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
                     ia_bias = (z, IA_bin)
-                ccl_tracers[tracer] = ccl.WeakLensingTracer(
-                    self.cosmo, dndz=(z, dNdz), ia_bias=ia_bias)
+                try:
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(
+                        self.cosmo, dndz=(z, dNdz), ia_bias=ia_bias)
+                except ccl.errors.CCLError:
+                    # Hack as in TXPipe. Error probably because Nz is noisy
+                    print("To avoid a CCL_ERROR_INTEG we reduce the " +
+                          f"number of points in the nz by half in {tracer}")
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(
+                        self.cosmo, dndz=(z[::2], dNdz[::2]), ia_bias=ia_bias)
                 # CCL automatically normalizes dNdz
                 if tracer in self.sigma_e:
                     tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
