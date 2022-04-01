@@ -178,12 +178,14 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
         raise ValueError('You must pass a NmtBin instance through the ' +
                          'cache or at initialization')
 
+    s1, s2 = f1.fl.spin, f2.fl.spin
+
     if outdir is not None:
-        fname = os.path.join(outdir, f'w__{m1}__{m2}.fits')
+        fname = os.path.join(outdir, f'w{s1}{s2}__{m1}__{m2}.fits')
         isfile = os.path.isfile(fname)
 
         # The workspace of m1 x m2 and m2 x m1 is the same.
-        fname2 = os.path.join(outdir, f'w__{m2}__{m1}.fits')
+        fname2 = os.path.join(outdir, f'w{s1}{s2}__{m2}__{m1}.fits')
         isfile2 = os.path.isfile(fname2)
     else:
         fname = isfile = fname2 = isfile2 = None
@@ -237,6 +239,8 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         cw:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
+    s1, s2, s3, s4 = f1.fl.spin, f2.fl.spin, f3.fl.spin, f4.fl.spin
+
     # Any other symmetry?
     combinations = [(m1, m2, m3, m4), (m2, m1, m3, m4), (m1, m2, m4, m3),
                     (m2, m1, m4, m3), (m3, m4, m1, m2), (m4, m3, m1, m2),
@@ -246,7 +250,8 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         fnames = []
         isfiles = []
         for mn1, mn2, mn3, mn4 in combinations:
-            f = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits')
+            f = f'cw{s1}{s2}{s3}{s4}__{mn1}__{mn2}__{mn3}__{mn4}.fits'
+            f = os.path.join(outdir, f)
             if f not in fnames:
                 fnames.append(f)
                 isfiles.append(os.path.isfile(fnames[-1]))
@@ -463,7 +468,8 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 w[i] = w_by_mask_name[k]
             elif ('workspaces' in cache) and ((k in cache['workspaces']) or
                                               k[::-1] in cache['workspaces']):
-                cache_wsp = cache['workspaces']
+                s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
+                cache_wsp = cache['workspaces'][f'{s1}{s2}']
                 if k in cache_wsp:
                     fname = cache_wsp[k]
                 else:
