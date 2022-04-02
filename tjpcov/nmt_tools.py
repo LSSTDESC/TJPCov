@@ -455,6 +455,15 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
         else:
             # In this case you have to check for m1 x m2 and m2 x m1
             k = (mask_names[i1], mask_names[i2])
+
+            s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
+            cache_wsp = cache.get('workspaces', None)
+            if cache_wsp is not None:
+                if f'{s1}{s2}' in cache_wsp:
+                    cache_wsp = cache_wsp[f'{s1}{s2}']
+                elif f'{s2}{s1}' in cache_wsp:
+                    cache_wsp = cache_wsp[f'{s2}{s1}']
+
             if k in w_by_mask_name:
                 w[i] = w_by_mask_name[k]
             elif k[::-1] in w_by_mask_name:
@@ -466,10 +475,8 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                 # will complain if they are None
                 w_by_mask_name[k] = None
                 w[i] = w_by_mask_name[k]
-            elif ('workspaces' in cache) and ((k in cache['workspaces']) or
-                                              k[::-1] in cache['workspaces']):
-                s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
-                cache_wsp = cache['workspaces'][f'{s1}{s2}']
+            elif (cache_wsp is not None) and \
+                 ((k in cache_wsp) or k[::-1] in cache_wsp):
                 if k in cache_wsp:
                     fname = cache_wsp[k]
                 else:

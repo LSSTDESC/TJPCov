@@ -543,19 +543,28 @@ def test_get_workspace_dict(kwards):
     wl0wl0 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits')
     wl0wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits')
     wl1wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits')
-    cache = {'workspaces': {('mask_DESgc0', 'mask_DESgc0'): gc0gc0,
-                            ('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
-                            ('mask_DESgc0', 'mask_DESwl1'): gc0wl1,
-                            ('mask_DESwl0', 'mask_DESwl0'): wl0wl0,
-                            ('mask_DESwl0', 'mask_DESwl1'): wl0wl1,
-                            ('mask_DESwl1', 'mask_DESwl1'): wl1wl1}}
-    # fields to None to force it fail if it does not uses the cache
-    w2 = nmt_tools.get_workspaces_dict(None, m, mn, bins, outdir, kwards,
+    cache = {'workspaces':
+             {'00': {('mask_DESgc0', 'mask_DESgc0'): gc0gc0},
+              '02': {('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
+                    ('mask_DESgc0', 'mask_DESwl1'): gc0wl1},
+              '22': {('mask_DESwl0', 'mask_DESwl0'): wl0wl0,
+                    ('mask_DESwl0', 'mask_DESwl1'): wl0wl1,
+                    ('mask_DESwl1', 'mask_DESwl1'): wl1wl1}}}
+    # bins to None to force it fail if it does not uses the cache
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, None, outdir, kwards,
                                        cache=cache)
+    # Check that '20' is also understood
+    del cache['workspaces']['02']
+    cache['workspaces']['20'] = {('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
+                                 ('mask_DESgc0', 'mask_DESwl1'): gc0wl1}
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, None, outdir, kwards,
+                                       cache=cache)
+
     # Check that it will compute the workspaces if one is missing
-    del cache['workspaces'][('mask_DESgc0', 'mask_DESwl1')]
+    del cache['workspaces']['02'][('mask_DESgc0', 'mask_DESwl1')]
     w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
                                        cache=cache)
+
 
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
