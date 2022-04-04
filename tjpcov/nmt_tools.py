@@ -454,9 +454,11 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
             w[i] = cache[key]
         else:
             # In this case you have to check for m1 x m2 and m2 x m1
-            k = (mask_names[i1], mask_names[i2])
-
+            # We add the spin value to the mask names to make sure we don't mix
+            # workspaces for different spin combinations
             s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
+            k = (mask_names[i1] + f'{s1}', mask_names[i2] + f'{s2}')
+
             cache_wsp = cache.get('workspaces', None)
             if cache_wsp is not None:
                 if f'{s1}{s2}' in cache_wsp:
