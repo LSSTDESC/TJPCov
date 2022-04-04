@@ -37,7 +37,7 @@ def parse(filename):
 
     analyses = list(
         set(list(data.keys())) -
-        set(['parameters', 'tjpcov', 'cache']))
+        set(['parameters', 'cosmosis', 'emcee', 'tjpcov', 'cache']))
 
     for analysis in analyses:
         new_keys = {}
