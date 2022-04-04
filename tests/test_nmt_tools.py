@@ -24,6 +24,7 @@ os.makedirs(outdir)
 
 sacc_file = sacc.Sacc.load_fits(sacc_path)
 tjpcov_class = cv.CovarianceCalculator(input_yml)
+nside = 32
 
 def get_sacc():
     return sacc_file
@@ -604,6 +605,43 @@ def test_get_sacc_with_concise_dtypes():
                 # Don't check window as it points to a different memory address
                 continue
             assert dp.tags[k] == dp2.tags[k]
+
+def test_get_nbpw():
+    s = get_sacc()
+
+    nbpw = nmt_tools.get_nbpw(s)
+    bins = get_nmt_bin()
+
+    assert nbpw == bins.get_n_bands()
+
+
+def test_get_nell():
+    s = get_sacc()
+    nell = 3 * nside
+    bins = get_nmt_bin()
+    w = get_workspace('galaxy_clustering')
+    cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): w}}}
+
+    assert nell == nmt_tools.get_nell(s)
+
+    # Now with a sacc file without bandpower windows
+    s = get_dummy_sacc()
+    clf = get_cl('cross')
+    s.add_ell_cl('cl_0e', 'DESgc__0', 'DESwl__0', clf['ell'], clf['cl'][0])
+
+    assert nell == nmt_tools.get_nell(s, bins=bins)
+    assert nell == nmt_tools.get_nell(s, nside=nside)
+    assert nell == nmt_tools.get_nell(s, cache=cache)
+
+    # Force ValueError (as when window is wrong)
+    class s():
+        def __init__(self):
+            pass
+        def get_data_types(self):
+            raise ValueError
+
+    assert nell == nmt_tools.get_nell(s(), bins=bins)
+
 
 
 if os.path.isdir(outdir):

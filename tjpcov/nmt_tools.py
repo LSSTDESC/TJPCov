@@ -545,6 +545,7 @@ def get_sacc_with_concise_dtypes(sacc_data):
 
     return s
 
+
 def get_nbpw(sacc_data):
     """
     Return the number of bandpowers in which the data has been binned
@@ -582,6 +583,8 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
         tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
         ix = sacc_data.indices(data_type=dtype, tracers=tracers)
         bpw = sacc_data.get_bandpower_windows(ix)
+        if bpw is None:
+            raise ValueError
         nell = bpw.nell
     except ValueError as e:
         # If the window functions are wrong. Do magic
@@ -594,10 +597,10 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
         elif nside is not None:
             nell = 3*nside
         elif 'workspaces' in cache:
-            w = list(cache['workspaces'].values())[0]
+            w = list(list(cache['workspaces'].values())[0].values())[0]
             if isinstance(w, nmt.NmtWorkspace):
                 bpw = w.get_bandpower_windows()
-                nell = bpw.nell
+                nell = bpw.shape[-1]
             else:
                 raise ValueError("We don't want to read the workspace " +
                                  "just to get the ells. Better set nside")
