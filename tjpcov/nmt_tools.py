@@ -398,11 +398,15 @@ def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
         if key in cache:
             f[i] = cache[key]
         else:
-            k = mask_names[i]
+            # We add the spin to make sure we distinguish fields of different
+            # types even though they share the same mask
+            k = mask_names[i] + str(spins[i])
             if k not in f_by_mask_name:
                 f_by_mask_name[k] = nmt.NmtField(masks[i], None,
                                                  spin=spins[i], **nmt_conf)
             f[i] = f_by_mask_name[k]
+        print(f_by_mask_name)
+        print(f)
 
     return f
 

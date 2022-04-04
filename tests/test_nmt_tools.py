@@ -464,6 +464,13 @@ def test_get_fields_dict(nmt_conf):
     # Check that the DESgc fields are exactly the same (not generated twice)
     assert f2[1] is f2[2]
 
+    # Check that if the mask of DESwl has the same name as that of DESgc, they
+    # do not get messed up
+    mn2 = mn.copy()
+    mn2[3] = tjpcov_class.mask_names['DESgc__0']
+    f2 = nmt_tools.get_fields_dict(m, s, mn2, tr, nmt_conf, cache={})
+    assert f2[1] is not f2[3]
+
     # Check fields are the same by computing the workspace and coupling a
     # fiducial Cell
     cl = {}
