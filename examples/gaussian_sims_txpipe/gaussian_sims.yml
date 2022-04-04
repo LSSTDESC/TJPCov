@@ -1,4 +1,6 @@
 tjpcov:
+  use_mpi: True
+
   # False: harmonic space; True: configuration space
   do_xi: False
 
@@ -20,7 +22,7 @@ tjpcov:
     lens_{{ i }}: mask
     {% endfor %}
 
-  outdir: ./cosmodc2_outdir/ 
+  outdir: /global/cscratch1/sd/carlosgg/cosmodc2_outdir/ 
 
   # linear bias for lenses constant for redshift bin (example notebook)
   {% for i in range(5) %} 
@@ -59,6 +61,6 @@ cache:
     '00':
       !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_41196234001124792567781117430861363693.dat
     '02':
-      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_182520387454631781467886282603068651979.dat
+      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_198373045463190895858197663429561695307.dat
     '22':
       !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_10386599691946767095762939280732896122.dat
