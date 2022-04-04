@@ -453,30 +453,36 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
         if key in cache:
             w[i] = cache[key]
         else:
-            # In this case you have to check for m1 x m2 and m2 x m1
-            # We add the spin value to the mask names to make sure we don't mix
-            # workspaces for different spin combinations
             s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
-            k = (mask_names[i1] + f'{s1}', mask_names[i2] + f'{s2}')
+            # In this case you have to check for m1 x m2 and m2 x m1
+            k = (mask_names[i1], mask_names[i2])
+            sk = ''.join(sorted(f'{s1}{s2}'))
 
+            # Look for the workspaces of appropriate spin combinations
             cache_wsp = cache.get('workspaces', None)
             if cache_wsp is not None:
-                if f'{s1}{s2}' in cache_wsp:
-                    cache_wsp = cache_wsp[f'{s1}{s2}']
-                elif f'{s2}{s1}' in cache_wsp:
-                    cache_wsp = cache_wsp[f'{s2}{s1}']
+                if sk in cache_wsp:
+                    cache_wsp = cache_wsp[sk]
+                elif sk[::-1] in cache_wsp:
+                    cache_wsp = cache_wsp[sk[::-1]]
 
-            if k in w_by_mask_name:
-                w[i] = w_by_mask_name[k]
-            elif k[::-1] in w_by_mask_name:
-                w[i] = w_by_mask_name[k[::-1]]
+            if sk not in w_by_mask_name:
+                w_by_mask_name_s = {}
+                w_by_mask_name[sk] = w_by_mask_name_s
+            else:
+                w_by_mask_name_s =  w_by_mask_name[sk]
+
+            if k in w_by_mask_name_s:
+                w[i] = w_by_mask_name_s[k]
+            elif k[::-1] in w_by_mask_name_s:
+                w[i] = w_by_mask_name_s[k[::-1]]
             elif (i not in [12, 34]) and (np.mean(masks[i1] * masks[i2]) == 0):
                 # w13, w23, w14, w24 are needed to couple the theoretical Cell
                 # and are not needed if the masks do not overlap. However,
                 # w12 and w34 are needed for nmt.gaussian_covariance, which
                 # will complain if they are None
-                w_by_mask_name[k] = None
-                w[i] = w_by_mask_name[k]
+                w_by_mask_name_s[k] = None
+                w[i] = w_by_mask_name_s[k]
             elif (cache_wsp is not None) and \
                  ((k in cache_wsp) or k[::-1] in cache_wsp):
                 if k in cache_wsp:
@@ -485,13 +491,13 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
                     fname = cache_wsp[k[::-1]]
                 wsp = nmt.NmtWorkspace()
                 wsp.read_from(fname)
-                w[i] = w_by_mask_name[k] = wsp
+                w[i] = w_by_mask_name_s[k] = wsp
             else:
-                w_by_mask_name[k] = get_workspace(fields[i1], fields[i2],
-                                                  mask_names[i1],
-                                                  mask_names[i2], bins,
-                                                  outdir, **nmt_conf)
-                w[i] = w_by_mask_name[k]
+                w_by_mask_name_s[k] = get_workspace(fields[i1], fields[i2],
+                                                    mask_names[i1],
+                                                    mask_names[i2], bins,
+                                                    outdir, **nmt_conf)
+                w[i] = w_by_mask_name_s[k]
 
     return w
 

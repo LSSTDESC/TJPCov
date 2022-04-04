@@ -554,16 +554,16 @@ def test_get_workspace_dict(kwards):
     # bins to None to force it fail if it does not uses the cache
     w2 = nmt_tools.get_workspaces_dict(f, m, mn, None, outdir, kwards,
                                        cache=cache)
+
+    # Check that it will compute the workspaces if one is missing
+    del cache['workspaces']['02'][('mask_DESgc0', 'mask_DESwl1')]
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
+                                       cache=cache)
     # Check that '20' is also understood
     del cache['workspaces']['02']
     cache['workspaces']['20'] = {('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
                                  ('mask_DESgc0', 'mask_DESwl1'): gc0wl1}
     w2 = nmt_tools.get_workspaces_dict(f, m, mn, None, outdir, kwards,
-                                       cache=cache)
-
-    # Check that it will compute the workspaces if one is missing
-    del cache['workspaces']['02'][('mask_DESgc0', 'mask_DESwl1')]
-    w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
                                        cache=cache)
 
 
