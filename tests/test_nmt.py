@@ -153,6 +153,29 @@ def test_nmt_conf_missing():
     os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
 
+def test_tracer_info():
+    # Check it returns the correct coupled noise
+    tjpcov_class = cv.CovarianceCalculator(input_yml)
+    s = tjpcov_class.cl_data
+
+    # Check you can pass the coupled noise with the sacc metadata
+    for tr in s.tracers:
+        nl_cp = get_tracer_noise(tr)
+        s.tracers[tr].metadata['n_ell_coupled'] = nl_cp
+
+    _, _, noise = tjpcov_class.get_tracer_info(s, return_noise_coupled=True)
+
+    for tr in s.tracers:
+        assert np.all(s.tracers[tr].metadata['n_ell_coupled'] == noise[tr])
+
+    # Check that it will default to None if one of them is missing
+    del s.tracers[tr].metadata['n_ell_coupled']
+    _, _, noise = tjpcov_class.get_tracer_info(s, return_noise_coupled=True)
+
+    assert noise is None
+
+
+
 
 @pytest.mark.parametrize('tracer_comb1,tracer_comb2',
                          [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
@@ -391,6 +414,25 @@ def test_get_all_cov_nmt():
     cov2 = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise,
                                         cache={'bins': bins}) + 1e-100
     assert np.all(cov == cov2)
+
+    # Check you can pass the coupled noise with the sacc metadata
+    for tr in s.tracers:
+        nl_cp = get_tracer_noise(tr)
+        s.tracers[tr].metadata['n_ell_coupled'] = nl_cp
+
+    tjpcov_class.cl_data = s
+    cov2 = tjpcov_class.get_all_cov_nmt(cache={'bins': bins}) + 1e-100
+    assert np.all(cov == cov2)
+
+    # Check that it will use the passed one instead of the one in the sacc file
+    # if given
+    for tr in s.tracers:
+        nl_cp = get_tracer_noise(tr)
+        s.tracers[tr].metadata['n_ell_coupled'] = nl_cp + 2
+    cov2 = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise,
+                                        cache={'bins': bins}) + 1e-100
+    assert np.all(cov == cov2)
+
 
 # Clean up after the tests
 os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")

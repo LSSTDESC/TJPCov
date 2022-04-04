@@ -405,8 +405,6 @@ def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
                 f_by_mask_name[k] = nmt.NmtField(masks[i], None,
                                                  spin=spins[i], **nmt_conf)
             f[i] = f_by_mask_name[k]
-        print(f_by_mask_name)
-        print(f)
 
     return f
 

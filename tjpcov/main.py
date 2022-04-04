@@ -493,7 +493,7 @@ class CovarianceCalculator():
 
         if return_noise_coupled:
             vals = list(tracer_Noise_coupled.values())
-            if not np.any(vals):
+            if not np.all(vals):
                 tracer_Noise_coupled = None
             elif not np.all(vals):
                 warnings.warn('Missing n_ell_coupled info for some tracers in '
