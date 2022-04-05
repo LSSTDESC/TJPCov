@@ -302,27 +302,29 @@ def test_get_workspace(kwards):
     w.compute_coupling_matrix(f1, f2, bins, **kwards)
 
     # Compute workspace with nmt_tools
+    s1 = 0
+    s2 = 2
     mn1 = 'mask_DESgc0'
     mn2 = 'mask_DESwl0'
     w_code = nmt_tools.get_workspace(f1, f2, mn1, mn2, bins, outdir, **kwards)
 
     # Check the file is created
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     assert os.path.isfile(fname)
 
     # Check that you will read the same workspace if input the other way round
     # and check the symmetric file is not created
     w_code2 = nmt_tools.get_workspace(f2, f1, mn2, mn1, bins, outdir, **kwards)
-    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'w{s2}{s1}__{mn2}__{mn1}.fits')
     assert not os.path.isfile(fname)
 
     # Check that with recompute the original file is removed and the symmetric
     # remains
     w_code2 = nmt_tools.get_workspace(f2, f1, mn2, mn1, bins, outdir,
                                       recompute=True, **kwards)
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     assert not os.path.isfile(fname)
-    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'w{s2}{s1}__{mn2}__{mn1}.fits')
     assert os.path.isfile(fname)
 
     # Load cl to apply the workspace on
@@ -335,13 +337,13 @@ def test_get_workspace(kwards):
         - 1
     assert np.max(np.abs(rdev)) < 1e-10
 
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     remove_file(fname)
-    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'w{s2}{s1}__{mn2}__{mn1}.fits')
     remove_file(fname)
     # Check that outdir can be None
     w_code = nmt_tools.get_workspace(f1, f2, mn1, mn2, bins, None, **kwards)
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     assert not os.path.isfile(fname)
 
 
@@ -383,10 +385,12 @@ def test_get_covariance_workspace(kwards):
     # Check only the first is written/computed created & that cw is correct
 
     for fields, masks_names in zip(combinations, combinations_names):
+        spins = [fi.fl.spin for fi in fields]
         cw_code = nmt_tools.get_covariance_workspace(*fields, *masks_names,
                                                      outdir, **kwards)
         fname = os.path.join(outdir,
-                             'cw__{}__{}__{}__{}.fits'.format(*masks_names))
+                             'cw{}{}{}{}__{}__{}__{}__{}.fits'.format(*spins,
+                                                                      *masks_names))
         if masks_names == (mn1, mn2, mn3, mn4):
             assert os.path.isfile(fname)
         else:
@@ -404,10 +408,10 @@ def test_get_covariance_workspace(kwards):
                                                  mn2, mn1, outdir,
                                                  recompute=True, **kwards)
 
-    fname = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn3}.fits')
+    fname = os.path.join(outdir, f'cw0022__{mn1}__{mn2}__{mn3}__{mn3}.fits')
     assert not os.path.isfile(fname)
 
-    fname = os.path.join(outdir, f'cw__{mn3}__{mn4}__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'cw2200__{mn3}__{mn4}__{mn2}__{mn1}.fits')
     assert os.path.isfile(fname)
 
     remove_file(fname)

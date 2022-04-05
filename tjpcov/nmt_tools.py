@@ -185,7 +185,7 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
         isfile = os.path.isfile(fname)
 
         # The workspace of m1 x m2 and m2 x m1 is the same.
-        fname2 = os.path.join(outdir, f'w{s1}{s2}__{m2}__{m1}.fits')
+        fname2 = os.path.join(outdir, f'w{s2}{s1}__{m2}__{m1}.fits')
         isfile2 = os.path.isfile(fname2)
     else:
         fname = isfile = fname2 = isfile2 = None
@@ -239,7 +239,7 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         cw:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
-    s1, s2, s3, s4 = f1.fl.spin, f2.fl.spin, f3.fl.spin, f4.fl.spin
+    spins = {m1: f1.fl.spin, m2: f2.fl.spin, m3: f3.fl.spin, m4: f4.fl.spin}
 
     # Any other symmetry?
     combinations = [(m1, m2, m3, m4), (m2, m1, m3, m4), (m1, m2, m4, m3),
@@ -250,6 +250,7 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         fnames = []
         isfiles = []
         for mn1, mn2, mn3, mn4 in combinations:
+            s1, s2, s3, s4 = [spins[mi] for mi in [mn1, mn2, mn3, mn4]]
             f = f'cw{s1}{s2}{s3}{s4}__{mn1}__{mn2}__{mn3}__{mn4}.fits'
             f = os.path.join(outdir, f)
             if f not in fnames:
