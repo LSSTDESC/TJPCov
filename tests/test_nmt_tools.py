@@ -430,12 +430,21 @@ def test_get_mask_names_dict():
         assert mn[i + 1] == tjpcov_class.mask_names[tr[i + 1]]
 
 
-def test_get_masks_dict():
+@pytest.mark.parametrize('kwards', [{'mask_fn': tjpcov_class.mask_fn,
+                                     'nside': None},
+                                    {'mask_fn':
+                                     './tests/benchmarks/32_DES_tjpcov_bm/catalogs/DES_mask_ns32.hdf5',
+                                     'nside': 32}])
+
+def test_get_masks_dict(kwards):
     tr = get_tracers_dict_for_cov_as_in_tjpcov()
     mn = get_mask_names_dict_for_cov_as_in_tjpcov()
     m = get_masks_dict_for_cov_as_in_tjpcov()
 
-    m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache={})
+    mask_fn = kwards['mask_fn']
+    nside = kwards['nside']
+
+    m2 = nmt_tools.get_masks_dict(mask_fn, mn, tr, cache={}, nside=nside)
 
     # Check the masks have been read correctly
     for i in range(4):
@@ -447,7 +456,7 @@ def test_get_masks_dict():
 
     # Check that cache works and avoid reading the files
     cache = {f'm{i + 1}': m[i + 1] for i in range(4)}
-    m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache=cache)
+    m2 = nmt_tools.get_masks_dict(mask_fn, mn, tr, cache=cache, nside=nside)
 
     for i in range(4):
         # Check they are the same object, i.e. have not been read
