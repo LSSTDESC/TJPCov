@@ -5,7 +5,7 @@ tjpcov:
   do_xi: False
 
   # harmonic space sacc input
-  cl_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/summary_statistics_fourier_TJPCov.sacc
+  cl_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/twopoint_data_fourier.sacc
 
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: examples/gaussian_sims_txpipe/fiducial_cosmology.yml
