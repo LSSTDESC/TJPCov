@@ -7,11 +7,13 @@ import tjpcov.main as cv
 from tjpcov.parser import parse
 import yaml
 import sacc
+import glob
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
 input_yml_no_nmtc = os.path.join(root, "tjpcov_conf_minimal_no_nmtconf.yaml")
+input_yml_txpipe = os.path.join(root, "tjpcov_conf_minimal_txpipe.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
 
 
@@ -432,6 +434,41 @@ def test_get_all_cov_nmt():
     cov2 = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise,
                                         cache={'bins': bins}) + 1e-100
     assert np.all(cov == cov2)
+
+    # Clean after the test
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+
+def test_txpipe_like_input():
+    tjpcov_class = cv.CovarianceCalculator(input_yml_txpipe)
+    s = tjpcov_class.cl_data
+
+    tracer_noise = {}
+    for tr in s.tracers:
+        tracer_noise[tr] = get_tracer_noise(tr)
+
+    # We don't need to pass the bins because we have provided the workspaces
+    cov = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise) \
+        + 1e-100
+
+    cov_bm = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+
+    # Check chi2
+    clf = np.array([])
+    for trs in s.get_tracer_combinations():
+        cl_trs = get_fiducial_cl(s, *trs, remove_be=True)
+        clf = np.concatenate((clf, cl_trs.flatten()))
+    cl = s.mean
+
+    delta = clf - cl
+    chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
+    chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+    # Clean up after the test
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 
 # Clean up after the tests

@@ -9,9 +9,7 @@ def read_map_from_hdf5(fname, name, nside):
         pixel = f[f'maps/{name}/pixel']
         value = f[f'maps/{name}/value']
 
-        # m = np.zeros(hp.nside2npix(nside))
-        # Use hp.UNSEEN as in TXPipe
-        m = np.repeat(hp.UNSEEN, hp.nside2npix(nside))
+        m = np.zeros(hp.nside2npix(nside))
         m[pixel] = value
 
         return m
