@@ -14,7 +14,7 @@ tjpcov:
   cov_type: gauss
 
   # Setting mask OR fsky approximation
-  mask_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/TXPipe_inputs/mask.hdf5
+  mask_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/mask_nside128.hdf5
 
   mask_names:
     {% for i in range(5) %} 
@@ -22,7 +22,7 @@ tjpcov:
     lens_{{ i }}: mask
     {% endfor %}
 
-  outdir: /global/cscratch1/sd/carlosgg/cosmodc2_outdir/ 
+  outdir: /global/cscratch1/sd/carlosgg/cosmodc2_outdir_128/ 
 
   # linear bias for lenses constant for redshift bin (example notebook)
   {% for i in range(5) %} 
@@ -35,7 +35,7 @@ tjpcov:
 
   # Needed to read the masks and to generate nell because the window functions
   # in the sacc file seems to be wrong
-  nside: 2048
+  nside: 128
 
 NaMaster:
   module: pymaster
@@ -59,8 +59,8 @@ NaMaster:
 cache:
   workspaces:
     '00':
-      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_41196234001124792567781117430861363693.dat
+      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_117425114361711337863539036686156726003.dat
     '02':
-      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_198373045463190895858197663429561695307.dat
+      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_71462392609674678976860458614183157498.dat
     '22':
-      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/cache_nmt/workspace_10386599691946767095762939280732896122.dat
+      !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_157216657939322354163180931046515984611.dat
