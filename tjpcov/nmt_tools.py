@@ -619,3 +619,110 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
             raise ValueError('nside, NmtBin or NmtWorkspace instances ' +
                              'must be passed')
     return nell
+
+
+def get_list_of_tracers_for_wsp(sacc_data, mask_names):
+    """
+    Return the tracers needed to compute the independent workspaces.
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        tracers (list of str): List of tracers needed to compute the
+        independent workspaces.
+    """
+
+    tracers = sacc_data.get_tracer_combinations()
+
+    fnames = []
+    tracers_out = []
+    for i, trs1 in enumerate(tracers):
+        s1, s2 = get_tracer_comb_spin(sacc_data, trs1)
+        mn1, mn2 = [mask_names[tri] for tri in trs1]
+
+        for trs2 in tracers[i:]:
+            s3, s4 = get_tracer_comb_spin(sacc_data, trs2)
+            mn3, mn4 = [mask_names[tri] for tri in trs2]
+
+            fname1 = f'w{s1}{s2}__{mn1}__{mn2}.fits'
+            fname2 = f'w{s3}{s4}__{mn3}__{mn4}.fits'
+
+            if (fname1 in fnames) or (fname2 in fnames):
+                continue
+
+            fnames.append(fname1)
+            fnames.append(fname2)
+
+            tracers_out.append((trs1, trs2))
+
+    return tracers_out
+
+
+def get_list_of_tracers_for_cov_wsp(sacc_data, mask_names, remove_trs_wsp=False):
+    """
+    Return the tracers needed to compute the independent covariance workspaces.
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        tracers (list of str): List of tracers needed to compute the
+        independent covariance workspaces.
+    """
+
+    tracers = sacc_data.get_tracer_combinations()
+
+    fnames = []
+    tracers_out = []
+    for i, trs1 in enumerate(tracers):
+        s1, s2 = get_tracer_comb_spin(sacc_data, trs1)
+        mn1, mn2 = [mask_names[tri] for tri in trs1]
+        for trs2 in tracers[i:]:
+            s3, s4 = get_tracer_comb_spin(sacc_data, trs2)
+            mn3, mn4 = [mask_names[tri] for tri in trs2]
+
+            fname = f'cw{s1}{s2}{s3}{s4}__{mn1}__{mn2}__{mn3}__{mn4}.fits'
+            if fname not in fnames:
+                fnames.append(fname)
+                tracers_out.append((trs1, trs2))
+
+    if remove_trs_wsp:
+        trs_wsp = get_list_of_tracers_for_wsp(sacc_data, mask_names)
+        for trs in trs_wsp:
+            tracers_out.remove(trs)
+
+    return tracers_out
+
+
+def get_list_of_tracers_for_cov(sacc_data, remove_trs_wsp_cwsp=False,
+                                mask_names=None):
+    """
+    Return the covariance independent tracers combinations.
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        tracers (list of str): List of independent tracers combinations.
+    """
+
+    tracers = sacc_data.get_tracer_combinations()
+
+    tracers_out = []
+    for i, trs1 in enumerate(tracers):
+        for trs2 in tracers[i:]:
+            tracers_out.append((trs1, trs2))
+
+    if remove_trs_wsp_cwsp:
+        trs_cwsp = get_list_of_tracers_for_cov_wsp(sacc_data, mask_names)
+        for trs in trs_cwsp:
+            tracers_out.remove(trs)
+
+    return tracers_out

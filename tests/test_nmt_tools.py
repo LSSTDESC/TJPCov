@@ -663,6 +663,85 @@ def test_get_nell():
     assert nell == nmt_tools.get_nell(s(), bins=bins)
 
 
+def test_get_list_of_tracers_for_wsp():
+    s = get_sacc()
+    mask_names = tjpcov_class.mask_names
+    trs_wsp = nmt_tools.get_list_of_tracers_for_wsp(s, mask_names)
+
+    trs_wsp2 = [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                (('DESgc__0', 'DESwl__0'), ('DESgc__0', 'DESwl__0')),
+                (('DESgc__0', 'DESwl__1'), ('DESgc__0', 'DESwl__1')),
+                (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                (('DESwl__0', 'DESwl__1'), ('DESwl__0', 'DESwl__1')),
+                (('DESwl__1', 'DESwl__1'), ('DESwl__1', 'DESwl__1'))]
+
+    assert sorted(trs_wsp) == sorted(trs_wsp2)
+
+
+def test_get_list_of_tracers_for_cov_wsp():
+    s = get_sacc()
+    mask_names = tjpcov_class.mask_names
+    trs_cwsp = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names)
+
+    trs_cwsp2 = [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                 (('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESgc__0'), ('DESwl__1', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__0'), ('DESgc__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESwl__0'), ('DESgc__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__1'), ('DESgc__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__1'), ('DESwl__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESwl__1'), ('DESwl__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__1'), ('DESwl__1', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                 (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__1'), ('DESwl__0', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__1'), ('DESwl__1', 'DESwl__1')),
+                 (('DESwl__1', 'DESwl__1'), ('DESwl__1', 'DESwl__1')),
+                 ]
+
+    assert sorted(trs_cwsp) == sorted(trs_cwsp2)
+
+    trs_cwsp = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names,
+                                                         remove_trs_wsp=True)
+
+    for trs in nmt_tools.get_list_of_tracers_for_wsp(s, mask_names):
+        trs_cwsp2.remove(trs)
+
+    assert trs_cwsp == trs_cwsp2
+
+
+def test_get_list_of_tracers_for_cov():
+    s = get_sacc()
+    mask_names = tjpcov_class.mask_names
+    trs_cov = nmt_tools.get_list_of_tracers_for_cov(s)
+
+    # Test all tracers
+    trs_cov2 = []
+    tracers = s.get_tracer_combinations()
+    for i, trs1 in enumerate(tracers):
+        for trs2 in tracers[i:]:
+            trs_cov2.append((trs1, trs2))
+
+    assert trs_cov == trs_cov2
+
+    # Test all tracers except those used for workspaces and cov workspaces
+    trs_cov = nmt_tools.get_list_of_tracers_for_cov(s,
+                                                    remove_trs_wsp_cwsp=True,
+                                                    mask_names=mask_names)
+
+    for trs in nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names):
+        trs_cov2.remove(trs)
+
+    assert sorted(trs_cov) == sorted(trs_cov2)
+
+
 
 if os.path.isdir(outdir):
     os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")

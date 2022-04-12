@@ -721,17 +721,57 @@ class CovarianceCalculator():
             elif tracer_noise_coupled and tracer in tracer_noise_coupled:
                 tracer_Noise_coupled[tracer] = tracer_noise_coupled[tracer]
 
-        # Make a list of all pair of tracer combinations
-        tracers_cov = []
-        for i, tracer_comb1 in enumerate(cl_tracers):
-            for tracer_comb2 in cl_tracers[i:]:
-                tracers_cov.append((tracer_comb1, tracer_comb2))
+        # Make a list of all pair of tracer combinations needed to compute the
+        # independent workspaces
+        trs_wsp = nmt_tools.get_list_of_tracers_for_wsp(two_point_data,
+                                                        self.mask_names)
+        # Now the tracers for covariance workspaces (without trs_wsp)
+        trs_cwsp = nmt_tools.get_list_of_tracers_for_cov_wsp(two_point_data,
+                                                             self.mask_names,
+                                                             remove_trs_wsp=True)
+
+        # Make a list of all remaining combinations
+        tracers_cov = nmt_tools.get_list_of_tracers_for_cov(two_point_data,
+                                                            remove_trs_wsp_cwsp=True,
+                                                            mask_names=self.mask_names)
 
         # Save blocks and the corresponding tracers, as comm.gather does not
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
         print('Computing independent covariance blocks')
+        print('Computing the workspaces', flush=True)
+        for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(trs_wsp):
+            print(tracer_comb1, tracer_comb2)
+            cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
+                                        tracer_comb2=tracer_comb2,
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        tracer_Noise_coupled=tracer_Noise_coupled,
+                                        **kwargs)['final']
+            blocks.append(cov)
+            tracers_blocks.append((tracer_comb1, tracer_comb2))
+
+        if self.comm:
+            self.comm.Barrier()
+
+        print('Computing the covariance workspaces', flush=True)
+        for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(trs_cwsp):
+            print(tracer_comb1, tracer_comb2)
+            cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
+                                        tracer_comb2=tracer_comb2,
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        tracer_Noise_coupled=tracer_Noise_coupled,
+                                        **kwargs)['final']
+            blocks.append(cov)
+            tracers_blocks.append((tracer_comb1, tracer_comb2))
+
+        if self.comm:
+            self.comm.Barrier()
+
+        print('Computing the remaining blocks', flush=True)
+        # Now loop over the remaining tracers
         for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(tracers_cov):
             print(tracer_comb1, tracer_comb2)
             cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
@@ -742,6 +782,7 @@ class CovarianceCalculator():
                                         **kwargs)['final']
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
+
 
         return blocks, tracers_blocks
 

@@ -74,6 +74,7 @@ def test_split_tasks_by_rank():
 def test_compute_all_blocks_nmt():
     tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
     s = tjpcov_class.cl_data
+    mask_names = tjpcov_class.mask_names
     bins = get_nmt_bin()
 
     tracer_noise_cp = get_tracer_noise_cp_dict(s)
@@ -83,8 +84,16 @@ def test_compute_all_blocks_nmt():
                                                                  cache={'bins':
                                                                         bins})
 
-    assert(tracers_blocks ==
-           list(tjpcov_class.split_tasks_by_rank(get_tracers_cov(s))))
+    trs1 = nmt_tools.get_list_of_tracers_for_wsp(s, mask_names)
+    trs2 = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names,
+                                                     remove_trs_wsp=True)
+    trs3 = nmt_tools.get_list_of_tracers_for_cov(s, remove_trs_wsp=True,
+                                                 remove_trs_cwsp=True,
+                                                 mask_names=mask_names)
+    trs_blocks = list(tjpcov_class.split_tasks_by_rank(trs1))
+    trs_blocks += list(tjpcov_class.split_tasks_by_rank(trs2))
+    trs_blocks += list(tjpcov_class.split_tasks_by_rank(trs3))
+    assert(tracers_blocks == trs_blocks)
 
 
     ell, _ = s.get_ell_cl('cl_00', 'DESgc__0', 'DESgc__0')
