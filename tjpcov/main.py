@@ -740,7 +740,7 @@ class CovarianceCalculator():
         blocks = []
         tracers_blocks = []
         print('Computing independent covariance blocks')
-        print('Computing the workspaces', flush=True)
+        print('Computing the blocks for independent workspaces')
         for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(trs_wsp):
             print(tracer_comb1, tracer_comb2)
             cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
@@ -755,7 +755,7 @@ class CovarianceCalculator():
         if self.comm:
             self.comm.Barrier()
 
-        print('Computing the covariance workspaces', flush=True)
+        print('Computing the blocks for independent covariance workspaces')
         for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(trs_cwsp):
             print(tracer_comb1, tracer_comb2)
             cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
@@ -770,7 +770,7 @@ class CovarianceCalculator():
         if self.comm:
             self.comm.Barrier()
 
-        print('Computing the remaining blocks', flush=True)
+        print('Computing the remaining blocks')
         # Now loop over the remaining tracers
         for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(tracers_cov):
             print(tracer_comb1, tracer_comb2)
