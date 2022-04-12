@@ -87,8 +87,7 @@ def test_compute_all_blocks_nmt():
     trs1 = nmt_tools.get_list_of_tracers_for_wsp(s, mask_names)
     trs2 = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names,
                                                      remove_trs_wsp=True)
-    trs3 = nmt_tools.get_list_of_tracers_for_cov(s, remove_trs_wsp=True,
-                                                 remove_trs_cwsp=True,
+    trs3 = nmt_tools.get_list_of_tracers_for_cov(s, remove_trs_wsp_cwsp=True,
                                                  mask_names=mask_names)
     trs_blocks = list(tjpcov_class.split_tasks_by_rank(trs1))
     trs_blocks += list(tjpcov_class.split_tasks_by_rank(trs2))
