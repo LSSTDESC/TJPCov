@@ -628,6 +628,8 @@ def get_list_of_tracers_for_wsp(sacc_data, mask_names):
     Parameters:
     -----------
         sacc_data (Sacc):  Data Sacc instance
+        mask_names (dict): Dictionary with the mask names for each tracer. Keys
+        must be the tracer names and values the mask names.
 
     Returns:
     --------
@@ -668,6 +670,11 @@ def get_list_of_tracers_for_cov_wsp(sacc_data, mask_names, remove_trs_wsp=False)
     Parameters:
     -----------
         sacc_data (Sacc):  Data Sacc instance
+        mask_names (dict): Dictionary with the mask names for each tracer. Keys
+        must be the tracer names and values the mask names.
+        remove_trs_wsp (bool): If True, remove the tracer combinations from
+        used to generate the workspaces independently (i.e the output of
+        `get_list_of_tracers_for_wsp`).
 
     Returns:
     --------
@@ -707,6 +714,12 @@ def get_list_of_tracers_for_cov(sacc_data, remove_trs_wsp_cwsp=False,
     Parameters:
     -----------
         sacc_data (Sacc):  Data Sacc instance
+        remove_trs_wsp_cwsp (bool): If True, remove the tracer combinations from
+        used to generate the workspaces and covariance workspaces
+        independently. If True, `must_names` must be provided.
+        mask_names (dict): Dictionary with the mask names for each tracer. Keys
+        must be the tracer names and values the mask names. Needed if
+        `remove_trs_wsp_cwsp` is True.
 
     Returns:
     --------
