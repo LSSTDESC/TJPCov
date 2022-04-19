@@ -746,3 +746,23 @@ def get_list_of_tracers_for_cov(sacc_data, remove_trs_wsp_cwsp=False,
             tracers_out.remove(trs)
 
     return tracers_out
+
+
+def get_ell_eff(sacc_data):
+    """
+    Return the effective ell in the sacc file. It assume that all of them have
+    the same effective ell (true with current TXPipe implementation).
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        ell (array): Array with the effective ell in the sacc file.
+    """
+    dtype = sacc_data.get_data_types()[0]
+    tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
+    ell, _ = sacc_data.get_ell_cl(dtype, *tracers)
+
+    return ell

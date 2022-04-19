@@ -741,6 +741,13 @@ def test_get_list_of_tracers_for_cov():
 
     assert sorted(trs_cov) == sorted(trs_cov2)
 
+def test_get_ell_eff():
+    s = get_sacc()
+    bins = get_nmt_bin()
+    ells = bins.get_effective_ells()
+
+    assert np.all(nmt_tools.get_ell_eff(s) == ells)
+
 
 
 if os.path.isdir(outdir):
