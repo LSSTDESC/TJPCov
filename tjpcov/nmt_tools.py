@@ -332,6 +332,8 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache, nside=None):
         cache (dict): Dictionary with cached variables. It will use the cached
         masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4' and the
         values the loaded maps.
+        nside (int): Healpy map nside. Needed to recreate the map from a TXPipe
+        hdf5 map file.
 
     Returns:
     --------
@@ -583,11 +585,16 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
 
     Parameters:
     -----------
-        sacc_data (Sacc):  Data Sacc instance
+        sacc_data (Sacc):  Data Sacc instance. If the stored bandpowers are
+        wrong. You will need to pass one of the other arguments.
+        bins (NmtBin): NmtBin instance with the desired binning.
+        nside (int): Healpy map nside.
+        cache (dict): Dictionary with cached variables. It will use the cached
+        workspaces to read the bandpower windows.
 
     Returns:
     --------
-        nell (int): Number of ells for the fidicual Cells; i.e. 3*nside
+        nell (int): Number of ells for the fidicual Cells points; i.e. 3*nside
     """
     try:
         dtype = sacc_data.get_data_types()[0]
