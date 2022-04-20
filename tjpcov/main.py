@@ -505,12 +505,14 @@ class CovarianceCalculator():
 
     def get_SSC_cov(self, tracer_comb1=None, tracer_comb2=None,
                     ccl_tracers=None, fsky=None,
-                    integration_method='qag_quad'):
+                    integration_method='qag_quad', include_b_modes=True):
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
         outdir is set, it will save the covariance to a file called
         `cov_ssc_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
         returned if found.
+
+        Blocks of the B-modes are assumed 0 so far.
 
         Parameters:
         -----------
@@ -519,10 +521,12 @@ class CovarianceCalculator():
             ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
             the tracer names
             fsky (float): sky fraction.
-            integration_method (string) : integration method to be used
+            integration_method (string): integration method to be used
                 for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
                 method backed up by `quad` when it fails) and 'spline' (the
                 integrand is splined and then integrated analytically).
+            include_b_modes (bool): If True, return the full SSC with zeros in
+            for B-modes (if any). If False, return the non-zero block.
 
         Returns:
         --------
@@ -531,7 +535,12 @@ class CovarianceCalculator():
             in both cases.
 
         """
-        # TODO: fsky? At initialization from mask if not given?
+        if fsky is None:
+            fsky = self.fsky
+
+        tr = {}
+        tr[1], tr[2] = tracer_comb1
+        tr[3], tr[4] = tracer_comb2
 
         cosmo = self.cosmo
         mass_def = ccl.halos.MassDef200m()
@@ -543,14 +552,26 @@ class CovarianceCalculator():
                                        fourier_analytic=True)
         hmc = ccl.halos.HMCalculator(cosmo, hmf, hbf, mass_def)
 
-        # TODO: Check this part
-        n_z = 100
-
-        n_k = 200
+        # Range of k
         k_min = 1e-4
         k_max = 1e2
 
-        a = np.linspace(1/(1+6), 1, n_z)
+        # Get range of redshifts
+        z_min = []
+        z_max = []
+        for i in range(4):
+            tr_sacc = self.cl_data.tracers[tr[i]]
+            z, nz = tr_sacc.z, tr_sacc.nz
+            z_min.append(z[np.where(nz > 0)[0][0]])
+            z_max.append(z[np.where(np.cumsum(nz)/np.sum(z) > 0.999)[0][0]])
+
+        z_min = np.min(z_min)
+        z_max = np.min(z_max)
+
+        # Arrays of a and k
+        n_k = 200
+        n_z = 100
+        a = np.linspace(1/(1+z_min), 1/(1+z_max), n_z)
         k = np.geomspace(k_min, k_max, n_k)
 
         tk3D = ccl.halos.halomod_Tk3D_SSC(cosmo=cosmo, hmc=hmc,
@@ -563,9 +584,6 @@ class CovarianceCalculator():
 
         sigma2_B = ccl.sigma2_B_disc(cosmo, a=a, fsky=fsky)
 
-        tr = {}
-        tr[1], tr[2] = tracer_comb1
-        tr[3], tr[4] = tracer_comb2
         ell = nmt_tools.get_ell_eff(self.cl_data)
         cov_ssc = ccl.covariances.angular_cl_cov_SSC(cosmo,
                                                      cltracer1=ccl_tracers[tr[1]],
@@ -577,7 +595,17 @@ class CovarianceCalculator():
                                                      sigma2_B=(a, sigma2_B),
                                                      fsky=fsky,
                                                      integration_method=integration_method)
-        return cov_ssc
+
+        if not include_b_modes:
+            return cov_ssc
+
+        nbpw = ell.size
+        ncell1 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1)
+        ncell2 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb2)
+        cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
+        cov_full[:, 0, :, 0] = cov_ssc
+
+        return cov_full
 
     def nmt_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,
