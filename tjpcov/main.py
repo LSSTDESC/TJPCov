@@ -560,10 +560,10 @@ class CovarianceCalculator():
         z_min = []
         z_max = []
         for i in range(4):
-            tr_sacc = self.cl_data.tracers[tr[i]]
+            tr_sacc = self.cl_data.tracers[tr[i + 1]]
             z, nz = tr_sacc.z, tr_sacc.nz
             z_min.append(z[np.where(nz > 0)[0][0]])
-            z_max.append(z[np.where(np.cumsum(nz)/np.sum(z) > 0.999)[0][0]])
+            z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
 
         z_min = np.min(z_min)
         z_max = np.min(z_max)
@@ -571,7 +571,7 @@ class CovarianceCalculator():
         # Arrays of a and k
         n_k = 200
         n_z = 100
-        a = np.linspace(1/(1+z_min), 1/(1+z_max), n_z)
+        a = np.linspace(1/(1+z_max), 1/(1+z_min), n_z)
         k = np.geomspace(k_min, k_max, n_k)
 
         tk3D = ccl.halos.halomod_Tk3D_SSC(cosmo=cosmo, hmc=hmc,
@@ -605,7 +605,7 @@ class CovarianceCalculator():
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
 
-        return cov_full
+        return cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
 
     def nmt_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,
