@@ -891,17 +891,20 @@ class CovarianceCalculator():
         return blocks, tracers_blocks
 
     def compute_all_blocks_SSC(self, fsky=None,
-                               integration_method='qag_quad'):
+                               integration_method='qag_quad',
+                               include_b_modes=True):
         """
         Compute all the independent super sample covariance blocks.
 
         Parameters:
         -----------
         fsky (float): sky fraction.
-        integration_method (string) : integration method to be used
-            for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
-            method backed up by `quad` when it fails) and 'spline' (the
-            integrand is splined and then integrated analytically).
+        integration_method (string) : integration method to be used for the
+        Limber integrals. Possibilities: 'qag_quad' (GSL's `qag` method backed
+        up by `quad` when it fails) and 'spline' (the integrand is splined and
+        then integrated analytically).
+        include_b_modes (bool): If True, return the full SSC with zeros in for
+        B-modes (if any). If False, return the non-zero block.
 
         Returns:
         --------
@@ -926,7 +929,8 @@ class CovarianceCalculator():
                                    tracer_comb2=tracer_comb2,
                                    ccl_tracers=ccl_tracers,
                                    fsky=fsky,
-                                   integration_method=integration_method)
+                                   integration_method=integration_method,
+                                   include_b_modes=include_b_modes)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 

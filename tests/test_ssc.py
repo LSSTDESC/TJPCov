@@ -91,3 +91,22 @@ def test_get_SSC_cov():
     cov_ssc_zb[:, 0, :, 0] -= cov_ssc
     assert np.all(cov_ssc_zb == np.zeros_like(cov_ssc_zb))
 
+
+def test_get_all_cov_SSC():
+    # Smoke
+    cc  = get_CovarianceCalculator()
+    s = cc.cl_data
+    cov_ssc = cc.get_all_cov_SSC() + 1e-100
+
+    tracer_comb1 = tracer_comb2 = ('source_0', 'source_0')
+    ccl_tracers, _ = cc.get_tracer_info(s)
+    cov_ssc2 = cc.get_SSC_cov(tracer_comb1=tracer_comb1,
+                             tracer_comb2=tracer_comb2,
+                             ccl_tracers=ccl_tracers, fsky=None,
+                             integration_method='qag_quad',
+                             include_b_modes=False) + 1e-100
+
+    assert cov_ssc.shape == cov_ssc2.shape
+    assert np.max(np.abs(cov_ssc / cov_ssc2 - 1)) < 1e-5
+
+    # TODO: add test for a larger sacc file
