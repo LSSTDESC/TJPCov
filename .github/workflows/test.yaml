@@ -62,6 +62,9 @@ jobs:
                         # Run Namaster tests
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt_tools.py
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt.py
+                        
+                        # Run other tests
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_tools.py
 
              - name: Test mpi (openmpi)
                run: |

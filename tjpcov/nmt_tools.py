@@ -1,9 +1,10 @@
 #!/usr/bin/python
-import healpy as hp
 import os
 import pymaster as nmt
 import numpy as np
 import sacc
+from . import tools
+import warnings
 
 
 def get_tracer_nmaps(sacc_data, tracer):
@@ -173,12 +174,18 @@ def get_workspace(f1, f2, m1, m2, bins, outdir, **kwargs):
         w:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
+    if not isinstance(bins, nmt.NmtBin):
+        raise ValueError('You must pass a NmtBin instance through the ' +
+                         'cache or at initialization')
+
+    s1, s2 = f1.fl.spin, f2.fl.spin
+
     if outdir is not None:
-        fname = os.path.join(outdir, f'w__{m1}__{m2}.fits')
+        fname = os.path.join(outdir, f'w{s1}{s2}__{m1}__{m2}.fits')
         isfile = os.path.isfile(fname)
 
         # The workspace of m1 x m2 and m2 x m1 is the same.
-        fname2 = os.path.join(outdir, f'w__{m2}__{m1}.fits')
+        fname2 = os.path.join(outdir, f'w{s2}{s1}__{m2}__{m1}.fits')
         isfile2 = os.path.isfile(fname2)
     else:
         fname = isfile = fname2 = isfile2 = None
@@ -232,6 +239,8 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         cw:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
     """
+    spins = {m1: f1.fl.spin, m2: f2.fl.spin, m3: f3.fl.spin, m4: f4.fl.spin}
+
     # Any other symmetry?
     combinations = [(m1, m2, m3, m4), (m2, m1, m3, m4), (m1, m2, m4, m3),
                     (m2, m1, m4, m3), (m3, m4, m1, m2), (m4, m3, m1, m2),
@@ -241,7 +250,9 @@ def get_covariance_workspace(f1, f2, f3, f4, m1, m2, m3, m4, outdir, **kwargs):
         fnames = []
         isfiles = []
         for mn1, mn2, mn3, mn4 in combinations:
-            f = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn4}.fits')
+            s1, s2, s3, s4 = [spins[mi] for mi in [mn1, mn2, mn3, mn4]]
+            f = f'cw{s1}{s2}{s3}{s4}__{mn1}__{mn2}__{mn3}__{mn4}.fits'
+            f = os.path.join(outdir, f)
             if f not in fnames:
                 fnames.append(f)
                 isfiles.append(os.path.isfile(fnames[-1]))
@@ -300,15 +311,17 @@ def get_mask_names_dict(mask_names, tracer_names):
     return mn
 
 
-def get_masks_dict(mask_files, mask_names, tracer_names, cache):
+def get_masks_dict(mask_files, mask_names, tracer_names, cache, nside=None):
     """
     Return a dictionary with the masks assotiated to the fields to be
     correlated
 
     Parameters:
     -----------
-        mask_files (dict): Dictionary of the masks, with the tracer names as
-        keys and paths to the masks as values. In fact, the tjpcov.mask_fn.
+        mask_files (dict or str): Dictionary of the masks, with the tracer
+        names as keys and paths to the masks as values. In fact, the
+        tjpcov.mask_fn. If str, it has to be a hdf5 file with keys the mask
+        names in mask_names.
         mask_names (dict):  Dictionary of the masks names assotiated to the
         fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
         name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
@@ -319,6 +332,8 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache):
         cache (dict): Dictionary with cached variables. It will use the cached
         masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4' and the
         values the loaded maps.
+        nside (int): Healpy map nside. Needed to recreate the map from a TXPipe
+        hdf5 map file.
 
     Returns:
     --------
@@ -336,11 +351,14 @@ def get_masks_dict(mask_files, mask_names, tracer_names, cache):
         else:
             k = mask_names[i]
             if k not in mask_by_mask_name:
-                mf = mask_files[tracer_names[i]]
+                if type(mask_files) is str:
+                    mf = mask_files
+                else:
+                    mf = mask_files[tracer_names[i]]
                 if isinstance(mf, np.ndarray):
                     mask_by_mask_name[k] = mf
                 else:
-                    mask_by_mask_name[k] = hp.read_map(mf)
+                    mask_by_mask_name[k] = tools.read_map(mf, k, nside)
             mask[i] = mask_by_mask_name[k]
 
     return mask
@@ -383,7 +401,9 @@ def get_fields_dict(masks, spins, mask_names, tracer_names, nmt_conf, cache):
         if key in cache:
             f[i] = cache[key]
         else:
-            k = mask_names[i]
+            # We add the spin to make sure we distinguish fields of different
+            # types even though they share the same mask
+            k = mask_names[i] + str(spins[i])
             if k not in f_by_mask_name:
                 f_by_mask_name[k] = nmt.NmtField(masks[i], None,
                                                  spin=spins[i], **nmt_conf)
@@ -438,35 +458,51 @@ def get_workspaces_dict(fields, masks, mask_names, bins, outdir, nmt_conf,
         if key in cache:
             w[i] = cache[key]
         else:
+            s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
             # In this case you have to check for m1 x m2 and m2 x m1
             k = (mask_names[i1], mask_names[i2])
-            if k in w_by_mask_name:
-                w[i] = w_by_mask_name[k]
-            elif k[::-1] in w_by_mask_name:
-                w[i] = w_by_mask_name[k[::-1]]
+            sk = ''.join(sorted(f'{s1}{s2}'))
+
+            # Look for the workspaces of appropriate spin combinations
+            cache_wsp = cache.get('workspaces', None)
+            if cache_wsp is not None:
+                if sk in cache_wsp:
+                    cache_wsp = cache_wsp[sk]
+                elif sk[::-1] in cache_wsp:
+                    cache_wsp = cache_wsp[sk[::-1]]
+
+            if sk not in w_by_mask_name:
+                w_by_mask_name_s = {}
+                w_by_mask_name[sk] = w_by_mask_name_s
+            else:
+                w_by_mask_name_s =  w_by_mask_name[sk]
+
+            if k in w_by_mask_name_s:
+                w[i] = w_by_mask_name_s[k]
+            elif k[::-1] in w_by_mask_name_s:
+                w[i] = w_by_mask_name_s[k[::-1]]
             elif (i not in [12, 34]) and (np.mean(masks[i1] * masks[i2]) == 0):
                 # w13, w23, w14, w24 are needed to couple the theoretical Cell
                 # and are not needed if the masks do not overlap. However,
                 # w12 and w34 are needed for nmt.gaussian_covariance, which
                 # will complain if they are None
-                w_by_mask_name[k] = None
-                w[i] = w_by_mask_name[k]
-            elif ('workspaces' in cache) and ((k in cache['workspaces']) or
-                                              k[::-1] in cache['workspaces']):
-                cache_wsp = cache['workspaces']
+                w_by_mask_name_s[k] = None
+                w[i] = w_by_mask_name_s[k]
+            elif (cache_wsp is not None) and \
+                 ((k in cache_wsp) or k[::-1] in cache_wsp):
                 if k in cache_wsp:
                     fname = cache_wsp[k]
                 else:
                     fname = cache_wsp[k[::-1]]
                 wsp = nmt.NmtWorkspace()
                 wsp.read_from(fname)
-                w[i] = w_by_mask_name[k] = wsp
+                w[i] = w_by_mask_name_s[k] = wsp
             else:
-                w_by_mask_name[k] = get_workspace(fields[i1], fields[i2],
-                                                  mask_names[i1],
-                                                  mask_names[i2], bins,
-                                                  outdir, **nmt_conf)
-                w[i] = w_by_mask_name[k]
+                w_by_mask_name_s[k] = get_workspace(fields[i1], fields[i2],
+                                                    mask_names[i1],
+                                                    mask_names[i2], bins,
+                                                    outdir, **nmt_conf)
+                w[i] = w_by_mask_name_s[k]
 
     return w
 
@@ -521,3 +557,192 @@ def get_sacc_with_concise_dtypes(sacc_data):
             dp.data_type = dc
 
     return s
+
+
+def get_nbpw(sacc_data):
+    """
+    Return the number of bandpowers in which the data has been binned
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+
+    Returns:
+    --------
+        nbpw (int): Number of bandpowers; i.e. ell_effective.size
+    """
+    dtype = sacc_data.get_data_types()[0]
+    tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
+    ix = sacc_data.indices(data_type=dtype, tracers=tracers)
+    nbpw = ix.size
+
+    return nbpw
+
+
+def get_nell(sacc_data, bins=None, nside=None, cache=None):
+    """
+    Return the number of ells for the fiducial Cells
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance. If the stored bandpowers are
+        wrong. You will need to pass one of the other arguments.
+        bins (NmtBin): NmtBin instance with the desired binning.
+        nside (int): Healpy map nside.
+        cache (dict): Dictionary with cached variables. It will use the cached
+        workspaces to read the bandpower windows.
+
+    Returns:
+    --------
+        nell (int): Number of ells for the fidicual Cells points; i.e. 3*nside
+    """
+    try:
+        dtype = sacc_data.get_data_types()[0]
+        tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
+        ix = sacc_data.indices(data_type=dtype, tracers=tracers)
+        bpw = sacc_data.get_bandpower_windows(ix)
+        if bpw is None:
+            raise ValueError
+        nell = bpw.nell
+    except ValueError as e:
+        # If the window functions are wrong. Do magic
+        warnings.warn('The window functions in the sacc file are wrong: ')
+        warnings.warn(str(e))
+        warnings.warn('Circunventing this error')
+
+        if bins is not None:
+            nell = bins.lmax + 1
+        elif nside is not None:
+            nell = 3*nside
+        elif 'workspaces' in cache:
+            w = list(list(cache['workspaces'].values())[0].values())[0]
+            if isinstance(w, nmt.NmtWorkspace):
+                bpw = w.get_bandpower_windows()
+                nell = bpw.shape[-1]
+            else:
+                raise ValueError("We don't want to read the workspace " +
+                                 "just to get the ells. Better set nside")
+        else:
+            raise ValueError('nside, NmtBin or NmtWorkspace instances ' +
+                             'must be passed')
+    return nell
+
+
+def get_list_of_tracers_for_wsp(sacc_data, mask_names):
+    """
+    Return the tracers needed to compute the independent workspaces.
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        mask_names (dict): Dictionary with the mask names for each tracer. Keys
+        must be the tracer names and values the mask names.
+
+    Returns:
+    --------
+        tracers (list of str): List of tracers needed to compute the
+        independent workspaces.
+    """
+
+    tracers = sacc_data.get_tracer_combinations()
+
+    fnames = []
+    tracers_out = []
+    for i, trs1 in enumerate(tracers):
+        s1, s2 = get_tracer_comb_spin(sacc_data, trs1)
+        mn1, mn2 = [mask_names[tri] for tri in trs1]
+
+        for trs2 in tracers[i:]:
+            s3, s4 = get_tracer_comb_spin(sacc_data, trs2)
+            mn3, mn4 = [mask_names[tri] for tri in trs2]
+
+            fname1 = f'w{s1}{s2}__{mn1}__{mn2}.fits'
+            fname2 = f'w{s3}{s4}__{mn3}__{mn4}.fits'
+
+            if (fname1 in fnames) or (fname2 in fnames):
+                continue
+
+            fnames.append(fname1)
+            fnames.append(fname2)
+
+            tracers_out.append((trs1, trs2))
+
+    return tracers_out
+
+
+def get_list_of_tracers_for_cov_wsp(sacc_data, mask_names, remove_trs_wsp=False):
+    """
+    Return the tracers needed to compute the independent covariance workspaces.
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        mask_names (dict): Dictionary with the mask names for each tracer. Keys
+        must be the tracer names and values the mask names.
+        remove_trs_wsp (bool): If True, remove the tracer combinations from
+        used to generate the workspaces independently (i.e the output of
+        `get_list_of_tracers_for_wsp`).
+
+    Returns:
+    --------
+        tracers (list of str): List of tracers needed to compute the
+        independent covariance workspaces.
+    """
+
+    tracers = sacc_data.get_tracer_combinations()
+
+    fnames = []
+    tracers_out = []
+    for i, trs1 in enumerate(tracers):
+        s1, s2 = get_tracer_comb_spin(sacc_data, trs1)
+        mn1, mn2 = [mask_names[tri] for tri in trs1]
+        for trs2 in tracers[i:]:
+            s3, s4 = get_tracer_comb_spin(sacc_data, trs2)
+            mn3, mn4 = [mask_names[tri] for tri in trs2]
+
+            fname = f'cw{s1}{s2}{s3}{s4}__{mn1}__{mn2}__{mn3}__{mn4}.fits'
+            if fname not in fnames:
+                fnames.append(fname)
+                tracers_out.append((trs1, trs2))
+
+    if remove_trs_wsp:
+        trs_wsp = get_list_of_tracers_for_wsp(sacc_data, mask_names)
+        for trs in trs_wsp:
+            tracers_out.remove(trs)
+
+    return tracers_out
+
+
+def get_list_of_tracers_for_cov(sacc_data, remove_trs_wsp_cwsp=False,
+                                mask_names=None):
+    """
+    Return the covariance independent tracers combinations.
+
+    Parameters:
+    -----------
+        sacc_data (Sacc):  Data Sacc instance
+        remove_trs_wsp_cwsp (bool): If True, remove the tracer combinations from
+        used to generate the workspaces and covariance workspaces
+        independently. If True, `must_names` must be provided.
+        mask_names (dict): Dictionary with the mask names for each tracer. Keys
+        must be the tracer names and values the mask names. Needed if
+        `remove_trs_wsp_cwsp` is True.
+
+    Returns:
+    --------
+        tracers (list of str): List of independent tracers combinations.
+    """
+
+    tracers = sacc_data.get_tracer_combinations()
+
+    tracers_out = []
+    for i, trs1 in enumerate(tracers):
+        for trs2 in tracers[i:]:
+            tracers_out.append((trs1, trs2))
+
+    if remove_trs_wsp_cwsp:
+        trs_cwsp = get_list_of_tracers_for_cov_wsp(sacc_data, mask_names)
+        for trs in trs_cwsp:
+            tracers_out.remove(trs)
+
+    return tracers_out

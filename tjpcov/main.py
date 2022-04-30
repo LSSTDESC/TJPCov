@@ -126,18 +126,14 @@ class CovarianceCalculator():
             self.cosmo = self.set_ccl_cosmo(config)
         elif isinstance(cosmo_fn, ccl.core.Cosmology):
             self.cosmo = cosmo_fn
-
-        elif cosmo_fn.split('.')[-1] == 'yaml':
+        elif cosmo_fn.split('.')[-1] in ['yaml', 'yml']:
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
             # TODO: remove this hot fix of ccl
-            self.cosmo.config.transfer_function_method = 1
-
+            # self.cosmo.config.transfer_function_method = 1
         elif cosmo_fn.split('.')[-1]  == 'pkl':
             import pickle
             with open(cosmo_fn, 'rb') as ccl_cosmo_file:
                 self.cosmo = pickle.load(ccl_cosmo_file)
-
-
         else:
             raise Exception(
                 "Err: File for cosmo field in input not recognized")
@@ -177,12 +173,19 @@ class CovarianceCalculator():
 
             # ell is the value for WT
             self.ell, self.ell_bins, self.ell_edges = ell_list
+        elif self.binning_info == 'ignore':
+            # Dirty trick to avoid inputting binning and not computing anything
+            # of the above
+            self.binning_info = None
         elif not isinstance(self.binning_info, nmt.NmtBin):
             raise ValueError('If passed, binning_info has to be a NmtBin ' +
                              'instance')
 
         self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
         self.mask_names = config['tjpcov'].get('mask_names')
+
+        # nside is needed if mask_fn is a hdf5 file
+        self.nside = config['tjpcov'].get('nside', None)
 
 
         # Calling WT in method, only if do_xi
@@ -197,6 +200,10 @@ class CovarianceCalculator():
         for k in ['f', 'w', 'cw']:
             if k not in self.nmt_conf:
                 self.nmt_conf[k] = {}
+
+        # Read cache from input file. It will update the cache passed as an
+        # argument of the different methods
+        self.cache = config.get('cache', {})
 
         return
 
@@ -396,7 +403,7 @@ class CovarianceCalculator():
         return self.WT_factors[tuple(tracers)]
 
 
-    def get_tracer_info(self, two_point_data={}):
+    def get_tracer_info(self, two_point_data={}, return_noise_coupled=False):
         """
         Creates CCL tracer objects and computes the noise for all the tracers
         Check usage: Can we call all the tracer at once?
@@ -405,19 +412,27 @@ class CovarianceCalculator():
         -----------
             two_point_data (sacc obj):
 
+            return_noise_coupled (bool): If True, also return
+            tracers_Noise_coupled. Default False.
+
         Returns:
         --------
             ccl_tracers: dict, ccl obj
                 ccl.WeakLensingTracer or ccl.NumberCountsTracer
             tracer_Noise ({dict: float}):
                 shot (shape) noise for lens (sources)
+            tracer_Noise_coupled ({dict: float}):
+                coupled shot (shape) noise for lens (sources). Returned if
+                retrun_noise_coupled is True.
+
         """
         ccl_tracers = {}
         tracer_Noise = {}
-        # b = { l:bi*np.ones(len(z)) for l, bi in self.lens_bias.items()}
+        tracer_Noise_coupled = {}
 
         for tracer in two_point_data.tracers:
             tracer_dat = two_point_data.get_tracer(tracer)
+            tracer_Noise_coupled[tracer] = tracer_dat.metadata.get('n_ell_coupled', None)
             # z = tracer_dat.z
 
             # FIXME: Following should be read from sacc dataset.--------------
@@ -441,8 +456,15 @@ class CovarianceCalculator():
                 else:
                     IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
                     ia_bias = (z, IA_bin)
-                ccl_tracers[tracer] = ccl.WeakLensingTracer(
-                    self.cosmo, dndz=(z, dNdz), ia_bias=ia_bias)
+                try:
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(
+                        self.cosmo, dndz=(z, dNdz), ia_bias=ia_bias)
+                except ccl.errors.CCLError:
+                    # Hack as in TXPipe. Error probably because Nz is noisy
+                    print("To avoid a CCL_ERROR_INTEG we reduce the " +
+                          f"number of points in the nz by half in {tracer}")
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(
+                        self.cosmo, dndz=(z[::2], dNdz[::2]), ia_bias=ia_bias)
                 # CCL automatically normalizes dNdz
                 if tracer in self.sigma_e:
                     tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
@@ -455,12 +477,29 @@ class CovarianceCalculator():
                 dNdz = tracer_dat.nz
                 # import pdb; pdb.set_trace()
                 b = self.bias_lens[tracer] * np.ones(len(z))
-                tracer_Noise[tracer] = 1./self.Ngal[tracer]
                 ccl_tracers[tracer] = ccl.NumberCountsTracer(
                     self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+                if tracer in self.Ngal:
+                    tracer_Noise[tracer] = 1./self.Ngal[tracer]
+                else:
+                    tracer_Noise[tracer] = None
             elif tracer_dat.quantity == 'cmb_convergence':
                 ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
                                                            z_source=1100)
+
+        if not np.all(list(tracer_Noise.values())):
+            warnings.warn('Missing noise for some tracers in file. You will ' +
+                          'have to pass it with the cache')
+
+        if return_noise_coupled:
+            vals = list(tracer_Noise_coupled.values())
+            if not np.all(vals):
+                tracer_Noise_coupled = None
+            elif not np.all(vals):
+                warnings.warn('Missing n_ell_coupled info for some tracers in '
+                              + 'the sacc file. You will have to pass it with'
+                              + 'the cache')
+            return ccl_tracers, tracer_Noise, tracer_Noise_coupled
 
         return ccl_tracers, tracer_Noise
 
@@ -514,22 +553,24 @@ class CovarianceCalculator():
 
         if cache is None:
             cache = {}
+        cache.update(self.cache)
 
-        if  'bins' in cache:
+        if 'bins' in cache:
             bins = cache['bins']
             if (self.binning_info is not None) and \
                (bins is not self.binning_info):
                 raise ValueError('Binning passed through cache is not the ' +
                                  'same as the one passed during ' +
                                  'initialization.')
-        elif self.binning_info is not None:
-            bins = self.binning_info
         else:
-            raise ValueError('You must pass a NmtBin instance through the ' +
-                             'cache or at initialization')
+            bins = self.binning_info
 
-        ell = np.arange(bins.lmax + 1)
-        ell_eff = bins.get_effective_ells()
+        # Get nbpw and ell arrays. Doing all this stuff because the window
+        # function in the sacc file might be wrong.
+        nbpw = nmt_tools.get_nbpw(self.cl_data)
+        nell = nmt_tools.get_nell(self.cl_data, bins, self.nside, cache)
+
+        ell = np.arange(nell)
 
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
@@ -596,7 +637,8 @@ class CovarianceCalculator():
             # TODO: Modify depending on how TXPipe caches things
             # Mask, mask_names, field and workspaces dictionaries
             mn = nmt_tools.get_mask_names_dict(self.mask_names, tr)
-            m = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, cache)
+            m = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, cache,
+                                         self.nside)
             f = nmt_tools.get_fields_dict(m, s, mn, tr, self.nmt_conf['f'],
                                           cache)
             w = nmt_tools.get_workspaces_dict(f, m, mn, bins, self.outdir,
@@ -625,8 +667,8 @@ class CovarianceCalculator():
                                           cl_cov[13], cl_cov[14], cl_cov[23],
                                           cl_cov[24], w[12], w[34], coupled)
         else:
-            size1 = ncell[12] * ell_eff.size
-            size2 = ncell[34] * ell_eff.size
+            size1 = ncell[12] * nbpw
+            size2 = ncell[34] * nbpw
             cov = np.zeros((size1, size2))
 
         np.savez_compressed(fname, cov=cov, final=cov, final_b=cov)
@@ -660,14 +702,17 @@ class CovarianceCalculator():
         two_point_data = self.cl_data
         cl_tracers = two_point_data.get_tracer_combinations()
 
-        ccl_tracers, tracer_Noise = self.get_tracer_info(
-            two_point_data=two_point_data)
+        ccl_tracers, tracer_Noise, tracer_Noise_coupled = \
+                self.get_tracer_info(two_point_data, return_noise_coupled=True)
 
-        if tracer_noise_coupled is not None:
-            tracer_Noise_coupled = tracer_Noise.copy()
+        if (tracer_noise_coupled is not None) or \
+                (tracer_Noise_coupled is not None):
             tracer_Noise = None
+            if tracer_Noise_coupled is None:
+                tracer_Noise_coupled = {}
         else:
             tracer_Noise_coupled = None
+
 
         # Circunvent the impossibility of inputting noise by hand
         for tracer in ccl_tracers:
@@ -676,17 +721,57 @@ class CovarianceCalculator():
             elif tracer_noise_coupled and tracer in tracer_noise_coupled:
                 tracer_Noise_coupled[tracer] = tracer_noise_coupled[tracer]
 
-        # Make a list of all pair of tracer combinations
-        tracers_cov = []
-        for i, tracer_comb1 in enumerate(cl_tracers):
-            for tracer_comb2 in cl_tracers[i:]:
-                tracers_cov.append((tracer_comb1, tracer_comb2))
+        # Make a list of all pair of tracer combinations needed to compute the
+        # independent workspaces
+        trs_wsp = nmt_tools.get_list_of_tracers_for_wsp(two_point_data,
+                                                        self.mask_names)
+        # Now the tracers for covariance workspaces (without trs_wsp)
+        trs_cwsp = nmt_tools.get_list_of_tracers_for_cov_wsp(two_point_data,
+                                                             self.mask_names,
+                                                             remove_trs_wsp=True)
+
+        # Make a list of all remaining combinations
+        tracers_cov = nmt_tools.get_list_of_tracers_for_cov(two_point_data,
+                                                            remove_trs_wsp_cwsp=True,
+                                                            mask_names=self.mask_names)
 
         # Save blocks and the corresponding tracers, as comm.gather does not
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
         print('Computing independent covariance blocks')
+        print('Computing the blocks for independent workspaces')
+        for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(trs_wsp):
+            print(tracer_comb1, tracer_comb2)
+            cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
+                                        tracer_comb2=tracer_comb2,
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        tracer_Noise_coupled=tracer_Noise_coupled,
+                                        **kwargs)['final']
+            blocks.append(cov)
+            tracers_blocks.append((tracer_comb1, tracer_comb2))
+
+        if self.comm:
+            self.comm.Barrier()
+
+        print('Computing the blocks for independent covariance workspaces')
+        for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(trs_cwsp):
+            print(tracer_comb1, tracer_comb2)
+            cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
+                                        tracer_comb2=tracer_comb2,
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        tracer_Noise_coupled=tracer_Noise_coupled,
+                                        **kwargs)['final']
+            blocks.append(cov)
+            tracers_blocks.append((tracer_comb1, tracer_comb2))
+
+        if self.comm:
+            self.comm.Barrier()
+
+        print('Computing the remaining blocks')
+        # Now loop over the remaining tracers
         for tracer_comb1, tracer_comb2 in self.split_tasks_by_rank(tracers_cov):
             print(tracer_comb1, tracer_comb2)
             cov = self.nmt_gaussian_cov(tracer_comb1=tracer_comb1,
@@ -697,6 +782,7 @@ class CovarianceCalculator():
                                         **kwargs)['final']
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
+
 
         return blocks, tracers_blocks
 
@@ -964,26 +1050,28 @@ class CovarianceCalculator():
 
         return cov_full
 
-    def create_sacc_cov(output, do_xi=False):
+    def create_sacc_cov(self, output, **kwargs):
         """ Write created cov to a new sacc object
 
         Parameters:
         ----------
         output (str): filename output
-        do_xi (bool): do_xi=True for real space, do_xi=False for harmonic
-            space
+        **kwargs: The arguments to pass to your chosen covariance estimation
+        method.
 
         Returns:
         -------
         None
 
         """
-        print("Placeholder...")
-        if do_xi:
-            print(f"Saving xi covariance as \n{output}")
+        if self.do_xi:
+            cov = self.get_all_cov(**kwargs)
         else:
-            print(f"Saving xi covariance as \n{output}")
-        pass
+            cov = self.get_all_cov_nmt(**kwargs)
+
+        s = self.cl_data.copy()
+        s.add_covariance(cov)
+        s.save_fits(output, overwrite=True)
 
 
 if __name__ == "__main__":

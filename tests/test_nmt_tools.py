@@ -24,6 +24,7 @@ os.makedirs(outdir)
 
 sacc_file = sacc.Sacc.load_fits(sacc_path)
 tjpcov_class = cv.CovarianceCalculator(input_yml)
+nside = 32
 
 def get_sacc():
     return sacc_file
@@ -301,27 +302,29 @@ def test_get_workspace(kwards):
     w.compute_coupling_matrix(f1, f2, bins, **kwards)
 
     # Compute workspace with nmt_tools
+    s1 = 0
+    s2 = 2
     mn1 = 'mask_DESgc0'
     mn2 = 'mask_DESwl0'
     w_code = nmt_tools.get_workspace(f1, f2, mn1, mn2, bins, outdir, **kwards)
 
     # Check the file is created
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     assert os.path.isfile(fname)
 
     # Check that you will read the same workspace if input the other way round
     # and check the symmetric file is not created
     w_code2 = nmt_tools.get_workspace(f2, f1, mn2, mn1, bins, outdir, **kwards)
-    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'w{s2}{s1}__{mn2}__{mn1}.fits')
     assert not os.path.isfile(fname)
 
     # Check that with recompute the original file is removed and the symmetric
     # remains
     w_code2 = nmt_tools.get_workspace(f2, f1, mn2, mn1, bins, outdir,
                                       recompute=True, **kwards)
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     assert not os.path.isfile(fname)
-    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'w{s2}{s1}__{mn2}__{mn1}.fits')
     assert os.path.isfile(fname)
 
     # Load cl to apply the workspace on
@@ -334,13 +337,13 @@ def test_get_workspace(kwards):
         - 1
     assert np.max(np.abs(rdev)) < 1e-10
 
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     remove_file(fname)
-    fname = os.path.join(outdir, f'w__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'w{s2}{s1}__{mn2}__{mn1}.fits')
     remove_file(fname)
     # Check that outdir can be None
     w_code = nmt_tools.get_workspace(f1, f2, mn1, mn2, bins, None, **kwards)
-    fname = os.path.join(outdir, f'w__{mn1}__{mn2}.fits')
+    fname = os.path.join(outdir, f'w{s1}{s2}__{mn1}__{mn2}.fits')
     assert not os.path.isfile(fname)
 
 
@@ -382,10 +385,12 @@ def test_get_covariance_workspace(kwards):
     # Check only the first is written/computed created & that cw is correct
 
     for fields, masks_names in zip(combinations, combinations_names):
+        spins = [fi.fl.spin for fi in fields]
         cw_code = nmt_tools.get_covariance_workspace(*fields, *masks_names,
                                                      outdir, **kwards)
         fname = os.path.join(outdir,
-                             'cw__{}__{}__{}__{}.fits'.format(*masks_names))
+                             'cw{}{}{}{}__{}__{}__{}__{}.fits'.format(*spins,
+                                                                      *masks_names))
         if masks_names == (mn1, mn2, mn3, mn4):
             assert os.path.isfile(fname)
         else:
@@ -403,10 +408,10 @@ def test_get_covariance_workspace(kwards):
                                                  mn2, mn1, outdir,
                                                  recompute=True, **kwards)
 
-    fname = os.path.join(outdir, f'cw__{mn1}__{mn2}__{mn3}__{mn3}.fits')
+    fname = os.path.join(outdir, f'cw0022__{mn1}__{mn2}__{mn3}__{mn3}.fits')
     assert not os.path.isfile(fname)
 
-    fname = os.path.join(outdir, f'cw__{mn3}__{mn4}__{mn2}__{mn1}.fits')
+    fname = os.path.join(outdir, f'cw2200__{mn3}__{mn4}__{mn2}__{mn1}.fits')
     assert os.path.isfile(fname)
 
     remove_file(fname)
@@ -425,12 +430,21 @@ def test_get_mask_names_dict():
         assert mn[i + 1] == tjpcov_class.mask_names[tr[i + 1]]
 
 
-def test_get_masks_dict():
+@pytest.mark.parametrize('kwards', [{'mask_fn': tjpcov_class.mask_fn,
+                                     'nside': None},
+                                    {'mask_fn':
+                                     './tests/benchmarks/32_DES_tjpcov_bm/catalogs/DES_mask_ns32.hdf5',
+                                     'nside': 32}])
+
+def test_get_masks_dict(kwards):
     tr = get_tracers_dict_for_cov_as_in_tjpcov()
     mn = get_mask_names_dict_for_cov_as_in_tjpcov()
     m = get_masks_dict_for_cov_as_in_tjpcov()
 
-    m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache={})
+    mask_fn = kwards['mask_fn']
+    nside = kwards['nside']
+
+    m2 = nmt_tools.get_masks_dict(mask_fn, mn, tr, cache={}, nside=nside)
 
     # Check the masks have been read correctly
     for i in range(4):
@@ -442,7 +456,7 @@ def test_get_masks_dict():
 
     # Check that cache works and avoid reading the files
     cache = {f'm{i + 1}': m[i + 1] for i in range(4)}
-    m2 = nmt_tools.get_masks_dict(tjpcov_class.mask_fn, mn, tr, cache=cache)
+    m2 = nmt_tools.get_masks_dict(mask_fn, mn, tr, cache=cache, nside=nside)
 
     for i in range(4):
         # Check they are the same object, i.e. have not been read
@@ -462,6 +476,13 @@ def test_get_fields_dict(nmt_conf):
 
     # Check that the DESgc fields are exactly the same (not generated twice)
     assert f2[1] is f2[2]
+
+    # Check that if the mask of DESwl has the same name as that of DESgc, they
+    # do not get messed up
+    mn2 = mn.copy()
+    mn2[3] = tjpcov_class.mask_names['DESgc__0']
+    f2 = nmt_tools.get_fields_dict(m, s, mn2, tr, nmt_conf, cache={})
+    assert f2[1] is not f2[3]
 
     # Check fields are the same by computing the workspace and coupling a
     # fiducial Cell
@@ -543,19 +564,28 @@ def test_get_workspace_dict(kwards):
     wl0wl0 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits')
     wl0wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits')
     wl1wl1 = os.path.join(root, 'DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits')
-    cache = {'workspaces': {('mask_DESgc0', 'mask_DESgc0'): gc0gc0,
-                            ('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
-                            ('mask_DESgc0', 'mask_DESwl1'): gc0wl1,
-                            ('mask_DESwl0', 'mask_DESwl0'): wl0wl0,
-                            ('mask_DESwl0', 'mask_DESwl1'): wl0wl1,
-                            ('mask_DESwl1', 'mask_DESwl1'): wl1wl1}}
-    # fields to None to force it fail if it does not uses the cache
-    w2 = nmt_tools.get_workspaces_dict(None, m, mn, bins, outdir, kwards,
+    cache = {'workspaces':
+             {'00': {('mask_DESgc0', 'mask_DESgc0'): gc0gc0},
+              '02': {('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
+                    ('mask_DESgc0', 'mask_DESwl1'): gc0wl1},
+              '22': {('mask_DESwl0', 'mask_DESwl0'): wl0wl0,
+                    ('mask_DESwl0', 'mask_DESwl1'): wl0wl1,
+                    ('mask_DESwl1', 'mask_DESwl1'): wl1wl1}}}
+    # bins to None to force it fail if it does not uses the cache
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, None, outdir, kwards,
                                        cache=cache)
+
     # Check that it will compute the workspaces if one is missing
-    del cache['workspaces'][('mask_DESgc0', 'mask_DESwl1')]
+    del cache['workspaces']['02'][('mask_DESgc0', 'mask_DESwl1')]
     w2 = nmt_tools.get_workspaces_dict(f, m, mn, bins, outdir, kwards,
                                        cache=cache)
+    # Check that '20' is also understood
+    del cache['workspaces']['02']
+    cache['workspaces']['20'] = {('mask_DESgc0', 'mask_DESwl0'): gc0wl0,
+                                 ('mask_DESgc0', 'mask_DESwl1'): gc0wl1}
+    w2 = nmt_tools.get_workspaces_dict(f, m, mn, None, outdir, kwards,
+                                       cache=cache)
+
 
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
@@ -595,6 +625,122 @@ def test_get_sacc_with_concise_dtypes():
                 # Don't check window as it points to a different memory address
                 continue
             assert dp.tags[k] == dp2.tags[k]
+
+def test_get_nbpw():
+    s = get_sacc()
+
+    nbpw = nmt_tools.get_nbpw(s)
+    bins = get_nmt_bin()
+
+    assert nbpw == bins.get_n_bands()
+
+
+def test_get_nell():
+    s = get_sacc()
+    nell = 3 * nside
+    bins = get_nmt_bin()
+    w = get_workspace('galaxy_clustering')
+    cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): w}}}
+
+    assert nell == nmt_tools.get_nell(s)
+
+    # Now with a sacc file without bandpower windows
+    s = get_dummy_sacc()
+    clf = get_cl('cross')
+    s.add_ell_cl('cl_0e', 'DESgc__0', 'DESwl__0', clf['ell'], clf['cl'][0])
+
+    assert nell == nmt_tools.get_nell(s, bins=bins)
+    assert nell == nmt_tools.get_nell(s, nside=nside)
+    assert nell == nmt_tools.get_nell(s, cache=cache)
+
+    # Force ValueError (as when window is wrong)
+    class s():
+        def __init__(self):
+            pass
+        def get_data_types(self):
+            raise ValueError
+
+    assert nell == nmt_tools.get_nell(s(), bins=bins)
+
+
+def test_get_list_of_tracers_for_wsp():
+    s = get_sacc()
+    mask_names = tjpcov_class.mask_names
+    trs_wsp = nmt_tools.get_list_of_tracers_for_wsp(s, mask_names)
+
+    trs_wsp2 = [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                (('DESgc__0', 'DESwl__0'), ('DESgc__0', 'DESwl__0')),
+                (('DESgc__0', 'DESwl__1'), ('DESgc__0', 'DESwl__1')),
+                (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                (('DESwl__0', 'DESwl__1'), ('DESwl__0', 'DESwl__1')),
+                (('DESwl__1', 'DESwl__1'), ('DESwl__1', 'DESwl__1'))]
+
+    assert sorted(trs_wsp) == sorted(trs_wsp2)
+
+
+def test_get_list_of_tracers_for_cov_wsp():
+    s = get_sacc()
+    mask_names = tjpcov_class.mask_names
+    trs_cwsp = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names)
+
+    trs_cwsp2 = [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                 (('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESgc__0'), ('DESwl__1', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__0'), ('DESgc__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESwl__0'), ('DESgc__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__1'), ('DESgc__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__1'), ('DESwl__0', 'DESwl__0')),
+                 (('DESgc__0', 'DESwl__1'), ('DESwl__0', 'DESwl__1')),
+                 (('DESgc__0', 'DESwl__1'), ('DESwl__1', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                 (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__1'), ('DESwl__0', 'DESwl__1')),
+                 (('DESwl__0', 'DESwl__1'), ('DESwl__1', 'DESwl__1')),
+                 (('DESwl__1', 'DESwl__1'), ('DESwl__1', 'DESwl__1')),
+                 ]
+
+    assert sorted(trs_cwsp) == sorted(trs_cwsp2)
+
+    trs_cwsp = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names,
+                                                         remove_trs_wsp=True)
+
+    for trs in nmt_tools.get_list_of_tracers_for_wsp(s, mask_names):
+        trs_cwsp2.remove(trs)
+
+    assert trs_cwsp == trs_cwsp2
+
+
+def test_get_list_of_tracers_for_cov():
+    s = get_sacc()
+    mask_names = tjpcov_class.mask_names
+    trs_cov = nmt_tools.get_list_of_tracers_for_cov(s)
+
+    # Test all tracers
+    trs_cov2 = []
+    tracers = s.get_tracer_combinations()
+    for i, trs1 in enumerate(tracers):
+        for trs2 in tracers[i:]:
+            trs_cov2.append((trs1, trs2))
+
+    assert trs_cov == trs_cov2
+
+    # Test all tracers except those used for workspaces and cov workspaces
+    trs_cov = nmt_tools.get_list_of_tracers_for_cov(s,
+                                                    remove_trs_wsp_cwsp=True,
+                                                    mask_names=mask_names)
+
+    for trs in nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names):
+        trs_cov2.remove(trs)
+
+    assert sorted(trs_cov) == sorted(trs_cov2)
+
 
 
 if os.path.isdir(outdir):

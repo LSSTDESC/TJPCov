@@ -1,0 +1,93 @@
+tjpcov:
+  use_mpi: True
+
+  # False: harmonic space; True: configuration space
+  do_xi: False
+
+  # harmonic space sacc input
+  # cl_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/twopoint_data_fourier.sacc
+  cl_file: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/summary_statistics_fourier_tjp.sacc
+
+  # 'set' from parameters OR pass CCL cosmology object OR yaml file
+  cosmo: examples/gaussian_sims_txpipe/fiducial_cosmology.yml
+
+  # allowed covariance type: gauss, ng (to be implemented)
+  cov_type: gauss
+
+  # Setting mask OR fsky approximation
+  mask_file: 
+    {% for i in range(5) %} 
+    source_{{ i }}: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/source_maps.hdf5
+    # lens_{{ i }}: /global/cscratch1/sd/carlosgg/cosmodc2_outdir_128/mask_wo_density_unseens.fits.gz
+    lens_{{ i }}: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/mask_nside128.hdf5
+    {% endfor %}
+
+  mask_names:
+    {% for i in range(5) %} 
+    source_{{ i }}: lensing_weight_{{ i }}
+    lens_{{ i }}: mask
+    {% endfor %}
+
+  outdir: /global/cscratch1/sd/carlosgg/cosmodc2_outdir_128/ 
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  {% for i in range(5) %} 
+  bias_lens_{{ i }}: 1
+  {% endfor %}
+
+  # IA: 0.5
+
+  binning_info: ignore
+
+  # Needed to read the masks and to generate nell because the window functions
+  # in the sacc file seems to be wrong
+  nside: 128
+
+NaMaster:
+  module: pymaster
+  f:
+    n_iter: 0
+    lmax_sht: -1
+  w:
+    lmax_mask: -1
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+  cw:
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+
+# Set cache now. This will be a dictionary passed to all functions in TJPCov
+# that reads the cache. See their documentation to know the possible keys and
+# values.
+cache:
+  workspaces: 
+   '00': 
+    !!python/tuple [mask, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_117425114361711337863539036686156726003.dat
+   '02': 
+    !!python/tuple [lensing_weight_0, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_71462392609674678976860458614183157498.dat
+    !!python/tuple [lensing_weight_1, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_247208756580811618759645693934698552145.dat
+    !!python/tuple [lensing_weight_2, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_28329377713089263378583293649078914915.dat
+    !!python/tuple [lensing_weight_3, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_112065645971973463312484637390690865013.dat
+    !!python/tuple [lensing_weight_4, mask]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_37828126114726357366041527483972485109.dat
+   '22':
+    !!python/tuple [lensing_weight_0, lensing_weight_0]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_327525364078996586159112702308976557262.dat
+    !!python/tuple [lensing_weight_1, lensing_weight_0]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_31626171527852820447383446701114612076.dat
+    !!python/tuple [lensing_weight_1, lensing_weight_1]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_162657065543829019916993288773056526693.dat
+    !!python/tuple [lensing_weight_2, lensing_weight_0]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_249065966437727480015723649960418774366.dat
+    !!python/tuple [lensing_weight_2, lensing_weight_1]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_73574024384009689243104599812027681013.dat
+    !!python/tuple [lensing_weight_2, lensing_weight_2]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_285722905685966991843432868715745848663.dat
+    !!python/tuple [lensing_weight_3, lensing_weight_0]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_332968225616181542209998202038429142344.dat
+    !!python/tuple [lensing_weight_3, lensing_weight_1]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_157216657939322354163180931046515984611.dat
+    !!python/tuple [lensing_weight_3, lensing_weight_2]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_290999461884104702432336089210234019025.dat
+    !!python/tuple [lensing_weight_3, lensing_weight_3]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_201934877672246840362115662077659606337.dat
+    !!python/tuple [lensing_weight_4, lensing_weight_0]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_236961998942570044750827407980373736904.dat
+    !!python/tuple [lensing_weight_4, lensing_weight_1]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_83059626603033817078963838513593251939.dat
+    !!python/tuple [lensing_weight_4, lensing_weight_2]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_195178872171656686383354788406071077969.dat
+    !!python/tuple [lensing_weight_4, lensing_weight_3]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_281511115825791964002122192140027587655.dat
+    !!python/tuple [lensing_weight_4, lensing_weight_4]: /global/projecta/projectdirs/lsst/groups/WL/users/jprat/gaussian_sims_srdnzs_fullsky/022422/12300area/nside128/cache_nmt/workspace_297504946339107881598446602663329684929.dat
