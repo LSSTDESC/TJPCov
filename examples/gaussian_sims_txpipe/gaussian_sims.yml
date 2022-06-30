@@ -62,6 +62,9 @@ NaMaster:
     n_iter: 3
     recompute: True
 
+# Set cache now. This will be a dictionary passed to all functions in TJPCov
+# that reads the cache. See their documentation to know the possible keys and
+# values.
 cache:
   workspaces: 
    '00': 
