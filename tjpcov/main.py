@@ -1137,6 +1137,21 @@ class CovarianceCalculator():
         return cov_full
 
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        """
+        Build full matrix from blocks.
+
+        Parameters:
+        -----------
+        blocks (list): List of blocks
+        tracers_cov (list): List of tracer combinations corresponding to each
+        block in blocks. They should have the same order
+
+        Returns:
+        --------
+        cov_full (Npt x Npt numpy array):
+            Covariance matrix for all combinations.
+            Npt = (number of bins ) * (number of combinations)
+        """
         blocks = iter(blocks)
 
         two_point_data = self.cl_data
