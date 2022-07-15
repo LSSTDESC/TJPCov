@@ -504,7 +504,7 @@ class CovarianceCalculator():
         return ccl_tracers, tracer_Noise
 
     def get_SSC_cov(self, tracer_comb1=None, tracer_comb2=None,
-                    ccl_tracers=None, fsky=None,
+                    ccl_tracers=None,
                     integration_method='qag_quad', include_b_modes=True):
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
@@ -520,7 +520,6 @@ class CovarianceCalculator():
             tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
             ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
             the tracer names
-            fsky (float): sky fraction.
             integration_method (string): integration method to be used
                 for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
                 method backed up by `quad` when it fails) and 'spline' (the
@@ -535,9 +534,6 @@ class CovarianceCalculator():
             in both cases.
 
         """
-        if fsky is None:
-            fsky = self.fsky
-
         tr = {}
         tr[1], tr[2] = tracer_comb1
         tr[3], tr[4] = tracer_comb2
@@ -574,15 +570,39 @@ class CovarianceCalculator():
         a = np.linspace(1/(1+z_max), 1/(1+z_min), n_z)
         k = np.geomspace(k_min, k_max, n_k)
 
-        tk3D = ccl.halos.halomod_Tk3D_SSC(cosmo=cosmo, hmc=hmc,
-                                          prof1=nfw,
-                                          prof2=nfw,
-                                          prof12_2pt=None,
-                                          normprof1=True, normprof2=True,
-                                          lk_arr=np.log(k), a_arr=a,
-                                          use_log=True)
+        bias1 = self.bias_lens.get(tr[1], 1)
+        bias2 = self.bias_lens.get(tr[2], 1)
+        bias3 = self.bias_lens.get(tr[3], 1)
+        bias4 = self.bias_lens.get(tr[4], 1)
 
-        sigma2_B = ccl.sigma2_B_disc(cosmo, a=a, fsky=fsky)
+        isnc1 = isinstance(ccl_tracers[tr[1]], ccl.NumberCountsTracer)
+        isnc2 = isinstance(ccl_tracers[tr[2]], ccl.NumberCountsTracer)
+        isnc3 = isinstance(ccl_tracers[tr[3]], ccl.NumberCountsTracer)
+        isnc4 = isinstance(ccl_tracers[tr[4]], ccl.NumberCountsTracer)
+
+        tk3D = ccl.halos.halomod_Tk3D_SSC_linear_bias(cosmo=cosmo, hmc=hmc,
+                                                      prof=nfw,
+                                                      bias1=bias1,
+                                                      bias2=bias2,
+                                                      bias3=bias3,
+                                                      bias4=bias4,
+                                                      is_number_counts1=isnc1,
+                                                      is_number_counts2=isnc2,
+                                                      is_number_counts3=isnc3,
+                                                      is_number_counts4=isnc4,
+                                                      lk_arr=np.log(k),
+                                                      a_arr=a, use_log=True)
+
+        mn = nmt_tools.get_mask_names_dict(self.mask_names, tr)
+        masks = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, None,
+                                         self.nside)
+        alm = hp.map2alm(masks[tr[1]] * masks[tr[2]])
+        blm = hp.map2alm(masks[tr[3]] * masks[tr[4]])
+
+        mask_wl = hp.alm2cl(alm * blm)
+        mask_wl *= (2 * np.arange(mask_wl.size) + 1)
+
+        sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a, mask_wl=mask_wl)
 
         ell = nmt_tools.get_ell_eff(self.cl_data)
         cov_ssc = ccl.covariances.angular_cl_cov_SSC(cosmo,
@@ -593,7 +613,6 @@ class CovarianceCalculator():
                                                      ell=ell,
                                                      tkka=tk3D,
                                                      sigma2_B=(a, sigma2_B),
-                                                     fsky=fsky,
                                                      integration_method=integration_method)
 
         if not include_b_modes:
@@ -890,7 +909,7 @@ class CovarianceCalculator():
 
         return blocks, tracers_blocks
 
-    def compute_all_blocks_SSC(self, fsky=None,
+    def compute_all_blocks_SSC(self,
                                integration_method='qag_quad',
                                include_b_modes=True):
         """
@@ -898,7 +917,6 @@ class CovarianceCalculator():
 
         Parameters:
         -----------
-        fsky (float): sky fraction.
         integration_method (string) : integration method to be used for the
         Limber integrals. Possibilities: 'qag_quad' (GSL's `qag` method backed
         up by `quad` when it fails) and 'spline' (the integrand is splined and
@@ -928,7 +946,6 @@ class CovarianceCalculator():
             cov = self.get_SSC_cov(tracer_comb1=tracer_comb1,
                                    tracer_comb2=tracer_comb2,
                                    ccl_tracers=ccl_tracers,
-                                   fsky=fsky,
                                    integration_method=integration_method,
                                    include_b_modes=include_b_modes)
             blocks.append(cov)
@@ -1119,121 +1136,7 @@ class CovarianceCalculator():
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
         return cov_full
 
-    def get_all_cov_nmt(self, tracer_noise=None, tracer_noise_coupled=None,
-                        **kwargs):
-        """
-        Compute all the covariances and then combine them into one single giant matrix
-        Parameters:
-        -----------
-        tracer_noise (dict): Dictionary with necessary (uncoupled) noise
-        with keys the tracer names. The values must be a float or int, not
-        an array
-        tracer_noise_coupled (dict): As tracer_Noise but with coupled
-        noise.
-        **kwargs: The arguments to pass to your chosen covariance estimation
-        method.
-
-        Returns:
-        --------
-        cov_full (Npt x Npt numpy array):
-            Covariance matrix for all combinations.
-            Npt = (number of bins ) * (number of combinations)
-        """
-
-        blocks, tracers_cov = self.compute_all_blocks_nmt(tracer_noise,
-                                             tracer_noise_coupled, **kwargs)
-
-        if self.comm is not None:
-            blocks = self.comm.gather(blocks, root=0)
-            tracers_cov = self.comm.gather(tracers_cov, root=0)
-
-            if self.rank == 0:
-                blocks = sum(blocks, [])
-                tracers_cov = sum(tracers_cov, [])
-            else:
-                return
-
-        blocks = iter(blocks)
-
-        two_point_data = self.cl_data
-        # Covariance construction based on
-        # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
-        s = nmt_tools.get_sacc_with_concise_dtypes(two_point_data)
-        dtype = s.get_data_types()[0]
-        tracers = s.get_tracer_combinations(data_type=dtype)[0]
-        ell, _ = s.get_ell_cl(dtype, *tracers)
-        nbpw = ell.size
-        #
-        ndim = s.mean.size
-        cl_tracers = s.get_tracer_combinations()
-
-        cov_full = -1 * np.ones((ndim, ndim))
-
-        print('Building the covariance: placing blocks in their place')
-        for tracer_comb1, tracer_comb2 in tracers_cov:
-            print(tracer_comb1, tracer_comb2)
-            # Although these two variables do not vary as ncell2 and dtypes2,
-            # it is cleaner to tho the loop this way
-            ncell1 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb1)
-            dtypes1 = nmt_tools.get_datatypes_from_ncell(ncell1)
-
-            ncell2 = nmt_tools.get_tracer_comb_ncell(s, tracer_comb2)
-            dtypes2 = nmt_tools.get_datatypes_from_ncell(ncell2)
-
-            cov_ij = next(blocks)
-            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
-
-            for i, dt1 in enumerate(dtypes1):
-                ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
-                if len(ix1) == 0:
-                    continue
-                for j, dt2 in enumerate(dtypes2):
-                    ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
-                    if len(ix2) == 0:
-                        continue
-                    covi = cov_ij[:, i, :, j]
-                    cov_full[np.ix_(ix1, ix2)] = covi
-                    cov_full[np.ix_(ix2, ix1)] = covi.T
-
-        if np.any(cov_full == -1):
-            raise Exception('Something went wrong. Probably related to the ' +
-                            'data types')
-
-        return cov_full
-
-    def get_all_cov_SSC(self, fsky=None, integration_method='qag_quad'):
-        """
-        Compute all the SSC block covariances and then combine them into one
-        single giant matrix
-
-        Parameters:
-        -----------
-        fsky (float): sky fraction.
-        integration_method (string) : integration method to be used
-            for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
-            method backed up by `quad` when it fails) and 'spline' (the
-            integrand is splined and then integrated analytically).
-
-        Returns:
-        --------
-        cov_full (Npt x Npt numpy array):
-            Covariance matrix for all combinations.
-            Npt = (number of bins ) * (number of combinations)
-        """
-
-        blocks, tracers_cov = self.compute_all_blocks_SSC(fsky,
-                                                          integration_method)
-
-        if self.comm is not None:
-            blocks = self.comm.gather(blocks, root=0)
-            tracers_cov = self.comm.gather(tracers_cov, root=0)
-
-            if self.rank == 0:
-                blocks = sum(blocks, [])
-                tracers_cov = sum(tracers_cov, [])
-            else:
-                return
-
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
         blocks = iter(blocks)
 
         two_point_data = self.cl_data
@@ -1279,6 +1182,79 @@ class CovarianceCalculator():
 
         return cov_full
 
+    def get_all_cov_nmt(self, tracer_noise=None, tracer_noise_coupled=None,
+                        **kwargs):
+        """
+        Compute all the covariances and then combine them into one single giant matrix
+        Parameters:
+        -----------
+        tracer_noise (dict): Dictionary with necessary (uncoupled) noise
+        with keys the tracer names. The values must be a float or int, not
+        an array
+        tracer_noise_coupled (dict): As tracer_Noise but with coupled
+        noise.
+        **kwargs: The arguments to pass to your chosen covariance estimation
+        method.
+
+        Returns:
+        --------
+        cov_full (Npt x Npt numpy array):
+            Covariance matrix for all combinations.
+            Npt = (number of bins ) * (number of combinations)
+        """
+
+        blocks, tracers_cov = self.compute_all_blocks_nmt(tracer_noise,
+                                             tracer_noise_coupled, **kwargs)
+
+        if self.comm is not None:
+            blocks = self.comm.gather(blocks, root=0)
+            tracers_cov = self.comm.gather(tracers_cov, root=0)
+
+            if self.rank == 0:
+                blocks = sum(blocks, [])
+                tracers_cov = sum(tracers_cov, [])
+            else:
+                return
+
+        cov_full = self._build_matrix_from_blocks(blocks, tracers_cov)
+
+        return cov_full
+
+    def get_all_cov_SSC(self, integration_method='qag_quad'):
+        """
+        Compute all the SSC block covariances and then combine them into one
+        single giant matrix
+
+        Parameters:
+        -----------
+        integration_method (string) : integration method to be used
+            for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
+            method backed up by `quad` when it fails) and 'spline' (the
+            integrand is splined and then integrated analytically).
+
+        Returns:
+        --------
+        cov_full (Npt x Npt numpy array):
+            Covariance matrix for all combinations.
+            Npt = (number of bins ) * (number of combinations)
+        """
+
+        blocks, tracers_cov = self.compute_all_blocks_SSC(integration_method)
+
+        if self.comm is not None:
+            blocks = self.comm.gather(blocks, root=0)
+            tracers_cov = self.comm.gather(tracers_cov, root=0)
+
+            if self.rank == 0:
+                blocks = sum(blocks, [])
+                tracers_cov = sum(tracers_cov, [])
+            else:
+                return
+
+        cov_full = self._build_matrix_from_blocks(blocks, tracers_cov)
+
+        return cov_full
+
     def create_sacc_cov(self, output, add_SSC=False, **kwargs):
         """ Write created cov to a new sacc object
 
@@ -1302,8 +1278,6 @@ class CovarianceCalculator():
 
         if add_SSC:
             kwargs_ssc = {}
-            if 'fsky' in kwargs:
-                kwargs_ssc['fsky'] = kwargs['fsky']
             if 'integration_method' in kwargs:
                 kwargs_ssc['integration_method'] = kwargs['integration_method']
 
