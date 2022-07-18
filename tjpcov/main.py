@@ -540,7 +540,7 @@ class CovarianceCalculator():
 
         cosmo = self.cosmo
         mass_def = ccl.halos.MassDef200m()
-        hmf = ccl.halos.MassFuncTinker10(cosmo,
+        hmf = ccl.halos.MassFuncTinker08(cosmo,
                                          mass_def=mass_def)
         hbf = ccl.halos.HaloBiasTinker10(cosmo,
                                          mass_def=mass_def)

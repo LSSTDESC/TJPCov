@@ -25,7 +25,7 @@ def get_config():
 
 def get_halomodel_calculator_and_NFW_profile(cosmo):
     md = ccl.halos.MassDef200m()
-    mf = ccl.halos.MassFuncTinker10(cosmo, mass_def=md)
+    mf = ccl.halos.MassFuncTinker08(cosmo, mass_def=md)
     hb = ccl.halos.HaloBiasTinker10(cosmo, mass_def=md)
     cm = ccl.halos.ConcentrationDuffy08(mdef=md)
 
