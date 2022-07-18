@@ -218,6 +218,8 @@ def test_get_tracer_comb_spin():
     assert nmt_tools.get_tracer_comb_ncell(s, ('PLAcv', 'DESwl__0')) == 2
     assert nmt_tools.get_tracer_comb_ncell(s, ('DESgc__0', 'DESwl__0')) == 2
     assert nmt_tools.get_tracer_comb_ncell(s, ('DESwl__0', 'DESwl__0')) == 4
+    assert nmt_tools.get_tracer_comb_ncell(s, ('DESwl__0', 'DESwl__0'),
+                                               independent=True) == 3
 
 
 def test_get_datatypes_from_ncell():
