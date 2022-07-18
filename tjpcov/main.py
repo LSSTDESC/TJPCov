@@ -548,27 +548,22 @@ class CovarianceCalculator():
                                        fourier_analytic=True)
         hmc = ccl.halos.HMCalculator(cosmo, hmf, hbf, mass_def)
 
-        # Range of k
-        k_min = 1e-4
-        k_max = 1e2
-
-        # Get range of redshifts
-        z_min = []
+        # Get range of redshifts. z_min = 0 for compatibility with the limber
+        # integrals
         z_max = []
         for i in range(4):
             tr_sacc = self.cl_data.tracers[tr[i + 1]]
             z, nz = tr_sacc.z, tr_sacc.nz
-            z_min.append(z[np.where(nz > 0)[0][0]])
-            z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
+            # z_min.append(z[np.where(nz > 0)[0][0]])
+            # z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
+            z_max.append(z.max())
 
-        z_min = np.min(z_min)
         z_max = np.min(z_max)
 
-        # Arrays of a and k
-        n_k = 200
-        n_z = 100
-        a = np.linspace(1/(1+z_max), 1/(1+z_min), n_z)
-        k = np.geomspace(k_min, k_max, n_k)
+        # Array of a. The number of z's have been chosen so that the test with
+        # z_max = 4 worked (see test_get_SSC_cov in tests/test_ssc.py)
+        n_z = 200
+        a = 1./(1+np.linspace(0, z_max, n_z)[::-1])
 
         bias1 = self.bias_lens.get(tr[1], 1)
         bias2 = self.bias_lens.get(tr[2], 1)
@@ -590,14 +585,13 @@ class CovarianceCalculator():
                                                       is_number_counts2=isnc2,
                                                       is_number_counts3=isnc3,
                                                       is_number_counts4=isnc4,
-                                                      lk_arr=np.log(k),
-                                                      a_arr=a, use_log=True)
+                                                      )
 
         mn = nmt_tools.get_mask_names_dict(self.mask_names, tr)
-        masks = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, None,
-                                         self.nside)
-        alm = hp.map2alm(masks[tr[1]] * masks[tr[2]])
-        blm = hp.map2alm(masks[tr[3]] * masks[tr[4]])
+        masks = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, {}, self.nside)
+        # TODO: Optimize this, avoid computing the mask_wl for all blocks.
+        alm = hp.map2alm(masks[1] * masks[2])
+        blm = hp.map2alm(masks[3] * masks[4])
 
         mask_wl = hp.alm2cl(alm * blm)
         mask_wl *= (2 * np.arange(mask_wl.size) + 1)
@@ -619,8 +613,10 @@ class CovarianceCalculator():
             return cov_ssc
 
         nbpw = ell.size
-        ncell1 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1)
-        ncell2 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb2)
+        ncell1 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1,
+                                                 independent=True)
+        ncell2 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb2,
+                                                 independent=True)
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
 

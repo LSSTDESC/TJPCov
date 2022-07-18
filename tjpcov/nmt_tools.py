@@ -73,7 +73,7 @@ def get_tracer_comb_spin(sacc_data, tracer_comb):
     return s1, s2
 
 
-def get_tracer_comb_ncell(sacc_data, tracer_comb):
+def get_tracer_comb_ncell(sacc_data, tracer_comb, independent=False):
     """
     Return the number of Cell for a pair of tracers (e.g. for shear-shear,
     ncell = 4: EE, EB, BE, BB)
@@ -82,6 +82,8 @@ def get_tracer_comb_ncell(sacc_data, tracer_comb):
     -----------
         sacc_data (Sacc):  Data Sacc instance
         tracer_comb (tuple):  List or tuple of a pair of tracer names
+        independent (bool): If True, just return the number of independent
+        Cell.
 
     Returns:
     --------
@@ -91,7 +93,13 @@ def get_tracer_comb_ncell(sacc_data, tracer_comb):
     nmaps1 = get_tracer_nmaps(sacc_data, tracer_comb[0])
     nmaps2 = get_tracer_nmaps(sacc_data, tracer_comb[1])
 
-    return nmaps1 * nmaps2
+    ncell = nmaps1 * nmaps2
+
+    if (tracer_comb[0] == tracer_comb[1]) and ncell == 4:
+        # Remove BE, because it will be the same as EB if tr1 == tr2
+        ncell = 3
+
+    return ncell
 
 
 def get_datatypes_from_ncell(ncell):
