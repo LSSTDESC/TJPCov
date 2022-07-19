@@ -1,34 +1,30 @@
 tracers:
-  # Biases from Table II of DES 5x2pt paper
+  # Using config /mnt/extraspace/damonge/Datasets/DES_Y1
   DESgc__0:
-    data_catalogs: '/mnt/extraspace/damonge/S8z_data/DES_data/redmagic_catalog/DES_Y1A1_3x2pt_redMaGiC_zerr_CATALOG.fits'
-    file_mask: '/mnt/extraspace/damonge/S8z_data/DES_data/redmagic_catalog/DES_Y1A1_3x2pt_redMaGiC_MASK_HPIX4096RING.fits'
-    file_nz: '/mnt/extraspace/damonge/S8z_data/DES_data/data_vector/2pt_NG_mcal_1110.fits'
     zbin: 0
-    nside: 32
+    data_catalog: '/mnt/extraspace/damonge/Datasets/DES_Y1/redmagic_catalog/DES_Y1A1_3x2pt_redMaGiC_zerr_CATALOG.fits'
+    file_mask: '/mnt/extraspace/damonge/Datasets/DES_Y1/redmagic_catalog/DES_Y1A1_3x2pt_redMaGiC_MASK_HPIX4096RING.fits'
+    file_nz: '/mnt/extraspace/damonge/Datasets/DES_Y1/data_vector/2pt_NG_mcal_1110.fits'
     mask_name: 'mask_DESgc'
     mapper_class: 'MapperDESY1gc'
-    # 1.41 -> Increased by 5% to match BF amplitude
+    mask_threshold: 0.5
     bias: 1.48
-    threshold: 0.5
 
   DESwl__0:
-    zbin_cat: '/mnt/extraspace/damonge/S8z_data/DES_data/shear_catalog/y1_source_redshift_binning_v1.fits'
-    data_cat:  '/mnt/extraspace/damonge/S8z_data/DES_data/shear_catalog/mcal-y1a1-combined-riz-unblind-v4-matched.fits'
-    file_nz: '/mnt/extraspace/damonge/S8z_data/DES_data/shear_catalog/y1_redshift_distributions_v1.fits'
-    nside: 32
     zbin: 0
-    path_lite: '/mnt/extraspace/gravityls_3/S8z/data/DES/'
+    zbin_cat: '/mnt/extraspace/damonge/Datasets/DES_Y1/shear_catalog/y1_source_redshift_binning_v1.fits'
+    data_cat:  '/mnt/extraspace/damonge/Datasets/DES_Y1/shear_catalog/mcal-y1a1-combined-riz-unblind-v4-matched.fits'
+    file_nz: '/mnt/extraspace/damonge/Datasets/DES_Y1/shear_catalog/y1_redshift_distributions_v1.fits'
+    path_rerun: '/mnt/extraspace/gravityls_3/xCell_output/xcell_reruns/DES_Y1'
     mask_name: 'mask_DESwl0'
     mapper_class: 'MapperDESY1wl'
 
   DESwl__1:
-    zbin_cat: '/mnt/extraspace/damonge/S8z_data/DES_data/shear_catalog/y1_source_redshift_binning_v1.fits'
-    data_cat:  '/mnt/extraspace/damonge/S8z_data/DES_data/shear_catalog/mcal-y1a1-combined-riz-unblind-v4-matched.fits'
-    file_nz: '/mnt/extraspace/damonge/S8z_data/DES_data/shear_catalog/y1_redshift_distributions_v1.fits'
-    nside: 32
     zbin: 1
-    path_lite: '/mnt/extraspace/gravityls_3/S8z/data/DES/'
+    zbin_cat: '/mnt/extraspace/damonge/Datasets/DES_Y1/shear_catalog/y1_source_redshift_binning_v1.fits'
+    data_cat:  '/mnt/extraspace/damonge/Datasets/DES_Y1/shear_catalog/mcal-y1a1-combined-riz-unblind-v4-matched.fits'
+    file_nz: '/mnt/extraspace/damonge/Datasets/DES_Y1/shear_catalog/y1_redshift_distributions_v1.fits'
+    path_rerun: '/mnt/extraspace/gravityls_3/xCell_output/xcell_reruns/DES_Y1'
     mask_name: 'mask_DESwl1'
     mapper_class: 'MapperDESY1wl'
 
@@ -75,11 +71,12 @@ toeplitz:
     l_exact: -1
     dl_band: -1
 
-healpy:
+sphere:
   n_iter_sht: 0
   n_iter_mcm: 3
   n_iter_cmcm: 3
   nside: 32
+  coords: 'C'
 
 recompute:
   cls: False
@@ -87,4 +84,4 @@ recompute:
   mcm: False
   cmcm: False
 
-output:  '/mnt/extraspace/gravityls_3/S8z/Cls_new_pipeline/32_DES_tjpcov_bm/'
+output:  '/mnt/extraspace/gravityls_3/xCell_output/32_DES_tjpcov_bm/'
