@@ -12,6 +12,7 @@ size = comm.Get_size()
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml_mpi = os.path.join(root, "tjpcov_conf_minimal_mpi.yaml")
+input_yml_nompi = os.path.join(root, "tjpcov_conf_minimal.yaml")
 
 
 def get_nmt_bin():
@@ -132,6 +133,22 @@ def test_get_all_cov_nmt_mpi():
     if rank == 0:
         cov += 1e-100
         cov_bm = s.covariance.covmat + 1e-100
+        assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
+
+def test_get_all_cov_SSC_mpi():
+    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
+    cov = tjpcov_class.get_all_cov_SSC()
+
+    comm.Barrier()
+    if rank == 0:
+        cov += 1e-100
+        # The serial computation will load the saved covariance blocks so it
+        # will not be expensive. We will be testing that the covariancia is
+        # built correctly
+        tjpcov_class = cv.CovarianceCalculator(input_yml_nompi)
+        cov_bm = tjpcov_class.get_all_cov_SSC() + 1e-100
         assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
         assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
         os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
