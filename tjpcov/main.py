@@ -534,6 +534,12 @@ class CovarianceCalculator():
             in both cases.
 
         """
+        fname = 'ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+        fname = os.path.join(self.outdir, fname)
+        if os.path.isfile(fname):
+            cf = np.load(fname)
+            return cf['cov' if include_b_modes else 'cov_nob']
+
         tr = {}
         tr[1], tr[2] = tracer_comb1
         tr[3], tr[4] = tracer_comb2
@@ -609,9 +615,6 @@ class CovarianceCalculator():
                                                      sigma2_B=(a, sigma2_B),
                                                      integration_method=integration_method)
 
-        if not include_b_modes:
-            return cov_ssc
-
         nbpw = ell.size
         ncell1 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1,
                                                  independent=True)
@@ -619,8 +622,14 @@ class CovarianceCalculator():
                                                  independent=True)
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
+        cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
 
-        return cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
+        np.savez_compressed(fname, cov=cov_full, cov_nob=cov_ssc)
+
+        if not include_b_modes:
+            return cov_ssc
+
+        return cov_full
 
     def nmt_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,

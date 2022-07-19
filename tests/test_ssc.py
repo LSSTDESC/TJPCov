@@ -9,13 +9,23 @@ import sacc
 import glob
 import pyccl as ccl
 import healpy as hp
+import shutil
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml_ssc = os.path.join(root, "tjpcov_conf_minimal_ssc.yaml")
 
-# cosmo = ccl.Cosmology(Omega_c=0.25, Omega_b=0.05, h=0.7, n_s=0.97,
-#                       sigma8=0.8, m_nu=0.0)
+
+def clean_tmp():
+    if os.path.isdir('./tests/tmp'):
+        shutil.rmtree('./tests/tmp/')
+    os.makedirs('./tests/tmp')
+
+    if os.path.isdir('./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/'):
+        shutil.rmtree('./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/')
+    os.makedirs('./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/')
+
+clean_tmp()
 
 def get_config():
     with open(input_yml_ssc) as f:
@@ -76,6 +86,12 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
                              integration_method='qag_quad',
                              include_b_modes=False)
 
+    # Check saved file
+    covf = np.load(cc.outdir + '/ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1,
+                                                             *tracer_comb2))
+    assert np.max(np.abs((covf['cov_nob'] + 1e-100) / (cov_ssc + 1e-100) - 1)) < 1e-10
+    clean_tmp()
+
     # CCL covariance
     a_arr = 1./(1+np.linspace(0, 4, 200)[::-1])
 
@@ -126,9 +142,6 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
                                      sigma2_B=(a_arr, sigma2_B),
                                      cltracer3=tr3, cltracer4=tr4)
 
-    print(np.diag(cov_ssc))
-    print(np.diag(cov_ccl))
-    print(cov_ccl.shape)
     assert np.max(np.fabs(cov_ssc/cov_ccl - 1)) < 1e-3
 
     # Check you get zeroed B-modes
@@ -137,6 +150,8 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
                                 ccl_tracers=ccl_tracers,
                                 integration_method='qag_quad',
                                 include_b_modes=True)
+    # Check saved
+    assert np.max(np.abs((covf['cov'] + 1e-100) / (cov_ssc_zb + 1e-100) - 1)) < 1e-10
 
     ix1 = s.indices(tracers=tracer_comb1)
     ix2 = s.indices(tracers=tracer_comb2)
@@ -148,6 +163,25 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
     assert np.all(cov_ssc_zb[:, 0, :, 0] == cov_ssc)
     cov_ssc_zb[:, 0, :, 0] -= cov_ssc
     assert np.all(cov_ssc_zb == np.zeros_like(cov_ssc_zb))
+
+
+    # Check get_SSC_cov reads file
+    covf = np.load(cc.outdir + '/ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1,
+                                                             *tracer_comb2))
+    cov_ssc = cc.get_SSC_cov(tracer_comb1=tracer_comb1,
+                                tracer_comb2=tracer_comb2,
+                                ccl_tracers=ccl_tracers,
+                                integration_method='qag_quad',
+                                include_b_modes=False)
+    assert np.all(covf['cov_nob'] == cov_ssc)
+
+    cov_ssc_zb = cc.get_SSC_cov(tracer_comb1=tracer_comb1,
+                                tracer_comb2=tracer_comb2,
+                                ccl_tracers=ccl_tracers,
+                                integration_method='qag_quad',
+                                include_b_modes=True)
+
+    assert np.all(covf['cov'] == cov_ssc_zb)
 
 
 def test_get_all_cov_SSC():
@@ -186,3 +220,5 @@ def test_get_all_cov_SSC():
     s.remove_selection(data_type='cl_ee')
 
     assert np.all(s.covariance.covmat == 1e-100)
+
+clean_tmp()
