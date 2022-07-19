@@ -112,23 +112,32 @@ def test_set_cosmo():
 #     return
 
 
-# TODO: Update these tests to avoid depending on a pkl object
-# def test_cl_block():
-#
-#     tracer_comb1 = ('lens0', 'lens0')
-#     tracer_comb2 = ('lens0', 'lens0')
-#
-#     print(f"Checking covariance block. \
-#           Tracer combination {tracer_comb1} {tracer_comb2}")
-#
-#     gcov_cl_1 = tjp0.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-#                                      tracer_comb2=tracer_comb2,
-#                                      ccl_tracers=ccl_tracers,
-#                                      tracer_Noise=tracer_Noise,
-#                                      two_point_data=tjp0.cl_data,
-#                                      do_xi=False)
-#     np.testing.assert_allclose(gcov_cl_1['final_b'],
-#                                ref_cov0cl[:24, :24])
+def test_cl_block():
+    tracer_comb1 = ('lens0', 'lens0')
+    tracer_comb2 = ('lens0', 'lens0')
+
+    print(f"Checking covariance block. \
+          Tracer combination {tracer_comb1} {tracer_comb2}")
+
+    s = tjp0.cl_data
+
+    ell = tjp0.ell
+    ccltr = ccl_tracers['lens0']
+    cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise['lens0']
+
+    fsky = tjp0.fsky
+    dl = np.gradient(ell)
+    cov = np.diag(2 * cl**2 / ((2 * ell + 1) * fsky * dl))
+    lb, cov = bin_cov(r=ell, r_bins=tjp0.ell_edges, cov=cov)
+
+    gcov_cl_1 = tjp0.cl_gaussian_cov(tracer_comb1=tracer_comb1,
+                                     tracer_comb2=tracer_comb2,
+                                     ccl_tracers=ccl_tracers,
+                                     tracer_Noise=tracer_Noise,
+                                     two_point_data=tjp0.cl_data,
+                                     do_xi=False)
+    np.testing.assert_allclose(gcov_cl_1['final_b'],
+                               cov)
 
 
 @pytest.mark.slow
