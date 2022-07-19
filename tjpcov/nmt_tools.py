@@ -95,7 +95,7 @@ def get_tracer_comb_ncell(sacc_data, tracer_comb, independent=False):
 
     ncell = nmaps1 * nmaps2
 
-    if (tracer_comb[0] == tracer_comb[1]) and ncell == 4:
+    if independent and (tracer_comb[0] == tracer_comb[1]) and (ncell == 4):
         # Remove BE, because it will be the same as EB if tr1 == tr2
         ncell = 3
 
