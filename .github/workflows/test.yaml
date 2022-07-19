@@ -50,25 +50,31 @@ jobs:
                         # pip install -r requirements.txt
                         # pip install .
                 
+             - name: Test tools
+               run: |
+                        # Run other tests
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_tools.py
 
-             - name: Tests
+             - name: Test Gaussian covariance (Knox formula)
                run: |
                         # TODO: make these tests pyccl version independent.
                         # Commented for now
                         # Run harmonic Space & configuration space with fsky
                         # approx
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal.py
+
+             - name: Test Gaussian covariance (NaMaster)
+               run: |
                         
                         # Run Namaster tests
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt_tools.py
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt.py
 
+             - name: Test Super Sample Covariance 
+               run: |
                         # Run SSC tests
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_ssc.py
                         
-                        # Run other tests
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_tools.py
-
              - name: Test mpi (openmpi)
                run: |
                         # Install openmpi
