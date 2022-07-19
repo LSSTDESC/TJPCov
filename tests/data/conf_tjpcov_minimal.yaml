@@ -14,7 +14,7 @@ tjpcov:
 
 
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
-  cosmo: tests/data/cosmos_desy1_v2p1p0.pkl
+  cosmo: tests/tmp/cosmos_desy1_v2p1p0.pkl
 
   # allowed covariance type: gauss, ng (to be implemented)
   cov_type: gauss
