@@ -158,7 +158,13 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
     ncell1 = int(ix1.size / ell.size)
     ncell2 = int(ix2.size / ell.size)
 
-    assert cov_ssc_zb.shape == (ix1.size, ix2.size)
+    # The covariance will have all correlations, including when EB == BE
+    if (ncell1 == 3) and (tracer_comb1[0] == tracer_comb1[1]):
+        ncell1 += 1
+    if (ncell2 == 3) and (tracer_comb2[0] == tracer_comb2[1]):
+        ncell2 += 1
+
+    assert cov_ssc_zb.shape == (ell.size * ncell1, ell.size * ncell2)
     cov_ssc_zb = cov_ssc_zb.reshape((ell.size, ncell1, ell.size, ncell2))
     assert np.all(cov_ssc_zb[:, 0, :, 0] == cov_ssc)
     cov_ssc_zb[:, 0, :, 0] -= cov_ssc

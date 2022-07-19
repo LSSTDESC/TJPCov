@@ -618,10 +618,8 @@ class CovarianceCalculator():
                                                      integration_method=integration_method)
 
         nbpw = ell.size
-        ncell1 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1,
-                                                 independent=True)
-        ncell2 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb2,
-                                                 independent=True)
+        ncell1 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb1)
+        ncell2 = nmt_tools.get_tracer_comb_ncell(self.cl_data, tracer_comb2)
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
         cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
