@@ -22,9 +22,9 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     packages=['tjpcov'],
-    install_requires=['scipy', 'numpy', 'Jinja2', 'pyyaml','pytest','pyccl==2.1.0','sacc'],
-    python_requires='>=3.6',
+    install_requires=['scipy', 'numpy', 'Jinja2', 'pyyaml','pytest','pyccl','sacc'],
+    python_requires='>=3.7',
 )
