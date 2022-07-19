@@ -509,7 +509,7 @@ class CovarianceCalculator():
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
         outdir is set, it will save the covariance to a file called
-        `cov_ssc_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
+        `ssc_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
         returned if found.
 
         Blocks of the B-modes are assumed 0 so far.
@@ -596,6 +596,8 @@ class CovarianceCalculator():
         mn = nmt_tools.get_mask_names_dict(self.mask_names, tr)
         masks = nmt_tools.get_masks_dict(self.mask_fn, mn, tr, {}, self.nside)
         # TODO: Optimize this, avoid computing the mask_wl for all blocks.
+        # Note that this is correct for same footprint cross-correlations. In
+        # case of multisurvey analyses this approximation might break.
         alm = hp.map2alm(masks[1] * masks[2])
         blm = hp.map2alm(masks[3] * masks[4])
 
