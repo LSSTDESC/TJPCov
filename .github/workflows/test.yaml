@@ -55,11 +55,9 @@ jobs:
                run: |
                         # TODO: make these tests pyccl version independent.
                         # Commented for now
-                        # Run harmonic Space
+                        # Run harmonic Space & configuration space with fsky
+                        # approx
                         # python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal.py
-                        
-                        # Run Configuration Space
-                        # python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal_cs.py
                         
                         # Run Namaster tests
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt_tools.py
