@@ -94,25 +94,40 @@ def test_ell():
 def test_set_cosmo():
 		tjp0 = cv.CovarianceCalculator(tjpcov_cfg="tests/data/conf_tjpcov_noCCLCosmo.yaml")
 
-# TODO: Update these tests to avoid depending on a pkl object
-# def test_xi_block():
-#     tracer_comb1 = ('lens0', 'lens0')
-#     tracer_comb2 = ('lens0', 'lens0')
-#
-#     print(f"Checking covariance block. \
-#           Tracer combination {tracer_comb1} {tracer_comb2}")
-#
-#     gcov_xi_1 = tjp0.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-#                                      tracer_comb2=tracer_comb2,
-#                                      ccl_tracers=ccl_tracers,
-#                                      tracer_Noise=tracer_Noise,
-#                                      two_point_data=tjp0.cl_data,
-#                                      do_xi=True)
-#     np.testing.assert_allclose(gcov_xi_1['final'], ref_covnobin)
-#     return
+
+def test_xi_block():
+    # Test made independent of pickled objects
+    tracer_comb1 = ('lens0', 'lens0')
+    tracer_comb2 = ('lens0', 'lens0')
+
+    print(f"Checking covariance block. \
+          Tracer combination {tracer_comb1} {tracer_comb2}")
+    s = tjp0.cl_data
+
+    ell = tjp0.ell
+    ccltr = ccl_tracers['lens0']
+    cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise['lens0']
+
+    fsky = tjp0.fsky
+    dl = np.gradient(ell)
+    cov = np.diag(2 * cl**2 / (4 * np.pi * fsky))
+
+    tjp0.WT = tjp0.wt_setup(tjp0.ell, tjp0.theta)
+    s1_s2 = tjp0.get_cov_WT_spin(tracer_comb=tracer_comb1)
+    th, cov = tjp0.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2,
+                                            s1_s2_cross=s1_s2, cl_cov=cov)
+
+    gcov_xi_1 = tjp0.cl_gaussian_cov(tracer_comb1=tracer_comb1,
+                                     tracer_comb2=tracer_comb2,
+                                     ccl_tracers=ccl_tracers,
+                                     tracer_Noise=tracer_Noise,
+                                     two_point_data=tjp0.cl_data,
+                                     do_xi=True)
+    np.testing.assert_allclose(gcov_xi_1['final'], cov)
 
 
 def test_cl_block():
+    # Test made independent of pickled objects
     tracer_comb1 = ('lens0', 'lens0')
     tracer_comb2 = ('lens0', 'lens0')
 
