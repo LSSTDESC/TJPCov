@@ -205,6 +205,14 @@ class CovarianceCalculator():
         # argument of the different methods
         self.cache = config.get('cache', {})
 
+        # SSC config
+        self.ssc_conf = config.get('SSC', {})
+
+        # Covariances requested. Input must be a string or a list of strings
+        self.cov_tbc = config['tjpcov'].get('cov_type', [])
+        if isinstance(self.cov_tbc, str):
+            self.cov_tbc = [self.cov_tbc]
+
         return
 
     def split_tasks_by_rank(self, tasks):
@@ -1240,17 +1248,19 @@ class CovarianceCalculator():
 
         return cov_full
 
-    def get_all_cov_SSC(self, integration_method='qag_quad'):
+    def get_all_cov_SSC(self, integration_method=None):
         """
         Compute all the SSC block covariances and then combine them into one
         single giant matrix
 
         Parameters:
         -----------
-        integration_method (string) : integration method to be used
+        integration_method (None or string) : integration method to be used
             for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
             method backed up by `quad` when it fails) and 'spline' (the
-            integrand is splined and then integrated analytically).
+            integrand is splined and then integrated analytically). If None, it
+            will use the configuration passed at initialization or default to
+            'qag_quad' if not given.
 
         Returns:
         --------
@@ -1258,6 +1268,11 @@ class CovarianceCalculator():
             Covariance matrix for all combinations.
             Npt = (number of bins ) * (number of combinations)
         """
+        # If the user doesn't call this function with a integration_method, use
+        # the one passed at initialization. If not given, default to qug_quad
+        if integration_method is None:
+            integration_method = self.ssc_conf.get('integration_method',
+                                                   'qag_quad')
 
         blocks, tracers_cov = self.compute_all_blocks_SSC(integration_method)
 
@@ -1275,33 +1290,69 @@ class CovarianceCalculator():
 
         return cov_full
 
-    def create_sacc_cov(self, output, add_SSC=False, **kwargs):
-        """ Write created cov to a new sacc object
+    def get_final_cov(self, gauss_kwargs=None, ssc_kwargs=None):
+        """
+        Returns the covariance with all the terms requested (Gaussian, ssc,
+        etc.).
+
+        Parameters:
+        ----------
+        gauss_kwargs (None or dict): If given, dictionary with arguments to
+        pass the get_all_cov or get_all_cov_nmt functions.
+        ssc_kwargs (None or dict): If given, dictionary with arguments to
+        pass the get_all_cov_SSC function.
+        Returns:
+        -------
+        cov (array): Covariance with all the terms requested added.
+
+        """
+        if not self.cov_tbc:
+            print('No covariance requested')
+            return
+
+        s = self.cl_data.copy()
+        cov = np.zeros((s.mean.size, s.mean.size))
+
+        if ('Gauss' in self.cov_tbc) or ('gauss' in self.cov_tbc):
+            print('Computing Gaussian covariance')
+            if gauss_kwargs is None:
+                gauss_kwargs = {}
+
+            if self.do_xi:
+                cov += self.get_all_cov(**gauss_kwargs)
+            else:
+                cov += self.get_all_cov_nmt(**gauss_kwargs)
+
+        if ('SSC' in self.cov_tbc) or ('ssc' in self.cov_tbc):
+            print('Computing Super Sample Covariance')
+            kwargs = {}
+            kwargs.update(self.ssc_conf)
+            if ssc_kwargs is not None:
+                kwargs.update(ssc_kwargs)
+
+            print(kwargs)
+            cov += self.get_all_cov_SSC(**kwargs)
+
+        return cov
+
+
+    def create_sacc_cov(self, output, gauss_kwargs=None, ssc_kwargs=None):
+        """
+        Write created cov to a new sacc object
 
         Parameters:
         ----------
         output (str): filename output
-        **kwargs: The arguments to pass to your chosen covariance estimation
-        method.
-
-        add_SSC (bool): If True, the SSC covariance is added.
-
+        gauss_kwargs (None or dict): If given, dictionary with arguments to
+        pass the get_all_cov or get_all_cov_nmt functions.
+        ssc_kwargs (None or dict): If given, dictionary with arguments to
+        pass the get_all_cov_SSC function.
         Returns:
         -------
         None
 
         """
-        if self.do_xi:
-            cov = self.get_all_cov(**kwargs)
-        else:
-            cov = self.get_all_cov_nmt(**kwargs)
-
-        if add_SSC:
-            kwargs_ssc = {}
-            if 'integration_method' in kwargs:
-                kwargs_ssc['integration_method'] = kwargs['integration_method']
-
-            cov += self.get_all_cov_SSC(**kwargs_ssc)
+        cov = self.get_final_cov()
 
         s = self.cl_data.copy()
         s.add_covariance(cov)
