@@ -50,9 +50,10 @@ jobs:
                         # pip install -r requirements.txt
                         # pip install .
                 
-             - name: Test tools
+             - name: Test general code
                run: |
                         # Run other tests
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_base.py
                         python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_tools.py
 
              - name: Test Gaussian covariance (Knox formula)
