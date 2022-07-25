@@ -67,7 +67,8 @@ def test_get_final_cov():
 
 def test_create_sacc_cov():
     cc_nmt_ssc = get_CovarianceCalculator(input_yml_nmt_ssc)
-    cov_nmt_ssc = cc_nmt_ssc.get_final_cov()
+    cache = {'bins': get_nmt_bin()}
+    cov_nmt_ssc = cc_nmt_ssc.get_final_cov(gauss_kwargs={'cache': cache})
 
     fname = './tests/tmp/tmp.sacc'
     cc_nmt_ssc.create_sacc_cov(fname)
