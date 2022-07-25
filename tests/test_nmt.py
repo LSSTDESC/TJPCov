@@ -258,7 +258,6 @@ def test_nmt_gaussian_cov(tracer_comb1, tracer_comb2):
 
     # Assert relative difference to an absurd precision because the equality
     # test fails now for some reason.
-    # assert np.all(cov == cov2)
     assert np.max(np.abs(cov / cov2) - 1) < 1e-10
 
     # Cov with uncoupled noise cannot be used for benchmark as tracer_noise is

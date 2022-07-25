@@ -2,7 +2,7 @@ scipy
 numpy
 Jinja2
 pyyaml
-pyccl
+pyccl>=2.5.0
 pytest
 jupyter
 sacc
