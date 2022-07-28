@@ -574,10 +574,11 @@ class CovarianceCalculator():
 
         z_max = np.min(z_max)
 
-        # Array of a. The number of z's have been chosen so that the test with
-        # z_max = 4 worked (see test_get_SSC_cov in tests/test_ssc.py)
-        n_z = 200
-        a = 1./(1+np.linspace(0, z_max, n_z)[::-1])
+        # Array of a.
+        # Use the a's in the pk spline
+        na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
+        a, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
+        a = a[1/a < z_max + 1]
 
         bias1 = self.bias_lens.get(tr[1], 1)
         bias2 = self.bias_lens.get(tr[2], 1)
@@ -606,11 +607,16 @@ class CovarianceCalculator():
         # TODO: Optimize this, avoid computing the mask_wl for all blocks.
         # Note that this is correct for same footprint cross-correlations. In
         # case of multisurvey analyses this approximation might break.
-        alm = hp.map2alm(masks[1] * masks[2])
-        blm = hp.map2alm(masks[3] * masks[4])
+        m12 = masks[1] * masks[2]
+        m34 = masks[3] * masks[4]
+        area = hp.nside2pixarea(hp.npix2nside(m12.size))
 
-        mask_wl = hp.alm2cl(alm * blm)
+        alm = hp.map2alm(m12)
+        blm = hp.map2alm(m34)
+
+        mask_wl = hp.alm2cl(alm, blm)
         mask_wl *= (2 * np.arange(mask_wl.size) + 1)
+        mask_wl /= np.sum(m12) * np.sum(m34) * area**2
 
         sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a, mask_wl=mask_wl)
 

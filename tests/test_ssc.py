@@ -48,14 +48,22 @@ def get_halomodel_calculator_and_NFW_profile(cosmo):
 def get_cl_footprint(tr1, tr2, tr3, tr4):
     config = get_config()
     mf = config['tjpcov']['mask_file']
-    mf12 = hp.read_map(mf[tr1]) * hp.read_map(mf[tr2])
-    mf34 = hp.read_map(mf[tr3]) * hp.read_map(mf[tr4])
 
-    alm = hp.map2alm(mf12)
-    blm = hp.map2alm(mf34)
+    area = hp.nside2pixarea(32)
+    m1 = hp.read_map(mf[tr1])
+    m2 = hp.read_map(mf[tr2])
+    m3 = hp.read_map(mf[tr3])
+    m4 = hp.read_map(mf[tr4])
 
-    cl = hp.alm2cl(alm * blm)
+    m12 = m1 * m2
+    m34 = m3 * m4
+
+    alm = hp.map2alm(m12)
+    blm = hp.map2alm(m34)
+
+    cl = hp.alm2cl(alm, blm)
     cl *= (2 * np.arange(cl.size) + 1)
+    cl /= np.sum(m12) * np.sum(m34) * area**2
 
     return cl
 
@@ -93,7 +101,8 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
     clean_tmp()
 
     # CCL covariance
-    a_arr = 1./(1+np.linspace(0, 4, 200)[::-1])
+    na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
+    a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
 
     bias1 = 1
     is_nc1 = False
@@ -142,6 +151,7 @@ def test_get_SSC_cov(tracer_comb1, tracer_comb2):
                                      sigma2_B=(a_arr, sigma2_B),
                                      cltracer3=tr3, cltracer4=tr4)
 
+    assert np.max(np.fabs(np.diag(cov_ssc/cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_ssc/cov_ccl - 1)) < 1e-3
 
     # Check you get zeroed B-modes
