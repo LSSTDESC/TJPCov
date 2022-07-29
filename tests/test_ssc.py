@@ -237,7 +237,7 @@ def test_get_SSC_cov_WL_with_benchmark():
     nside = 128
     ix = hp.query_disc(nside=nside, vec=(0, -60, 0), radius=radius)
     mask = np.zeros(hp.nside2npix(nside))
-    mask[ix] = 1
+    mask[ix] = 10  # Use 10 to check the normalization of the masks
 
     # Modify tjpcov instance
     cc.cl_data = s
