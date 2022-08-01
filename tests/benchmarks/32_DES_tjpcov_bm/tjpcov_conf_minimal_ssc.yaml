@@ -17,7 +17,7 @@ tjpcov:
   cosmo: 'set' # tests/data/cosmos_desy1_v2p1p0.pkl
 
   # allowed covariance type: gauss, ng (to be implemented)
-  cov_type: gauss
+  cov_type: ssc
 
   # Setting mask OR fsky approximation
   mask_file:
@@ -48,25 +48,6 @@ tjpcov:
   bias_DESgc__0: 1.48
 
   # IA: 0.5
-
-NaMaster:
-  module: pymaster
-  f:
-    n_iter: 0
-    lmax_sht: -1
-  w:
-    lmax_mask: -1
-    l_toeplitz: -1
-    l_exact: -1
-    dl_band: -1
-    n_iter: 3
-    recompute: True
-  cw:
-    l_toeplitz: -1
-    l_exact: -1
-    dl_band: -1
-    n_iter: 3
-    recompute: True
 
 parameters:
   # Not used for while (read by ccl.cosmo):

@@ -12,6 +12,7 @@ size = comm.Get_size()
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml_mpi = os.path.join(root, "tjpcov_conf_minimal_mpi.yaml")
+input_yml_nompi = os.path.join(root, "tjpcov_conf_minimal.yaml")
 
 
 def get_nmt_bin():
@@ -115,6 +116,7 @@ def test_compute_all_blocks_nmt():
     if rank == 0:
         os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
 
+
 def test_get_all_cov_nmt_mpi():
     tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
     s = tjpcov_class.cl_data
@@ -135,6 +137,52 @@ def test_get_all_cov_nmt_mpi():
         assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
         assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
         os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
+
+
+def test_compute_all_blocks_SSC():
+    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
+    s = tjpcov_class.cl_data
+
+
+    blocks, tracers_blocks = tjpcov_class.compute_all_blocks_SSC()
+    trs = nmt_tools.get_list_of_tracers_for_cov(s)
+    trs_blocks = list(tjpcov_class.split_tasks_by_rank(trs))
+    assert(tracers_blocks == trs_blocks)
+
+    for itrs, trs in enumerate(tracers_blocks):
+        tracer_comb1, tracer_comb2 = trs
+        print(trs)
+
+        cov = blocks[itrs] + 1e-100
+
+        fname = os.path.join(tjpcov_class.outdir,
+                             'ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1,
+                                                          *tracer_comb2))
+        cov_bm = np.load(fname)['cov'] + 1e-100
+
+        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+
+    comm.Barrier()
+    if rank == 0:
+        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
+
+
+def test_get_all_cov_SSC_mpi():
+    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
+    cov = tjpcov_class.get_all_cov_SSC()
+
+    comm.Barrier()
+    if rank == 0:
+        cov += 1e-100
+        # The serial computation will load the saved covariance blocks so it
+        # will not be expensive. We will be testing that the covariancia is
+        # built correctly
+        tjpcov_class = cv.CovarianceCalculator(input_yml_nompi)
+        cov_bm = tjpcov_class.get_all_cov_SSC() + 1e-100
+        assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
+
 
 # Clean up after the tests
 comm.Barrier()
