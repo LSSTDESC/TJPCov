@@ -605,14 +605,19 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
         nell (int): Number of ells for the fidicual Cells points; i.e. lmax or
         3*nside
     """
-    w = cache.get('workspaces', {})
-    if bins is not None:
-        nell = bins.lmax + 1
-    elif (w != {}) and isinstance(list(list(w.values())[0].values())[0],
-                                nmt.NmtWorkspace):
+    # Extracting the workspace from the cache first to use it later in a easy
+    # way.
+    if (cache is not None) and ('workspaces' in cache):
+        w = list(list(cache['workspaces'].values())[0].values())[0]
+    else:
+        w = None
+
+    if isinstance(w, nmt.NmtWorkspace):
         # We don't want to read the workspace just to get the nell
         bpw = w.get_bandpower_windows()
         nell = bpw.shape[-1]
+    elif bins is not None:
+        nell = bins.lmax + 1
     else:
         try:
             dtype = sacc_data.get_data_types()[0]
