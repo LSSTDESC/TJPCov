@@ -602,37 +602,37 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
 
     Returns:
     --------
-        nell (int): Number of ells for the fidicual Cells points; i.e. 3*nside
+        nell (int): Number of ells for the fidicual Cells points; i.e. lmax or
+        3*nside
     """
-    try:
-        dtype = sacc_data.get_data_types()[0]
-        tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
-        ix = sacc_data.indices(data_type=dtype, tracers=tracers)
-        bpw = sacc_data.get_bandpower_windows(ix)
-        if bpw is None:
-            raise ValueError
-        nell = bpw.nell
-    except ValueError as e:
-        # If the window functions are wrong. Do magic
-        warnings.warn('The window functions in the sacc file are wrong: ')
-        warnings.warn(str(e))
-        warnings.warn('Circunventing this error')
-
-        if bins is not None:
-            nell = bins.lmax + 1
-        elif nside is not None:
-            nell = 3*nside
-        elif 'workspaces' in cache:
-            w = list(list(cache['workspaces'].values())[0].values())[0]
-            if isinstance(w, nmt.NmtWorkspace):
-                bpw = w.get_bandpower_windows()
-                nell = bpw.shape[-1]
+    w = cache.get('workspaces', {})
+    if bins is not None:
+        nell = bins.lmax + 1
+    elif (w != {}) and isinstance(list(list(w.values())[0].values())[0],
+                                nmt.NmtWorkspace):
+        # We don't want to read the workspace just to get the nell
+        bpw = w.get_bandpower_windows()
+        nell = bpw.shape[-1]
+    else:
+        try:
+            dtype = sacc_data.get_data_types()[0]
+            tracers = sacc_data.get_tracer_combinations(data_type=dtype)[0]
+            ix = sacc_data.indices(data_type=dtype, tracers=tracers)
+            bpw = sacc_data.get_bandpower_windows(ix)
+            if bpw is None:
+                raise ValueError
+            nell = bpw.nell
+        except ValueError as e:
+            # If the window functions are wrong. Do magic
+            warnings.warn('The window functions in the sacc file are wrong: ')
+            warnings.warn(str(e))
+            if nside is not None:
+                warnings.warn('Trying to circunvent this error: we will try' +
+                              'with nell = 3*nside')
+                nell = 3*nside
             else:
-                raise ValueError("We don't want to read the workspace " +
-                                 "just to get the ells. Better set nside")
-        else:
-            raise ValueError('nside, NmtBin or NmtWorkspace instances ' +
-                             'must be passed')
+                raise ValueError('nside, NmtBin or NmtWorkspace instances ' +
+                                 'must be passed')
     return nell
 
 
