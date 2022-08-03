@@ -679,8 +679,15 @@ def test_get_nell():
     nell = 51
     assert nell == nmt_tools.get_nell(s, bins=bins)
     # Test that if bins nor workspace is given, it tries to use the sacc file
-    # and when fails it defaults to nell = 3*nside
+    # and when fails (if "binnint/ell_max" is not present in the metadata),
+    # it defaults to nell = 3*nside
     assert 3 *nside == nmt_tools.get_nell(s(), nside=nside)
+
+    # Check metadata
+    s = sacc.Sacc()
+    s.metadata["binning/ell_max"] = lmax
+    assert nell == nmt_tools.get_nell(s)
+
 
 def test_get_list_of_tracers_for_wsp():
     s = get_sacc()

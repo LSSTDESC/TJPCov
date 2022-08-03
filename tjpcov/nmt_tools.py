@@ -631,7 +631,9 @@ def get_nell(sacc_data, bins=None, nside=None, cache=None):
             # If the window functions are wrong. Do magic
             warnings.warn('The window functions in the sacc file are wrong: ')
             warnings.warn(str(e))
-            if nside is not None:
+            if "binning/ell_max" in sacc_data.metadata:
+                nell = sacc_data.metadata["binning/ell_max"] + 1
+            elif nside is not None:
                 warnings.warn('Trying to circunvent this error: we will try' +
                               'with nell = 3*nside')
                 nell = 3*nside
