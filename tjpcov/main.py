@@ -793,6 +793,7 @@ class CovarianceCalculator():
                 cw = nmt_tools.get_covariance_workspace(f[1], f[2], f[3], f[4],
                                                         mn[1], mn[2], mn[3],
                                                         mn[4], self.outdir,
+                                                        lmax=int(ell[-1]),
                                                         **self.nmt_conf['cw'])
 
             cl_cov = {}
