@@ -2,18 +2,14 @@
 
 TJPCov is a general covariance calculator interface to be used within LSST DESC.
 
-This is currently a placeholder with a handful of functions that may be useful.
-See the notebooks in the examples directory.
-
 ## Installation
 
-The placeholder TJPCov is now pip installable for convenience, but for development
+TJPCov is now pip installable for convenience, but for development
 clone the git repository.
 
+## Planning & development
 
-## Planning
-
-Join the #desc-tjpcov channel on the LSST DESC slack to contribute.
+Ask @felipeaoli or @carlosggarcia for access to the repository and join the #desc-mcp-cov channel on the LSST DESC slack to contribute.
 
 See also [terms of reference](https://github.com/LSSTDESC/TJPCov/blob/master/doc/Terms_of_Reference.md).
 
@@ -23,8 +19,7 @@ When you want to push a new version to pip (the server is called PyPI) then:
 
 1. increase the version number in setup.py
 2. create an account at pypi.org if you don't have one already
-3. ask Joe Zuntz to be added to the collaborator list for the project
-4. run these commands:
+3. run these commands:
 
 ```
 # just the first time:
