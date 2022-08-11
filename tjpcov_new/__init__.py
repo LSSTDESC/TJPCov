@@ -1,7 +1,7 @@
-from .tools import wigner_transform, bin_cov, parse
-from .parser import read_config
-from .covariance_base import CovarianceBase
+from .wigner_transform import wigner_transform, bin_cov
 from .covariance_fourier_gaussian_nmt import FourierGaussianNmtCovariance
+from .covariance_fourier_ssc import FourierSSCHaloModel
+from .covariance_gaussian_fsky import FourierGaussianFsky, RealGaussianFsky
 
 def covariance_from_name(name):
     def all_subclasses(cls):

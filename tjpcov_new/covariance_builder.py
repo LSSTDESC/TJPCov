@@ -1,4 +1,3 @@
-from . import read_config
 from .covariance_io import CovarianceIO
 import pyccl as ccl
 import pickle

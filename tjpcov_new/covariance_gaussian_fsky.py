@@ -1,4 +1,4 @@
-from . import wigner_transform, bin_cov, parse
+from . import wigner_transform, bin_cov
 from .covariance_builder import CovarianceFourier, CovarianceReal
 import numpy as np
 import os

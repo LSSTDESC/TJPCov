@@ -6,6 +6,7 @@ import warnings
 import yaml
 import jinja2
 import importlib
+import os
 
 class CovarianceIO():
     def __init__(self, config):
@@ -23,20 +24,21 @@ class CovarianceIO():
         self.sacc_file = None
 
         # Output directory where to save all the time consuming calculations
-        self.outdir = config['tjpcov'].get('outdir', None)
+        self.outdir = self.config['tjpcov'].get('outdir', './')
 
     def _read_config(self, config):
         if isinstance(config, dict):
             pass
         elif isinstance(config, str):
-            config, _ = self._parse(config)
+            config = self._parse(config)
         else:
             raise ValueError("config must be of type dict or str, given" +
                              f"{type(config)}")
 
         return config
 
-    def _parse(self, filename):
+    @staticmethod
+    def _parse(filename):
         """
         Parse a configuration file.
 
@@ -49,60 +51,36 @@ class CovarianceIO():
         -------
         config: dict
             The raw config file as a dictionary.
-        data : dict
-            A dictionary containg each analyses key replaced with its
-            corresponding data and function to compute the log-likelihood.
         """
 
         with open(filename, 'r') as fp:
             config_str = jinja2.Template(fp.read()).render()
         config = yaml.load(config_str, Loader=yaml.Loader)
-        data = yaml.load(config_str, Loader=yaml.Loader)
 
-        if 'parameters' in data:
-            params = {}
-            for p, val in data['parameters'].items():
-                if isinstance(val, list) and not isinstance(val, str):
-                    params[p] = val[1]
-                else:
-                    params[p] = val
-            data['parameters'] = params
+        return config
 
-        analyses = list(
-            set(list(data.keys())) -
-            set(['parameters', 'cosmosis', 'emcee', 'tjpcov', 'firecrown',
-                 'two_point', 'priors', 'cache']))
-
-        for analysis in analyses:
-            new_keys = {}
-
-            try:
-                mod = importlib.import_module(data[analysis]['module'])
-            except Exception:
-                print("Module '%s' for analysis '%s' cannot be imported!" % (
-                    data[analysis]['module'], analysis))
-                raise
-
-        return config, data
-
-    def create_sacc_cov(self, output):
+    def create_sacc_cov(self, output='cls_cov.fits'):
         """
         Write created cov to a new sacc object
 
         Parameters:
         ----------
-        output (str): filename output
+        output (str): filename output.
 
         Returns:
         -------
         None
 
         """
+        output = os.path.join(self.get_outdir(), output)
+
         cov = self.get_covariance()
 
         s = self.get_sacc_file().copy()
         s.add_covariance(cov)
         s.save_fits(output, overwrite=True)
+
+        return s
 
     def get_covariance(self):
         raise NotImplementedError("Do not use the base class directly")
@@ -134,7 +112,7 @@ class CovarianceIO():
             sacc_data (Sacc): Data Sacc instance with concise data types
         """
 
-        s = self.sacc_file.copy()
+        s = self.get_sacc_file().copy()
         dtypes = s.get_data_types()
 
         dt_long = []
