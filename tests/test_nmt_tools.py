@@ -664,6 +664,7 @@ def test_get_nell():
     # Force ValueError (as when window is wrong)
     class s():
         def __init__(self):
+            self.metadata = {}
             pass
         def get_data_types(self):
             raise ValueError
@@ -684,9 +685,9 @@ def test_get_nell():
     assert 3 *nside == nmt_tools.get_nell(s(), nside=nside)
 
     # Check metadata
-    s = sacc.Sacc()
-    s.metadata["binning/ell_max"] = lmax
-    assert nell == nmt_tools.get_nell(s)
+    sm = s()
+    sm.metadata["binning/ell_max"] = lmax
+    assert nell == nmt_tools.get_nell(sm)
 
 
 def test_get_list_of_tracers_for_wsp():
