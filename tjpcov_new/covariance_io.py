@@ -1,0 +1,173 @@
+import pyccl as ccl
+import pickle
+import sacc
+import numpy as np
+import warnings
+import yaml
+import jinja2
+import importlib
+
+class CovarianceIO():
+    def __init__(self, config):
+        """
+        CovarianceIO class for TJPCov.
+
+        This is a base class that handles the input/output of the covariances.
+        It does not computation.
+
+        Parameters
+        ----------
+        config (dict or str):
+        """
+        self.config = self._read_config(config)
+        self.sacc_file = None
+
+        # Output directory where to save all the time consuming calculations
+        self.outdir = config['tjpcov'].get('outdir', None)
+
+    def _read_config(self, config):
+        if isinstance(config, dict):
+            pass
+        elif isinstance(config, str):
+            config, _ = self._parse(config)
+        else:
+            raise ValueError("config must be of type dict or str, given" +
+                             f"{type(config)}")
+
+        return config
+
+    def _parse(self, filename):
+        """
+        Parse a configuration file.
+
+        Parameters
+        ----------
+        filename : str
+            The config file to parse. Should be YAML formatted.
+
+        Returns
+        -------
+        config: dict
+            The raw config file as a dictionary.
+        data : dict
+            A dictionary containg each analyses key replaced with its
+            corresponding data and function to compute the log-likelihood.
+        """
+
+        with open(filename, 'r') as fp:
+            config_str = jinja2.Template(fp.read()).render()
+        config = yaml.load(config_str, Loader=yaml.Loader)
+        data = yaml.load(config_str, Loader=yaml.Loader)
+
+        if 'parameters' in data:
+            params = {}
+            for p, val in data['parameters'].items():
+                if isinstance(val, list) and not isinstance(val, str):
+                    params[p] = val[1]
+                else:
+                    params[p] = val
+            data['parameters'] = params
+
+        analyses = list(
+            set(list(data.keys())) -
+            set(['parameters', 'cosmosis', 'emcee', 'tjpcov', 'firecrown',
+                 'two_point', 'priors', 'cache']))
+
+        for analysis in analyses:
+            new_keys = {}
+
+            try:
+                mod = importlib.import_module(data[analysis]['module'])
+            except Exception:
+                print("Module '%s' for analysis '%s' cannot be imported!" % (
+                    data[analysis]['module'], analysis))
+                raise
+
+        return config, data
+
+    def create_sacc_cov(self, output):
+        """
+        Write created cov to a new sacc object
+
+        Parameters:
+        ----------
+        output (str): filename output
+
+        Returns:
+        -------
+        None
+
+        """
+        cov = self.get_covariance()
+
+        s = self.get_sacc_file().copy()
+        s.add_covariance(cov)
+        s.save_fits(output, overwrite=True)
+
+    def get_covariance(self):
+        raise NotImplementedError("Do not use the base class directly")
+
+    def get_outdir(self):
+        return self.outdir
+
+    def get_sacc_file(self):
+        if self.sacc_file is None:
+            sacc_file = self.config['tjpcov'].get('sacc_file')
+            if isinstance(sacc_file, sacc.Sacc):
+                self.sacc_file = sacc_file
+            elif isinstance(sacc_file, str):
+                self.sacc_file = sacc.Sacc.load_fits(sacc_file)
+            else:
+                raise ValueError("sacc_file must be a sacc.Sacc or str, " +
+                                 f"given {type(sacc_file)}")
+
+        return self.sacc_file
+
+    def get_sacc_with_concise_dtypes(self):
+        """
+        Return a copy of the sacc file with concise data types
+
+        Parameters:
+
+        Returns:
+        --------
+            sacc_data (Sacc): Data Sacc instance with concise data types
+        """
+
+        s = self.sacc_file.copy()
+        dtypes = s.get_data_types()
+
+        dt_long = []
+        for dt in dtypes:
+            if len(dt.split('_')) > 2:
+                dt_long.append(dt)
+
+        for dt in dt_long:
+            pd = sacc.parse_data_type_name(dt)
+
+            if pd.statistic != 'cl':
+                raise ValueError(f'data_type {dt} not recognized. Is it a Cell?')
+
+            if pd.subtype is None:
+                dc = 'cl_00'
+            elif pd.subtype == 'e':
+                dc = 'cl_0e'
+            elif pd.subtype == 'b':
+                dc = 'cl_0b'
+            elif pd.subtype == 'ee':
+                dc = 'cl_ee'
+            elif pd.subtype == 'bb':
+                dc = 'cl_bb'
+            elif pd.subtype == 'eb':
+                dc = 'cl_eb'
+            elif pd.subtype == 'be':
+                dc = 'cl_be'
+            else:
+                raise ValueError(f'Data type subtype {pd.subtype} not recognized')
+
+
+            # Change the data_type to its concise versio
+            for dp in s.get_data_points(dt):
+                dp.data_type = dc
+
+        return s
