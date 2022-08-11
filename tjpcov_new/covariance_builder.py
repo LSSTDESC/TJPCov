@@ -39,13 +39,13 @@ class CovarianceBuilder(CovarianceIO):
         self.bias_lens = {k.replace('bias_',''):v for k,v in
                           self.config['tjpcov'].items() if 'bias_' in k}
 
-        self.IA = config['tjpcov'].get('IA')
+        self.IA = self.config['tjpcov'].get('IA')
 
         d2r = np.pi/180
         self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in
-                     config['tjpcov'].items() if 'Ngal' in k}
+                     self.config['tjpcov'].items() if 'Ngal' in k}
         self.sigma_e = {k.replace('sigma_e_',''):v for k, v in
-                        config['tjpcov'].items() if 'sigma_e' in k}
+                        self.config['tjpcov'].items() if 'sigma_e' in k}
 
         self.cov = None
 
@@ -72,6 +72,8 @@ class CovarianceBuilder(CovarianceIO):
 
         Parameters:
         -----------
+        kwargs: Parameters to pass to the `get_covariance_block` method. These
+        will depend on the covariance type requested
 
         Returns:
         --------
@@ -172,11 +174,17 @@ class CovarianceBuilder(CovarianceIO):
                 self.cosmo = ccl.Cosmology(**self.config['parameters'])
             elif isinstance(cosmo, ccl.core.Cosmology):
                 self.cosmo = cosmo
-            elif cosmo.split('.')[-1] in ['yaml', 'yml']:
-                self.cosmo = ccl.Cosmology.read_yaml(cosmo)
-            elif cosmo.split('.')[-1]  == 'pkl':
-                with open(cosmo, 'rb') as ccl_cosmo_file:
-                    self.cosmo = pickle.load(ccl_cosmo_file)
+            elif isinstance(cosmo, str):
+                ext = cosmo.split('.')[-1]
+                if ext in ['yaml', 'yml']:
+                    self.cosmo = ccl.Cosmology.read_yaml(cosmo)
+                elif ext  == 'pkl':
+                    with open(cosmo, 'rb') as ccl_cosmo_file:
+                        self.cosmo = pickle.load(ccl_cosmo_file)
+                else:
+                    raise ValueError('Cosmology path extension must be one ' +
+                                     "of 'yaml', 'yml' or 'pkl'. " +
+                                     f"Found {ext}.")
             else:
                 raise ValueError("cosmo entry looks wrong. It has to be one" +
                                  "of ['set', ccl.core.Cosmology instance, " +
