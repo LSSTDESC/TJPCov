@@ -689,6 +689,14 @@ def test_get_nell():
     sm.metadata["binning/ell_max"] = lmax
     assert nell == nmt_tools.get_nell(sm)
 
+    # Check that if ell_max > 3*nside-1 in metadata, (and nside given) we cut
+    # nell = 3*nside
+    # Check metadata
+    sm = s()
+    sm.metadata["binning/ell_max"] = 100
+    nell = 3*nside
+    assert nell == nmt_tools.get_nell(sm, nside=nside)
+
 
 def test_get_list_of_tracers_for_wsp():
     s = get_sacc()
