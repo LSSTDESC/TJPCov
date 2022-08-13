@@ -213,32 +213,6 @@ class CovarianceBuilder(CovarianceIO):
 
         return self.cov
 
-    def get_datatypes_from_ncell(self, ncell):
-        """
-        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
-        of cells for a pair of tracers
-
-        Parameters:
-        -----------
-            ncell (int):  Number of Cell for a pair of tracers
-        Returns:
-        --------
-            datatypes (list):  List of data types assotiated to the given degrees
-            of freedom
-
-        """
-        # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
-        if ncell == 1:
-            cl_types = ['cl_00']
-        elif ncell == 2:
-            cl_types = ['cl_0e', 'cl_0b']
-        elif ncell == 4:
-            cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
-        else:
-            raise ValueError('ncell does not match 1, 2, or 4.')
-
-        return cl_types
-
     def get_ell_eff(self):
         """
         Return the effective ell in the sacc file. It assume that all of them have
@@ -270,8 +244,8 @@ class CovarianceBuilder(CovarianceIO):
         --------
             tracers (list of str): List of independent tracers combinations.
         """
-
-        tracers = self.sacc_file.get_tracer_combinations()
+        sacc_file = self.get_sacc_file()
+        tracers = sacc_file.get_tracer_combinations()
 
         tracers_out = []
         for i, trs1 in enumerate(tracers):
@@ -541,7 +515,34 @@ class CovarianceBuilder(CovarianceIO):
 class CovarianceFourier(CovarianceBuilder):
     # TODO: Move Fourier specific methods here
     space_type = 'Fourier'
-    pass
+
+    def get_datatypes_from_ncell(self, ncell):
+        """
+        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
+        of cells for a pair of tracers
+
+        Parameters:
+        -----------
+            ncell (int):  Number of Cell for a pair of tracers
+        Returns:
+        --------
+            datatypes (list):  List of data types assotiated to the given degrees
+            of freedom
+
+        """
+        # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
+        # TODO: Can this be genearlized for real space and promoted to the
+        # CovarianceBuilder parent class?
+        if ncell == 1:
+            cl_types = ['cl_00']
+        elif ncell == 2:
+            cl_types = ['cl_0e', 'cl_0b']
+        elif ncell == 4:
+            cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
+        else:
+            raise ValueError('ncell does not match 1, 2, or 4.')
+
+        return cl_types
 
 
 class CovarianceReal(CovarianceBuilder):
