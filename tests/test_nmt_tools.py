@@ -87,8 +87,14 @@ def get_cl(dtype, fiducial=False):
     return np.load(fname)
 
 
-def get_nmt_bin():
-    bpw_edges = [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
+def get_nmt_bin(lmax=3*nside):
+    bpw_edges = np.array([0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72,
+                           78, 84, 90, 96])
+    if lmax != 3*nside:
+        # lmax + 1 because the last ell is not included
+        bpw_edges = bpw_edges[bpw_edges < lmax+1]
+        bpw_edges[-1] = lmax+1
+
     return  nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
 
 
@@ -658,11 +664,38 @@ def test_get_nell():
     # Force ValueError (as when window is wrong)
     class s():
         def __init__(self):
+            self.metadata = {}
             pass
         def get_data_types(self):
             raise ValueError
 
-    assert nell == nmt_tools.get_nell(s(), bins=bins)
+    with pytest.raises(ValueError):
+        assert nell == nmt_tools.get_nell(s())
+    # But it works if you pass the nside
+    assert nell == nmt_tools.get_nell(s(), nside=nside)
+
+    # Test lmax != 3*nside
+    lmax = 50
+    bins = get_nmt_bin(50)
+    nell = 51
+    assert nell == nmt_tools.get_nell(s, bins=bins)
+    # Test that if bins nor workspace is given, it tries to use the sacc file
+    # and when fails (if "binnint/ell_max" is not present in the metadata),
+    # it defaults to nell = 3*nside
+    assert 3 *nside == nmt_tools.get_nell(s(), nside=nside)
+
+    # Check metadata
+    sm = s()
+    sm.metadata["binning/ell_max"] = lmax
+    assert nell == nmt_tools.get_nell(sm)
+
+    # Check that if ell_max > 3*nside-1 in metadata, (and nside given) we cut
+    # nell = 3*nside
+    # Check metadata
+    sm = s()
+    sm.metadata["binning/ell_max"] = 100
+    nell = 3*nside
+    assert nell == nmt_tools.get_nell(sm, nside=nside)
 
 
 def test_get_list_of_tracers_for_wsp():
