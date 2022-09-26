@@ -3,9 +3,10 @@ from . import covariance_from_name
 import numpy as np
 
 
-class CovarianceCalculator(CovarianceIO):
+class CovarianceCalculator():
     def __init__(self, config):
-        super().__init__(config)
+        self.io = CovarianceIO(config)
+        self.config = self.io.config
 
         self.cov_total = None
         self.covs = None
@@ -49,6 +50,10 @@ class CovarianceCalculator(CovarianceIO):
             for ctype, cmat in covs:
                 cov.append(cmat.get_covariance())
 
-            self.cov_total = np.sum(cov)
+            self.cov_total = sum(cov)
 
         return self.cov_total
+
+    def create_sacc_cov(self, output='cls_cov.fits'):
+        cov = self.get_covariance()
+        self.io.create_sacc_cov(cov, output)

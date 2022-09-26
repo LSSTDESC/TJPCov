@@ -1,4 +1,6 @@
+from . import tools
 from .covariance_io import CovarianceIO
+from abc import ABC, abstractmethod
 import pyccl as ccl
 import pickle
 import sacc
@@ -6,7 +8,7 @@ import numpy as np
 import warnings
 
 
-class CovarianceBuilder(CovarianceIO):
+class CovarianceBuilder(ABC):
     def __init__(self, config):
         """
         Covariance Calculator object for TJPCov.
@@ -15,7 +17,8 @@ class CovarianceBuilder(CovarianceIO):
         ----------
         config (dict or str):
         """
-        super().__init__(config)
+        self.io = CovarianceIO(config)
+        self.config = self.io.config
 
         use_mpi = self.config['tjpcov'].get('use_mpi', False)
 
@@ -49,6 +52,15 @@ class CovarianceBuilder(CovarianceIO):
 
         self.cov = None
 
+        # We leave the masks in the base class because they are needed for most
+        # methods. Even for fsky we can use them to estimate the fsky if not
+        # provided. However, we might want to move it to a different class
+        self.mask_files = config['tjpcov'].get('mask_file')
+        self.mask_names = config['tjpcov'].get('mask_names')
+
+        # nside is needed if mask_files contain hdf5 files
+        self.nside = config['tjpcov'].get('nside')
+
     def _split_tasks_by_rank(self, tasks):
         """
         Iterate through a list of items, yielding ones this process is responsible for/
@@ -81,7 +93,7 @@ class CovarianceBuilder(CovarianceIO):
         blocks.
         """
 
-        two_point_data = self.get_sacc_file()
+        two_point_data = self.io.get_sacc_file()
         ccl_tracers, _ = self.get_tracer_info()
 
         # Make a list of all independent tracer combinations
@@ -126,7 +138,7 @@ class CovarianceBuilder(CovarianceIO):
 
         # Covariance construction based on
         # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
-        s = self.get_sacc_with_concise_dtypes()
+        s = self.io.get_sacc_with_concise_dtypes()
         nbpw = self.get_nbpw()
         #
         ndim = s.mean.size
@@ -192,8 +204,9 @@ class CovarianceBuilder(CovarianceIO):
 
         return self.cosmo
 
+    @abstractmethod
     def get_covariance_block(self, **kwargs):
-        raise NotImplementedError("Do not use the base class directly")
+        pass
 
     def get_covariance(self, **kwargs):
         if self.cov is not None:
@@ -226,12 +239,16 @@ class CovarianceBuilder(CovarianceIO):
         --------
             ell (array): Array with the effective ell in the sacc file.
         """
-        sacc_file = self.get_sacc_file()
+        sacc_file = self.io.get_sacc_file()
         dtype = sacc_file.get_data_types()[0]
         tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
         ell, _ = sacc_file.get_ell_cl(dtype, *tracers)
 
         return ell
+
+    @abstractmethod
+    def get_datatypes_from_ncell(self, ncell):
+        pass
 
     def get_list_of_tracers_for_cov(self):
         """
@@ -244,7 +261,7 @@ class CovarianceBuilder(CovarianceIO):
         --------
             tracers (list of str): List of independent tracers combinations.
         """
-        sacc_file = self.get_sacc_file()
+        sacc_file = self.io.get_sacc_file()
         tracers = sacc_file.get_tracer_combinations()
 
         tracers_out = []
@@ -335,9 +352,10 @@ class CovarianceBuilder(CovarianceIO):
         --------
             nbpw (int): Number of bandpowers; i.e. ell_effective.size
         """
-        dtype = self.sacc_file.get_data_types()[0]
-        tracers = self.sacc_file.get_tracer_combinations(data_type=dtype)[0]
-        ix = self.sacc_file.indices(data_type=dtype, tracers=tracers)
+        sacc_file = self.io.get_sacc_file()
+        dtype = sacc_file.get_data_types()[0]
+        tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
+        ix = sacc_file.indices(data_type=dtype, tracers=tracers)
         nbpw = ix.size
 
         return nbpw
@@ -414,8 +432,10 @@ class CovarianceBuilder(CovarianceIO):
         tracer_Noise = {}
         tracer_Noise_coupled = {}
 
-        for tracer in self.sacc_file.tracers:
-            tracer_dat = self.sacc_file.get_tracer(tracer)
+        sacc_file = self.io.get_sacc_file()
+
+        for tracer in sacc_file.tracers:
+            tracer_dat = sacc_file.get_tracer(tracer)
             tracer_Noise_coupled[tracer] = tracer_dat.metadata.get('n_ell_coupled', None)
 
             if (tracer_dat.quantity == 'galaxy_shear') or ('src' in tracer) \
@@ -482,7 +502,8 @@ class CovarianceBuilder(CovarianceIO):
             spin (int):  Spin of the given tracer
 
         """
-        tr = self.sacc_file.get_tracer(tracer)
+        sacc_file = self.io.get_sacc_file()
+        tr = sacc_file.get_tracer(tracer)
         if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
            ('lens' in tracer):
             return 0
