@@ -60,7 +60,8 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             raise ValueError('Only one of tracer_nose or ' +
                              'tracer_noise_coupled can be given')
 
-        cl_tracers = self.sacc_file.get_tracer_combinations()
+        sacc_file = self.io.get_sacc_file()
+        cl_tracers = sacc_file.get_tracer_combinations()
 
         ccl_tracers, tracer_Noise, tracer_Noise_coupled = \
             self.get_tracer_info(return_noise_coupled=True)
@@ -207,7 +208,7 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
 
         """
         fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
-        fname = os.path.join(self.outdir, fname)
+        fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname):
             cf = np.load(fname)
             return {'final': cf['final'], 'final_b': cf['final_b']}
@@ -257,10 +258,7 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
         ncell[14] = self.get_tracer_comb_ncell((tr[1], tr[4]))
         ncell[23] = self.get_tracer_comb_ncell((tr[2], tr[3]))
 
-        s = {}
-        s[1], s[2] = self.get_tracer_comb_spin(tracer_comb1)
-        s[3], s[4] = self.get_tracer_comb_spin(tracer_comb2)
-
+        s = self.get_tracers_spin_dict(tr)
 
         # Fiducial cl
         cl = {}
@@ -305,9 +303,9 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             # TODO: Modify depending on how TXPipe caches things
             # Mask, mask_names, field and workspaces dictionaries
             mn = self.get_mask_names_dict(tr)
-            m = self.get_masks_dict(mn, tr, cache)
-            f = self.get_fields_dict(m, s, mn, tr, cache)
-            w = self.get_workspaces_dict(f, m, mn, bins, cache)
+            m = self.get_masks_dict(tr, cache)
+            f = self.get_fields_dict(tr, cache, masks=m)
+            w = self.get_workspaces_dict(tr, bins, cache, masks=m, fields=f)
 
             # TODO; Allow input options as output folder, if recompute, etc.
             if 'cw' in cache:
@@ -364,7 +362,7 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             cw:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
 
         """
-        outdir = self.outdir
+        outdir = self.io.outdir
         spins = {m1: f1.fl.spin, m2: f2.fl.spin, m3: f3.fl.spin, m4: f4.fl.spin}
 
         # Any other symmetry?
@@ -409,27 +407,24 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
 
         return cw
 
-    def get_fields_dict(self, masks, spins, mask_names, tracer_names, cache):
+    def get_fields_dict(self, tracer_names, cache=None, masks=None):
         """
         Return a dictionary with the masks assotiated to the fields to be
         correlated
 
         Parameters:
         -----------
-            masks (dict): Dictionary of the masks of the fields correlated with
-            keys 1, 2, 3 or 4 and values the loaded masks.
-            spins (dict): Dictionary of the spins of the fields correlated with
-            keys 1, 2, 3 or 4 and values their spin.
-            mask_names (dict):  Dictionary of the masks names assotiated to the
-            fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
+            tracer_names (dict):  Dictionary of the tracer names of the same form
+            as mask_name. It has to be given as {1: name1, 2: name2, 3:
             name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
             the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
-            tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name.
+            <Cell^12 Cell^34>.
             cache (dict): Dictionary with cached variables. It will use the cached
             field if found. The keys must be 'f1', 'f2', 'f3' or 'f4' and the
             values the corresponding NmtFields.
+            masks
+            masks (dict): Dictionary of the masks of the fields correlated with
+            keys 1, 2, 3 or 4 and values the loaded masks.
 
         Returns:
         --------
@@ -437,6 +432,12 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             to be correlated.
 
         """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
         nmt_conf = self.nmt_conf['f']
         f = {}
         f_by_mask_name = {}
@@ -468,7 +469,8 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             independent workspaces.
         """
 
-        tracers = self.sacc_file.get_tracer_combinations()
+        sacc_file = self.io.get_sacc_file()
+        tracers = sacc_file.get_tracer_combinations()
 
         fnames = []
         tracers_out = []
@@ -509,7 +511,8 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             independent covariance workspaces.
         """
 
-        tracers = self.sacc_file.get_tracer_combinations()
+        sacc_file = self.io.get_sacc_file()
+        tracers = sacc_file.get_tracer_combinations()
 
         fnames = []
         tracers_out = []
@@ -585,7 +588,7 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
         elif bins is not None:
             nell = bins.lmax + 1
         else:
-            s = self.sacc_file
+            s = self.io.get_sacc_file()
             try:
                 dtype = s.get_data_types()[0]
                 tracers = s.get_tracer_combinations(data_type=dtype)[0]
@@ -641,7 +644,7 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             raise ValueError('You must pass a NmtBin instance through the ' +
                              'cache or at initialization')
 
-        outdir = self.outdir
+        outdir = self.io.outdir
         s1, s2 = f1.fl.spin, f2.fl.spin
 
         if outdir is not None:
@@ -677,27 +680,28 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
 
         return w
 
-    def get_workspaces_dict(self, fields, masks, mask_names, bins, cache):
+    def get_workspaces_dict(self, tracer_names, bins, cache=None, fields=None,
+                            masks=None):
         """
         Return a dictionary with the masks assotiated to the fields to be
         correlated
 
         Parameters:
         -----------
-            field (dict): Dictionary of the NmtFields of the fields correlated
-            with keys 1, 2, 3 or 4 and values the NmtFields.
-            masks (dict): Dictionary of the masks of the fields correlated with
-            keys 1, 2, 3 or 4 and values the loaded masks.
-            mask_names (dict):  Dictionary of the masks names assotiated to the
+            tracer_names (dict):  Dictionary of the masks names assotiated to the
             fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
             name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
             the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
+            <Cell^12 Cell^34>.
             bins (NmtBin): NmtBin instance with the desired binning.
             cache (dict): Dictionary with cached variables. It will use the cached
             field if found. The keys must be 'w12', 'w34', 'w13', 'w23', 'w14' or
             'w24' and the values the corresponding NmtWorkspaces. Alternatively,
             you can pass a dictionary with keys as (mask_name1, mask_name2).
+            field (dict): Dictionary of the NmtFields of the fields correlated
+            with keys 1, 2, 3 or 4 and values the NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+            keys 1, 2, 3 or 4 and values the loaded masks.
 
         Returns:
         --------
@@ -707,6 +711,13 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             NmtWorkspaces.
 
         """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if fields is None:
+            fields = self.get_fields_dict(tracer_names, cache, masks=masks)
+        if cache is None:
+            cache = {}
         nmt_conf = self.nmt_conf['w']
         w = {}
         w_by_mask_name = {}

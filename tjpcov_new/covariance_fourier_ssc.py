@@ -105,8 +105,7 @@ class FourierSSCHaloModel(CovarianceFourier):
                                                       is_number_counts4=isnc4,
                                                       )
 
-        mn = self.get_mask_names_dict(self.mask_names, tr)
-        masks = self.get_masks_dict(self.mask_fn, mn, tr, {}, self.nside)
+        masks = self.get_masks_dict(tr, {})
         # TODO: Optimize this, avoid computing the mask_wl for all blocks.
         # Note that this is correct for same footprint cross-correlations. In
         # case of multisurvey analyses this approximation might break.

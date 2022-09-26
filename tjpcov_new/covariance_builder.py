@@ -18,7 +18,7 @@ class CovarianceBuilder(ABC):
         config (dict or str):
         """
         self.io = CovarianceIO(config)
-        self.config = self.io.config
+        config = self.config = self.io.config
 
         use_mpi = self.config['tjpcov'].get('use_mpi', False)
 
@@ -80,7 +80,7 @@ class CovarianceBuilder(ABC):
 
     @abstractmethod
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        pass
+        raise NotImplementedError("Not implemented")
 
     def _compute_all_blocks(self, **kwargs):
         """
@@ -96,8 +96,6 @@ class CovarianceBuilder(ABC):
         blocks (list): List of all the independent super sample covariance
         blocks.
         """
-
-        two_point_data = self.io.get_sacc_file()
 
         # Make a list of all independent tracer combinations
         tracers_cov = self.get_list_of_tracers_for_cov()
@@ -149,7 +147,7 @@ class CovarianceBuilder(ABC):
 
     @abstractmethod
     def get_covariance_block(self, **kwargs):
-        pass
+        raise NotImplementedError("Not implemented")
 
     def get_covariance(self, **kwargs):
         if self.cov is not None:
@@ -198,7 +196,10 @@ class CovarianceBuilder(ABC):
         Parameters:
         -----------
             tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name.
+            as mask_name. It has to be given as {1: name1, 2: name2, 3:
+            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
+            the first and second Cell you are computing the covariance for; i.e.
+            <Cell^12 Cell^34>.
 
         Returns:
         --------
@@ -212,20 +213,18 @@ class CovarianceBuilder(ABC):
             mn[i] = mask_names[tracer_names[i]]
         return mn
 
-    def get_masks_dict(self, mask_names, tracer_names, cache):
+    def get_masks_dict(self, tracer_names, cache=None):
         """
         Return a dictionary with the masks assotiated to the fields to be
         correlated
 
         Parameters:
         -----------
-            mask_names (dict):  Dictionary of the masks names assotiated to the
-            fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
+            tracer_names (dict):  Dictionary of the tracer names of the same form
+            as mask_name. It has to be given as {1: name1, 2: name2, 3:
             name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
             the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>. In fact, the tjpcov.mask_names.
-            tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name.
+            <Cell^12 Cell^34>.
             cache (dict): Dictionary with cached variables. It will use the cached
             masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4' and the
             values the loaded maps.
@@ -237,9 +236,12 @@ class CovarianceBuilder(ABC):
 
         """
         mask_files = self.mask_files
+        mask_names = self.get_mask_names_dict(tracer_names)
         nside = self.nside
         mask = {}
         mask_by_mask_name = {}
+        if cache is None:
+            cache = {}
         for i in [1, 2, 3, 4]:
             # Mask
             key = f'm{i}'
@@ -278,6 +280,29 @@ class CovarianceBuilder(ABC):
         nbpw = ix.size
 
         return nbpw
+
+    def get_tracers_spin_dict(self, tracer_names):
+        """
+        Return a dictionary with the masks assotiated to the fields to be
+        correlated
+
+        Parameters:
+        -----------
+            tracer_names (dict):  Dictionary of the tracer names of the same form
+            as mask_name. It has to be given as {1: name1, 2: name2, 3:
+            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
+            the first and second Cell you are computing the covariance for; i.e.
+            <Cell^12 Cell^34>.
+
+        Returns:
+        --------
+            spins_dict (dict):  Dictionary with the spins assotiated to the
+            fields to be correlated.
+        """
+        s = {}
+        for i, tni in tracer_names.items():
+            s[i] = self.get_tracer_spin(tni)
+        return s
 
     def get_tracer_comb_spin(self, tracer_comb):
         """
