@@ -23,8 +23,8 @@ class CovarianceBuilderTester(CovarianceBuilder):
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
         super()._build_matrix_from_blocks(blocks, tracers_cov)
 
-    def get_covariance_block(self, **kwargs):
-        super().get_covariance_block(**kwargs)
+    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
 
 def get_nmt_bin(lmax=95):
@@ -65,7 +65,29 @@ def test_build_matrix_from_blocks_not_implemented():
 
 
 def test_compute_all_blocks():
-    pass
+    def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
+        f1 = int(tracer_comb1[0].split('__')[1]) + 1
+        f2 = int(tracer_comb1[1].split('__')[1]) + 1
+        f3 = int(tracer_comb2[0].split('__')[1]) + 1
+        f4 = int(tracer_comb2[1].split('__')[1]) + 1
+
+        block = f1 * f2 * f3 * f4 * np.ones((10, 10))
+        return block
+
+    class CovarianceBuilderTester(CovarianceBuilder):
+        # Based on https://stackoverflow.com/a/28299369
+        def _build_matrix_from_blocks(self, blocks, tracers_cov):
+            super()._build_matrix_from_blocks(blocks, tracers_cov)
+
+        def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+            return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+
+    cb = CovarianceBuilderTester(input_yml)
+    blocks, tracers_blocks = cb._compute_all_blocks()
+
+    for bi, trs in zip(blocks, tracers_blocks):
+        assert np.all(bi == get_covariance_block(trs[0], trs[1]))
 
 
 def test_get_cosmology():
@@ -105,7 +127,7 @@ def test_get_cosmology():
 def test_get_covariance_block_not_implemented():
     with pytest.raises(NotImplementedError):
         cb = CovarianceBuilderTester(input_yml)
-        cb.get_covariance_block()
+        cb.get_covariance_block([], [])
 
 
 def test_get_covariance():

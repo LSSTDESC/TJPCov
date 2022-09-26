@@ -146,7 +146,7 @@ class CovarianceBuilder(ABC):
         return self.cosmo
 
     @abstractmethod
-    def get_covariance_block(self, **kwargs):
+    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         raise NotImplementedError("Not implemented")
 
     def get_covariance(self, **kwargs):
