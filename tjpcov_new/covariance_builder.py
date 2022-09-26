@@ -78,6 +78,10 @@ class CovarianceBuilder(ABC):
             elif i % self.size == self.rank:
                 yield task
 
+    @abstractmethod
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        pass
+
     def _compute_all_blocks(self, **kwargs):
         """
         Compute all the independent covariance blocks.
@@ -94,7 +98,6 @@ class CovarianceBuilder(ABC):
         """
 
         two_point_data = self.io.get_sacc_file()
-        ccl_tracers, _ = self.get_tracer_info()
 
         # Make a list of all independent tracer combinations
         tracers_cov = self.get_list_of_tracers_for_cov()
@@ -111,72 +114,12 @@ class CovarianceBuilder(ABC):
             # at initialization and/or through kwargs?
             cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
                                             tracer_comb2=tracer_comb2,
-                                            ccl_tracers=ccl_tracers, **kwargs)
+                                            **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
 
         return blocks, tracers_blocks
-
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """
-        Build full matrix from blocks.
-
-        Parameters:
-        -----------
-        blocks (list): List of blocks
-        tracers_cov (list): List of tracer combinations corresponding to each
-        block in blocks. They should have the same order
-
-        Returns:
-        --------
-        cov_full (Npt x Npt numpy array):
-            Covariance matrix for all combinations.
-            Npt = (number of bins ) * (number of combinations)
-        """
-        blocks = iter(blocks)
-
-        # Covariance construction based on
-        # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
-        s = self.io.get_sacc_with_concise_dtypes()
-        nbpw = self.get_nbpw()
-        #
-        ndim = s.mean.size
-        cl_tracers = s.get_tracer_combinations()
-
-        cov_full = -1 * np.ones((ndim, ndim))
-
-        print('Building the covariance: placing blocks in their place')
-        for tracer_comb1, tracer_comb2 in tracers_cov:
-            print(tracer_comb1, tracer_comb2)
-            # Although these two variables do not vary as ncell2 and dtypes2,
-            # it is cleaner to tho the loop this way
-            ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
-            dtypes1 = self.get_datatypes_from_ncell(ncell1)
-
-            ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
-            dtypes2 = self.get_datatypes_from_ncell(ncell2)
-
-            cov_ij = next(blocks)
-            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
-
-            for i, dt1 in enumerate(dtypes1):
-                ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
-                if len(ix1) == 0:
-                    continue
-                for j, dt2 in enumerate(dtypes2):
-                    ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
-                    if len(ix2) == 0:
-                        continue
-                    covi = cov_ij[:, i, :, j]
-                    cov_full[np.ix_(ix1, ix2)] = covi
-                    cov_full[np.ix_(ix2, ix1)] = covi.T
-
-        if np.any(cov_full == -1):
-            raise Exception('Something went wrong. Probably related to the ' +
-                            'data types')
-
-        return cov_full
 
     def get_cosmology(self):
         if self.cosmo is None:
@@ -225,30 +168,6 @@ class CovarianceBuilder(ABC):
             self.cov = self._build_matrix_from_blocks(blocks, tracers_cov)
 
         return self.cov
-
-    def get_ell_eff(self):
-        """
-        Return the effective ell in the sacc file. It assume that all of them have
-        the same effective ell (true with current TXPipe implementation).
-
-        Parameters:
-        -----------
-            sacc_data (Sacc):  Data Sacc instance
-
-        Returns:
-        --------
-            ell (array): Array with the effective ell in the sacc file.
-        """
-        sacc_file = self.io.get_sacc_file()
-        dtype = sacc_file.get_data_types()[0]
-        tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
-        ell, _ = sacc_file.get_ell_cl(dtype, *tracers)
-
-        return ell
-
-    @abstractmethod
-    def get_datatypes_from_ncell(self, ncell):
-        pass
 
     def get_list_of_tracers_for_cov(self):
         """
@@ -379,6 +298,165 @@ class CovarianceBuilder(ABC):
 
         return s1, s2
 
+    def get_tracer_spin(self, tracer):
+        """
+        Return the spin of a given tracer
+
+        Parameters:
+        -----------
+            sacc_data (Sacc):  Data Sacc instance
+            tracer (str):  Tracer name
+
+        Returns:
+        --------
+            spin (int):  Spin of the given tracer
+
+        """
+        sacc_file = self.io.get_sacc_file()
+        tr = sacc_file.get_tracer(tracer)
+        if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
+           ('lens' in tracer):
+            return 0
+        elif (tr.quantity == 'galaxy_shear') or ('source' in tracer):
+            return 2
+        else:
+            raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')
+
+    def get_tracer_nmaps(self, tracer):
+        """
+        Return the number of maps assotiated to the given tracer
+
+        Parameters:
+        -----------
+            sacc_data (Sacc):  Data Sacc instance
+            tracer (str):  Tracer name
+
+        Returns:
+        --------
+            nmaps (int):  Number of maps assotiated to the tracer.
+
+        """
+        s = self.get_tracer_spin(tracer)
+        if s == 0:
+            return 1
+        else:
+            return 2
+
+
+class CovarianceFourier(CovarianceBuilder):
+    # TODO: Move Fourier specific methods here
+    space_type = 'Fourier'
+
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        """
+        Build full matrix from blocks.
+
+        Parameters:
+        -----------
+        blocks (list): List of blocks
+        tracers_cov (list): List of tracer combinations corresponding to each
+        block in blocks. They should have the same order
+
+        Returns:
+        --------
+        cov_full (Npt x Npt numpy array):
+            Covariance matrix for all combinations.
+            Npt = (number of bins ) * (number of combinations)
+        """
+        # TODO: Genearlize this for both real and Fourier space and move it to
+        # CovarianceBuilder
+        blocks = iter(blocks)
+
+        # Covariance construction based on
+        # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
+        s = self.io.get_sacc_with_concise_dtypes()
+        nbpw = self.get_nbpw()
+        #
+        ndim = s.mean.size
+        cl_tracers = s.get_tracer_combinations()
+
+        cov_full = -1 * np.ones((ndim, ndim))
+
+        print('Building the covariance: placing blocks in their place')
+        for tracer_comb1, tracer_comb2 in tracers_cov:
+            print(tracer_comb1, tracer_comb2)
+            # Although these two variables do not vary as ncell2 and dtypes2,
+            # it is cleaner to tho the loop this way
+            ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
+            dtypes1 = self.get_datatypes_from_ncell(ncell1)
+
+            ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
+            dtypes2 = self.get_datatypes_from_ncell(ncell2)
+
+            cov_ij = next(blocks)
+            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
+
+            for i, dt1 in enumerate(dtypes1):
+                ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
+                if len(ix1) == 0:
+                    continue
+                for j, dt2 in enumerate(dtypes2):
+                    ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
+                    if len(ix2) == 0:
+                        continue
+                    covi = cov_ij[:, i, :, j]
+                    cov_full[np.ix_(ix1, ix2)] = covi
+                    cov_full[np.ix_(ix2, ix1)] = covi.T
+
+        if np.any(cov_full == -1):
+            raise Exception('Something went wrong. Probably related to the ' +
+                            'data types')
+
+        return cov_full
+
+    def get_datatypes_from_ncell(self, ncell):
+        """
+        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
+        of cells for a pair of tracers
+
+        Parameters:
+        -----------
+            ncell (int):  Number of Cell for a pair of tracers
+        Returns:
+        --------
+            datatypes (list):  List of data types assotiated to the given degrees
+            of freedom
+
+        """
+        # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
+        # TODO: Can this be genearlized for real space and promoted to the
+        # CovarianceBuilder parent class?
+        if ncell == 1:
+            cl_types = ['cl_00']
+        elif ncell == 2:
+            cl_types = ['cl_0e', 'cl_0b']
+        elif ncell == 4:
+            cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
+        else:
+            raise ValueError('ncell does not match 1, 2, or 4.')
+
+        return cl_types
+
+    def get_ell_eff(self):
+        """
+        Return the effective ell in the sacc file. It assume that all of them have
+        the same effective ell (true with current TXPipe implementation).
+
+        Parameters:
+        -----------
+            sacc_data (Sacc):  Data Sacc instance
+
+        Returns:
+        --------
+            ell (array): Array with the effective ell in the sacc file.
+        """
+        sacc_file = self.io.get_sacc_file()
+        dtype = sacc_file.get_data_types()[0]
+        tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
+        ell, _ = sacc_file.get_ell_cl(dtype, *tracers)
+
+        return ell
+
     def get_tracer_comb_ncell(self, tracer_comb, independent=False):
         """
         Return the number of Cell for a pair of tracers (e.g. for shear-shear,
@@ -487,83 +565,6 @@ class CovarianceBuilder(ABC):
             return ccl_tracers, tracer_Noise, tracer_Noise_coupled
 
         return ccl_tracers, tracer_Noise
-
-    def get_tracer_spin(self, tracer):
-        """
-        Return the spin of a given tracer
-
-        Parameters:
-        -----------
-            sacc_data (Sacc):  Data Sacc instance
-            tracer (str):  Tracer name
-
-        Returns:
-        --------
-            spin (int):  Spin of the given tracer
-
-        """
-        sacc_file = self.io.get_sacc_file()
-        tr = sacc_file.get_tracer(tracer)
-        if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
-           ('lens' in tracer):
-            return 0
-        elif (tr.quantity == 'galaxy_shear') or ('source' in tracer):
-            return 2
-        else:
-            raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')
-
-    def get_tracer_nmaps(self, tracer):
-        """
-        Return the number of maps assotiated to the given tracer
-
-        Parameters:
-        -----------
-            sacc_data (Sacc):  Data Sacc instance
-            tracer (str):  Tracer name
-
-        Returns:
-        --------
-            nmaps (int):  Number of maps assotiated to the tracer.
-
-        """
-        s = self.get_tracer_spin(tracer)
-        if s == 0:
-            return 1
-        else:
-            return 2
-
-
-class CovarianceFourier(CovarianceBuilder):
-    # TODO: Move Fourier specific methods here
-    space_type = 'Fourier'
-
-    def get_datatypes_from_ncell(self, ncell):
-        """
-        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
-        of cells for a pair of tracers
-
-        Parameters:
-        -----------
-            ncell (int):  Number of Cell for a pair of tracers
-        Returns:
-        --------
-            datatypes (list):  List of data types assotiated to the given degrees
-            of freedom
-
-        """
-        # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
-        # TODO: Can this be genearlized for real space and promoted to the
-        # CovarianceBuilder parent class?
-        if ncell == 1:
-            cl_types = ['cl_00']
-        elif ncell == 2:
-            cl_types = ['cl_0e', 'cl_0b']
-        elif ncell == 4:
-            cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
-        else:
-            raise ValueError('ncell does not match 1, 2, or 4.')
-
-        return cl_types
 
 
 class CovarianceReal(CovarianceBuilder):
