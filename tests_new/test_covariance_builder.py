@@ -7,6 +7,7 @@ import pickle
 import pyccl as ccl
 import pymaster as nmt
 from tjpcov_new.covariance_builder import CovarianceBuilder
+from scipy.linalg import block_diag
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
@@ -50,9 +51,9 @@ def test_nuisance_config():
     assert cb.Ngal == {'DESgc__0': Ngal, 'DESwl__0': Ngal, 'DESwl__1': Ngal}
     assert cb.sigma_e == {'DESwl__0': 0.26, 'DESwl__1': 0.26}
 
-# TODO: Add tests for _split_tasks_by_rank, _compute_all_blocks and
-# _build_matrix_from_blocks, get_covariance. They are tested through the
-# NaMaster and the SSC run but it would be better to have dedicated tests.
+# TODO: Add tests for _split_tasks_by_rank and _build_matrix_from_blocks,
+# get_covariance. They are tested through the NaMaster and the SSC run but it
+# would be better to have dedicated tests.
 
 def test_split_tasks_by_rank():
     pass
@@ -131,7 +132,38 @@ def test_get_covariance_block_not_implemented():
 
 
 def test_get_covariance():
-    pass
+    def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
+        f1 = int(tracer_comb1[0].split('__')[1]) + 1
+        f2 = int(tracer_comb1[1].split('__')[1]) + 1
+        f3 = int(tracer_comb2[0].split('__')[1]) + 1
+        f4 = int(tracer_comb2[1].split('__')[1]) + 1
+
+        block = f1 * f2 * f3 * f4 * np.ones((10, 10))
+        return block
+
+    def build_matrix_from_blocks(blocks, tracers_cov):
+        tracers_cov_sorted = sorted(tracers_cov)
+        ix = []
+        for trs in tracers_cov_sorted:
+            ix.append(tracers_cov.index(trs))
+        blocks = list(np.array(blocks)[ix])
+        return block_diag(*blocks)
+
+    class CovarianceBuilderTester(CovarianceBuilder):
+        # Based on https://stackoverflow.com/a/28299369
+        def _build_matrix_from_blocks(self, blocks, tracers_cov):
+            return build_matrix_from_blocks(blocks, tracers_cov)
+
+        def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+            return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+
+    cb = CovarianceBuilderTester(input_yml)
+    blocks, tracers_blocks = cb._compute_all_blocks()
+    cov = cb.get_covariance()
+    cov2 = build_matrix_from_blocks(blocks[::-1], tracers_blocks[::-1])
+
+    assert np.all(cov2 == cov)
 
 
 def test_get_list_of_tracers_for_cov():

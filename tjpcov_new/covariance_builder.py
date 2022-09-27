@@ -150,7 +150,7 @@ class CovarianceBuilder(ABC):
         raise NotImplementedError("Not implemented")
 
     def get_covariance(self, **kwargs):
-        if self.cov is not None:
+        if self.cov is None:
             blocks, tracers_cov = self._compute_all_blocks(**kwargs)
 
             if self.comm is not None:
