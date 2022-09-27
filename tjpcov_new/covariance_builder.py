@@ -372,6 +372,12 @@ class CovarianceFourier(CovarianceBuilder):
     # TODO: Move Fourier specific methods here
     space_type = 'Fourier'
 
+    def __init__(self, config):
+        super().__init__(config)
+        self.ccl_tracers = None
+        self.tracer_Noise = None
+        self.tracer_Noise_coupled = None
+
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
         """
         Build full matrix from blocks.
@@ -513,7 +519,7 @@ class CovarianceFourier(CovarianceBuilder):
     def get_tracer_info(self, return_noise_coupled=False):
         """
         Creates CCL tracer objects and computes the noise for all the tracers
-        Check usage: Can we call all the tracer at once?
+        based on the specifications given in the configuration file.
 
         Parameters:
         -----------
@@ -531,63 +537,76 @@ class CovarianceFourier(CovarianceBuilder):
                 retrun_noise_coupled is True.
 
         """
-        ccl_tracers = {}
-        tracer_Noise = {}
-        tracer_Noise_coupled = {}
+        if ccl_tracers is None:
+            ccl_tracers = {}
+            tracer_Noise = {}
+            tracer_Noise_coupled = {}
 
-        sacc_file = self.io.get_sacc_file()
+            sacc_file = self.io.get_sacc_file()
 
-        for tracer in sacc_file.tracers:
-            tracer_dat = sacc_file.get_tracer(tracer)
-            tracer_Noise_coupled[tracer] = tracer_dat.metadata.get('n_ell_coupled', None)
+            for tracer in sacc_file.tracers:
+                tracer_dat = sacc_file.get_tracer(tracer)
 
-            if (tracer_dat.quantity == 'galaxy_shear') or ('src' in tracer) \
-                    or ('source' in tracer):
-                z = tracer_dat.z
-                dNdz = tracer_dat.nz
-                if self.IA is None:
-                    ia_bias = None
-                else:
-                    IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
-                    ia_bias = (z, IA_bin)
-                ccl_tracers[tracer] = ccl.WeakLensingTracer(self.cosmo,
-                                                            dndz=(z, dNdz),
-                                                            ia_bias=ia_bias)
-                # CCL automatically normalizes dNdz
-                if tracer in self.sigma_e:
-                    tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
-                else:
-                    tracer_Noise[tracer] = None
+                # Coupled noise read from tracer metadata in the sacc file
+                tracer_Noise_coupled[tracer] = tracer_dat.metadata.get('n_ell_coupled', None)
 
-            elif (tracer_dat.quantity == 'galaxy_density') or \
-                ('lens' in tracer):
-                z = tracer_dat.z
-                dNdz = tracer_dat.nz
-                # import pdb; pdb.set_trace()
-                b = self.bias_lens[tracer] * np.ones(len(z))
-                ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                    self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
-                if tracer in self.Ngal:
-                    tracer_Noise[tracer] = 1./self.Ngal[tracer]
-                else:
-                    tracer_Noise[tracer] = None
-            elif tracer_dat.quantity == 'cmb_convergence':
-                ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
-                                                           z_source=1100)
+                if (tracer_dat.quantity == 'galaxy_shear') or ('src' in tracer) \
+                        or ('source' in tracer):
+                    # CCL Tracer
+                    z = tracer_dat.z
+                    dNdz = tracer_dat.nz
+                    if self.IA is None:
+                        ia_bias = None
+                    else:
+                        IA_bin = self.IA*np.ones(len(z))
+                        ia_bias = (z, IA_bin)
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(self.cosmo,
+                                                                dndz=(z, dNdz),
+                                                                ia_bias=ia_bias)
+                    # Noise
+                    if tracer in self.sigma_e:
+                        tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
+                    else:
+                        tracer_Noise[tracer] = None
 
-        if not np.all(list(tracer_Noise.values())):
-            warnings.warn('Missing noise for some tracers in file. You will ' +
-                          'have to pass it with the cache')
+                elif (tracer_dat.quantity == 'galaxy_density') or \
+                    ('lens' in tracer):
+                    # CCL Tracer
+                    z = tracer_dat.z
+                    dNdz = tracer_dat.nz
+                    b = self.bias_lens[tracer] * np.ones(len(z))
+                    ccl_tracers[tracer] = ccl.NumberCountsTracer(
+                        self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
 
-        if return_noise_coupled:
-            vals = list(tracer_Noise_coupled.values())
-            if not np.all(vals):
-                tracer_Noise_coupled = None
-            elif not np.all(vals):
+                    # Noise
+                    if tracer in self.Ngal:
+                        tracer_Noise[tracer] = 1./self.Ngal[tracer]
+                    else:
+                        tracer_Noise[tracer] = None
+
+                elif tracer_dat.quantity == 'cmb_convergence':
+                    # CCL Tracer
+                    ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
+                                                               z_source=1100)
+
+            if not np.all(list(tracer_Noise.values())):
+                warnings.warn('Missing noise for some tracers in file. You will ' +
+                              'have to pass it with the cache')
+
+            if not np.all(list(tracer_Noise_coupled.values())):
                 warnings.warn('Missing n_ell_coupled info for some tracers in '
                               + 'the sacc file. You will have to pass it with'
                               + 'the cache')
-            return ccl_tracers, tracer_Noise, tracer_Noise_coupled
+                # This is to force the use of tracer_Noise but not sure we want
+                # to do that if we know the coupled one.
+                tracer_Noise_coupled = None
+
+            self.ccl_tracers = ccl_tracers
+            self.tracer_Noise = tracer_Noise
+            self.tracer_Noise_coupled = tracer_Noise_coupled
+
+        if return_noise_coupled:
+            return self.ccl_tracers, self.tracer_Noise, self.tracer_Noise_coupled
 
         return ccl_tracers, tracer_Noise
 
