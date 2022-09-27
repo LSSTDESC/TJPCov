@@ -51,12 +51,22 @@ def test_nuisance_config():
     assert cb.Ngal == {'DESgc__0': Ngal, 'DESwl__0': Ngal, 'DESwl__1': Ngal}
     assert cb.sigma_e == {'DESwl__0': 0.26, 'DESwl__1': 0.26}
 
-# TODO: Add tests for _split_tasks_by_rank and _build_matrix_from_blocks,
-# get_covariance. They are tested through the NaMaster and the SSC run but it
-# would be better to have dedicated tests.
 
+# TODO: Should we test this also with mpi?
 def test_split_tasks_by_rank():
-    pass
+    cb = CovarianceBuilderTester(input_yml)
+    tasks = list(range(100))
+    tasks_splitted = list(cb._split_tasks_by_rank(tasks))
+
+    assert tasks == tasks_splitted
+
+    # Fake a mpi process with size = 2 and rank = 2
+    cb.size = 2
+    cb.rank = 1
+
+    tasks_splitted = list(cb._split_tasks_by_rank(tasks))
+
+    assert tasks[1::2] == tasks_splitted
 
 
 def test_build_matrix_from_blocks_not_implemented():
