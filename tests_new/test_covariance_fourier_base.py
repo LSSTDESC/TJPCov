@@ -19,9 +19,6 @@ os.makedirs('tests/tmp/', exist_ok=True)
 
 class CovarianceFourierTester(CovarianceFourier):
     # Based on https://stackoverflow.com/a/28299369
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        super()._build_matrix_from_blocks(blocks, tracers_cov)
-
     def get_covariance_block(self, **kwargs):
         super().get_covariance_block(**kwargs)
 
@@ -51,8 +48,46 @@ def get_nmt_bin(lmax=95):
 
 
 def test_build_matrix_from_blocks():
-    pass
+    cb = CovarianceFourierTester(input_yml)
+    s = cb.io.get_sacc_file()
+    # Remove the autocorrelation of weak lensing because it has only 3 dtypes
+    # in the sacc file (eb = be) and the code expects 4.
+    for i in range(4):
+        print(f'Removing {i}')
+        s.remove_selection(tracers=(f'DESwl__{i}', f'DESwl__{i}'))
+    cov = s.covariance.covmat + 1e-100
 
+    trs_cov = cb.get_list_of_tracers_for_cov()
+    blocks = []
+    for trs1, trs2 in trs_cov:
+        ix1 = s.indices(tracers=trs1)
+        ix2 = s.indices(tracers=trs2)
+        cov12 = cov[ix1][:, ix2]
+        blocks.append(cov12)
+
+    # We test here the reshaping with order 'F' (as in Fortran)
+    # To test the reshaping needed for NaMaster we have to use 'C' (as in C)
+    # That will be done in the NaMaster tests via comparing the full covariance
+    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov, order='F')
+
+    assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
+
+    # Now without removing the autocorrelations of shear
+    cb = CovarianceFourierTester(input_yml)
+    s = cb.io.get_sacc_file()
+    cov = s.covariance.covmat + 1e-100
+
+    trs_cov = cb.get_list_of_tracers_for_cov()
+    blocks = []
+    for trs1, trs2 in trs_cov:
+        ix1 = s.indices(tracers=trs1)
+        ix2 = s.indices(tracers=trs2)
+        cov12 = cov[ix1][:, ix2]
+        blocks.append(cov12)
+    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov, order='F',
+                                        only_independent=True)
+
+    assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
 def test_get_datatypes_from_ncell():
     cb = CovarianceFourierTester(input_yml)

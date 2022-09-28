@@ -52,6 +52,8 @@ class CovarianceBuilder(ABC):
 
         self.cov = None
 
+        self.nbpw = None
+
         # We leave the masks in the base class because they are needed for most
         # methods. Even for fsky we can use them to estimate the fsky if not
         # provided. However, we might want to move it to a different class
@@ -273,13 +275,14 @@ class CovarianceBuilder(ABC):
         --------
             nbpw (int): Number of bandpowers; i.e. ell_effective.size
         """
-        sacc_file = self.io.get_sacc_file()
-        dtype = sacc_file.get_data_types()[0]
-        tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
-        ix = sacc_file.indices(data_type=dtype, tracers=tracers)
-        nbpw = ix.size
+        if self.nbpw is None:
+            sacc_file = self.io.get_sacc_file()
+            dtype = sacc_file.get_data_types()[0]
+            tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
+            ix = sacc_file.indices(data_type=dtype, tracers=tracers)
+            self.nbpw = ix.size
 
-        return nbpw
+        return self.nbpw
 
     def get_tracers_spin_dict(self, tracer_names):
         """
@@ -378,7 +381,8 @@ class CovarianceFourier(CovarianceBuilder):
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
 
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+    def _build_matrix_from_blocks(self, blocks, tracers_cov, order='C',
+                                  only_independent=False):
         """
         Build full matrix from blocks.
 
@@ -386,7 +390,14 @@ class CovarianceFourier(CovarianceBuilder):
         -----------
         blocks (list): List of blocks
         tracers_cov (list): List of tracer combinations corresponding to each
-        block in blocks. They should have the same order
+        block in blocks. They must have the same order
+        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
+        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
+        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
+        blocks are as in the sacc file, 'F' should be used.
+        only_independent (bool): If True, the blocks only contain the
+        covariance for the independent Cells. E.g. for wl-wl, Cell EB = BE. If
+        True, BE will not be considered.
 
         Returns:
         --------
@@ -419,8 +430,19 @@ class CovarianceFourier(CovarianceBuilder):
             ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
             dtypes2 = self.get_datatypes_from_ncell(ncell2)
 
+            if only_independent:
+                if (tracer_comb1[0] == tracer_comb1[1]) and (ncell1 == 4):
+                    ncell1 -= 1
+                    dtypes1.remove('cl_be')
+
+                if (tracer_comb2[0] == tracer_comb2[1]) and (ncell2 == 4):
+                    ncell2 -= 1
+                    dtypes2.remove('cl_be')
+
             cov_ij = next(blocks)
-            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2))
+            # The reshape works for the NaMaster ordering with order 'C'
+            # If the blocks are ordered as in the sacc file, you need order 'F'
+            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2), order=order)
 
             for i, dt1 in enumerate(dtypes1):
                 ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
