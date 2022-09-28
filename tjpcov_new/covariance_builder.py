@@ -537,7 +537,8 @@ class CovarianceFourier(CovarianceBuilder):
                 retrun_noise_coupled is True.
 
         """
-        if ccl_tracers is None:
+        if self.ccl_tracers is None:
+            cosmo = self.get_cosmology()
             ccl_tracers = {}
             tracer_Noise = {}
             tracer_Noise_coupled = {}
@@ -560,7 +561,7 @@ class CovarianceFourier(CovarianceBuilder):
                     else:
                         IA_bin = self.IA*np.ones(len(z))
                         ia_bias = (z, IA_bin)
-                    ccl_tracers[tracer] = ccl.WeakLensingTracer(self.cosmo,
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(cosmo,
                                                                 dndz=(z, dNdz),
                                                                 ia_bias=ia_bias)
                     # Noise
@@ -576,7 +577,7 @@ class CovarianceFourier(CovarianceBuilder):
                     dNdz = tracer_dat.nz
                     b = self.bias_lens[tracer] * np.ones(len(z))
                     ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                        self.cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+                        cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
 
                     # Noise
                     if tracer in self.Ngal:
@@ -586,14 +587,14 @@ class CovarianceFourier(CovarianceBuilder):
 
                 elif tracer_dat.quantity == 'cmb_convergence':
                     # CCL Tracer
-                    ccl_tracers[tracer] = ccl.CMBLensingTracer(self.cosmo,
+                    ccl_tracers[tracer] = ccl.CMBLensingTracer(cosmo,
                                                                z_source=1100)
 
-            if not np.all(list(tracer_Noise.values())):
+            if None in list(tracer_Noise.values()):
                 warnings.warn('Missing noise for some tracers in file. You will ' +
                               'have to pass it with the cache')
 
-            if not np.all(list(tracer_Noise_coupled.values())):
+            if None in list(tracer_Noise_coupled.values()):
                 warnings.warn('Missing n_ell_coupled info for some tracers in '
                               + 'the sacc file. You will have to pass it with'
                               + 'the cache')
