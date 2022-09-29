@@ -25,6 +25,12 @@ def test_smoke_input():
     with pytest.raises(ValueError):
         CovarianceIO(['hello'])
 
+    # Check outdir is created
+    if os.path.isdir(outdir):
+        os.system(f"rm -rf {outdir}")
+    CovarianceIO(input_yml)
+    assert os.path.isdir(outdir)
+
 
 def test_create_sacc_cov():
     cio = CovarianceIO(input_yml)

@@ -25,6 +25,7 @@ class CovarianceIO():
 
         # Output directory where to save all the time consuming calculations
         self.outdir = self.config['tjpcov'].get('outdir', './')
+        os.makedirs(self.outdir, exist_ok=True)
 
     def _read_config(self, config):
         if isinstance(config, dict):
