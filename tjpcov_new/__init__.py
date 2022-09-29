@@ -1,5 +1,5 @@
 from .wigner_transform import wigner_transform, bin_cov
-from .covariance_fourier_gaussian_nmt import FourierGaussianNmtCovariance
+from .covariance_fourier_gaussian_nmt import CovarianceFourierGaussianNmt
 from .covariance_fourier_ssc import FourierSSCHaloModel
 from .covariance_gaussian_fsky import FourierGaussianFsky, RealGaussianFsky
 

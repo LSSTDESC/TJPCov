@@ -620,9 +620,6 @@ class CovarianceFourier(CovarianceBuilder):
                 warnings.warn('Missing n_ell_coupled info for some tracers in '
                               + 'the sacc file. You will have to pass it with'
                               + 'the cache')
-                # This is to force the use of tracer_Noise but not sure we want
-                # to do that if we know the coupled one.
-                tracer_Noise_coupled = None
 
             self.ccl_tracers = ccl_tracers
             self.tracer_Noise = tracer_Noise
@@ -631,7 +628,7 @@ class CovarianceFourier(CovarianceBuilder):
         if return_noise_coupled:
             return self.ccl_tracers, self.tracer_Noise, self.tracer_Noise_coupled
 
-        return ccl_tracers, tracer_Noise
+        return self.ccl_tracers, self.tracer_Noise
 
 
 class CovarianceReal(CovarianceBuilder):

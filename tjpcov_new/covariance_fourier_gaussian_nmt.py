@@ -6,7 +6,7 @@ import warnings
 import pyccl as ccl
 
 
-class FourierGaussianNmtCovariance(CovarianceFourier):
+class CovarianceFourierGaussianNmt(CovarianceFourier):
     cov_type = 'gauss'
 
     def __init__(self, config):
@@ -171,9 +171,8 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
 
         return cl_cp
 
-    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             ccl_tracers=None, tracer_Noise=None,
-                             tracer_Noise_coupled=None, coupled=False,
+    def get_covariance_block(self, tracer_comb1, tracer_comb2,
+                             use_coupled_noise=True, coupled=False,
                              cache=None):
         """
         Compute a single covariance matrix for a given pair of C_ell. If outdir
@@ -185,40 +184,34 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
         -----------
             tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
             tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
-            the tracer names
-            tracer_Noise (dict): Dictionary with necessary (uncoupled) noise
-            with keys the tracer names. The values must be a float or int, not
-            an array
-            tracer_Noise_coupled (dict): As tracer_Noise but with coupled
-            noise.
+            use_coupled_noise (bool): If True, use the coupled noise. Note that
+            if noise is provided via the `cache` arg, this will be used and
+            assumed to be coupled if this option is True.
             coupled (bool): True to return the coupled Gaussian covariance
             (default False)
-            cache (dict): Dictionary with the necessary workspaces and
-            covariance workspaces. It accept masks (keys: 'm1', 'm2', 'm3',
-            'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'), workspaces (keys:
-            'w13', 'w23', 'w14', 'w24', 'w12', 'w34'), the covariance
+            cache (dict): Dictionary with the corresponding noise, masks,
+            fields, workspaces and covariance workspaces. It accepts noise
+            (keys: 'SN13', 'SN23', 'SN14', 'SN24'), masks (keys: 'm1', 'm2',
+            'm3', 'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'), workspaces
+            (keys: 'w13', 'w23', 'w14', 'w24', 'w12', 'w34'), the covariance
             workspace (key: 'cw') and a NmtBin (key: 'bins').
 
         Returns:
         --------
-            cov (dict):  Gaussian covariance matrix for a pair of C_ell. keys
-            are 'final' and 'final_b'. The covariance stored is the same in
-            both cases.
-
+            cov (array):  Gaussian covariance matrix for a pair of C_ell.
         """
-        fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+        if coupled:
+            raise NotImplementedError('Computing coupled covariance matrix ' +
+                                      'not implemented yet')
+            fname = 'covcp_{}_{}_{}_{}.npz'.format(*tracer_comb1,
+                                                   *tracer_comb2)
+        else:
+            fname = 'cov_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+
         fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname):
-            cf = np.load(fname)
-            return {'final': cf['final'], 'final_b': cf['final_b']}
-
-        if (tracer_Noise is not None) and (tracer_Noise_coupled is not None):
-            raise ValueError('Only one tracer_Noise or tracer_Noise_coupled ' +
-                             'can be given')
-        if coupled:
-            raise ValueError('Computing coupled covariance matrix not ' +
-                             'implemented yet')
+            cov = np.load(fname)['cov']
+            return cov
 
         if cache is None:
             cache = {}
@@ -244,7 +237,7 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
         if 'cosmo' in cache:
             cosmo = cache['cosmo']
         else:
-            cosmo = self.cosmo
+            cosmo = self.get_cosmology()
 
         tr = {}
         tr[1], tr[2] = tracer_comb1
@@ -260,17 +253,20 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
 
         s = self.get_tracers_spin_dict(tr)
 
+        ccl_tracers, tracer_Noise, tracer_Noise_coupled = \
+            self.get_tracer_info(return_noise_coupled=True)
+
         # Fiducial cl
         cl = {}
         # Noise (coupled or not)
-        SN = {'coupled': tracer_Noise is None}
-
-        if SN['coupled'] is False:
+        SN = {}
+        if not use_coupled_noise:
             warnings.warn("Computing the coupled noise from the uncoupled " +
                           "noise. This assumes the noise is white")
 
+        # Loop over the 4 different field combinations and fill the cl and
+        # noise dictionaries
         for i in [13, 24, 14, 23]:
-            # Fiducial cl
             i1, i2 = [int(j) for j in str(i)]
             key = f'cl{i}'
             if key in cache:
@@ -288,8 +284,16 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             else:
                 SN[i] = np.zeros((ncell[i], ell.size))
                 SN[i][0] = SN[i][-1] = np.ones_like(ell)
-                if SN['coupled']:
-                    SN[i] *= tracer_Noise_coupled[tr[i1]] if auto else 0
+                if use_coupled_noise:
+                    nl_cp = tracer_Noise_coupled[tr[i1]] if auto else 0
+                    if nl_cp is None:
+                        raise ValueError('Requested use_coupled_noise but ' +
+                                         'tracer_Noise_coupled is None for ' +
+                                         f'tracer {tr[i1]}. This could ' +
+                                         'mean that it does not have the ' +
+                                         'n_ell_coupled metadata information' +
+                                         ' in the sacc file.')
+                    SN[i] *= nl_cp
                 else:
                     SN[i] *= tracer_Noise[tr[i1]] if auto else 0
                 if s[i1] == 2:
@@ -318,13 +322,13 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
 
             cl_cov = {}
             cl_cov[13] = self.get_cl_for_cov(cl[13], SN[13], m[1], m[3], w[13],
-                                             nl_is_cp=SN['coupled'])
+                                             nl_is_cp=use_coupled_noise)
             cl_cov[23] = self.get_cl_for_cov(cl[23], SN[23], m[2], m[3], w[23],
-                                             nl_is_cp=SN['coupled'])
+                                             nl_is_cp=use_coupled_noise)
             cl_cov[14] = self.get_cl_for_cov(cl[14], SN[14], m[1], m[4], w[14],
-                                             nl_is_cp=SN['coupled'])
+                                             nl_is_cp=use_coupled_noise)
             cl_cov[24] = self.get_cl_for_cov(cl[24], SN[24], m[2], m[4], w[24],
-                                             nl_is_cp=SN['coupled'])
+                                             nl_is_cp=use_coupled_noise)
 
             cov = nmt.gaussian_covariance(cw, s[1], s[2], s[3], s[4],
                                           cl_cov[13], cl_cov[14], cl_cov[23],
@@ -334,9 +338,9 @@ class FourierGaussianNmtCovariance(CovarianceFourier):
             size2 = ncell[34] * nbpw
             cov = np.zeros((size1, size2))
 
-        np.savez_compressed(fname, cov=cov, final=cov, final_b=cov)
+        np.savez_compressed(fname, cov=cov)
 
-        return {'final': cov, 'final_b': cov}
+        return cov
 
     def get_covariance_workspace(self, f1, f2, f3, f4, m1, m2, m3, m4, **kwargs):
         """
