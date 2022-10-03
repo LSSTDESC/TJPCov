@@ -411,7 +411,7 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         return cw
 
-    def get_fields_dict(self, tracer_names, cache=None, masks=None):
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
         """
         Return a dictionary with the masks assotiated to the fields to be
         correlated
@@ -426,9 +426,11 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             cache (dict): Dictionary with cached variables. It will use the cached
             field if found. The keys must be 'f1', 'f2', 'f3' or 'f4' and the
             values the corresponding NmtFields.
-            masks
             masks (dict): Dictionary of the masks of the fields correlated with
             keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+            field. They will override the ones passed in the configuration
+            file through nmt_conf['f'].
 
         Returns:
         --------
@@ -442,7 +444,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         if cache is None:
             cache = {}
         spins = self.get_tracers_spin_dict(tracer_names)
-        nmt_conf = self.nmt_conf['f']
+        nmt_conf = self.nmt_conf['f'].copy()
+        nmt_conf.update(kwargs)
         f = {}
         f_by_mask_name = {}
         for i in [1, 2, 3, 4]:
@@ -651,6 +654,10 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         outdir = self.io.outdir
         s1, s2 = f1.fl.spin, f2.fl.spin
 
+        # Currently, outdir will be always not None. If not specified, it
+        # will be the current directory. I leave this for now since we might
+        # want to disable the option of writing files in the future for small
+        # fast runs in the future.
         if outdir is not None:
             fname = os.path.join(outdir, f'w{s1}{s2}__{m1}__{m2}.fits')
             isfile = os.path.isfile(fname)
@@ -685,7 +692,7 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         return w
 
     def get_workspaces_dict(self, tracer_names, bins, cache=None, fields=None,
-                            masks=None):
+                            masks=None, **kwargs):
         """
         Return a dictionary with the masks assotiated to the fields to be
         correlated
@@ -706,6 +713,9 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             with keys 1, 2, 3 or 4 and values the NmtFields.
             masks (dict): Dictionary of the masks of the fields correlated with
             keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+            workspace. They will override the ones passed in the configuration
+            file through nmt_conf['w'].
 
         Returns:
         --------
@@ -722,7 +732,10 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             fields = self.get_fields_dict(tracer_names, cache, masks=masks)
         if cache is None:
             cache = {}
-        nmt_conf = self.nmt_conf['w']
+
+        nmt_conf = self.nmt_conf['w'].copy()
+        nmt_conf.update(kwargs)
+
         w = {}
         w_by_mask_name = {}
         # 12 and 34 must be first to avoid asigning them None if their maks do not
