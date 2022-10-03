@@ -502,6 +502,81 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 
+@pytest.mark.parametrize('tracer_comb1,tracer_comb2',
+                         [(('DESgc__0', 'DESgc__0'), ('DESgc__0', 'DESgc__0')),
+                          (('DESgc__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                          (('DESgc__0', 'DESgc__0'), ('DESwl__0', 'DESwl__0')),
+                          (('DESwl__0', 'DESwl__0'), ('DESwl__0', 'DESwl__0')),
+                          (('DESwl__0', 'DESwl__0'), ('DESwl__1', 'DESwl__1')),
+                          ])
+def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
+    # In a separate function because the previous one is already too long
+    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    # Add the coupled noise metadata information to the sacc file
+    s = cnmt.io.get_sacc_file()
+    for tr in s.tracers.keys():
+        nl_cp = get_tracer_noise(tr, cp=True)
+        s.tracers[tr].metadata['n_ell_coupled'] = nl_cp
+
+    (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
+
+    cl13 = get_fiducial_cl(s, tr1, tr3, binned=False)
+    cl24 = get_fiducial_cl(s, tr2, tr4, binned=False)
+    cl14 = get_fiducial_cl(s, tr1, tr4, binned=False)
+    cl23 = get_fiducial_cl(s, tr2, tr3, binned=False)
+
+    cache = {
+             # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+             # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+             # 'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+             # 'w12': w12, 'w34': w34,
+             # 'cw': cw,
+             'cl13': cl13, 'cl24': cl24, 'cl14': cl14, 'cl23':cl23,
+             # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+             'bins': get_nmt_bin()
+    }
+
+    cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2,
+                                    cache=cache) + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
+
+    cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
+
+    if tracer_comb1 == tracer_comb2:
+        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-5)
+
+    w13 = get_workspace_from_trs(tr1, tr3)
+    w23 = get_workspace_from_trs(tr2, tr3)
+    w14 = get_workspace_from_trs(tr1, tr4)
+    w24 = get_workspace_from_trs(tr2, tr4)
+    w12 = get_workspace_from_trs(tr1, tr2)
+    w34 = get_workspace_from_trs(tr3, tr4)
+    cw = get_covariance_workspace(*tracer_comb1, *tracer_comb2)
+
+    cache = {
+             # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+             # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+             'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+             'w12': w12, 'w34': w34,
+             'cw': cw,
+             'cl13': cl13, 'cl24': cl24, 'cl14': cl14, 'cl23':cl23,
+             # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+             'bins': get_nmt_bin()
+    }
+
+    cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2,
+                                    cache=cache) + 1e-100
+    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
+
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-6
+    if tracer_comb1 == tracer_comb2:
+        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-6)
+
+
 @pytest.mark.parametrize('kwargs', [{}, {'l_toeplitz': 10, 'l_exact': 10,
                                      'dl_band': 10, 'n_iter': 0 }])
 def test_get_covariance_workspace(kwargs):
@@ -1015,7 +1090,6 @@ def test_txpipe_like_input():
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()
     for tr in s.tracers.keys():
-        print(tr)
         nl_cp = get_tracer_noise(tr, cp=True)
         s.tracers[tr].metadata['n_ell_coupled'] = nl_cp
 
