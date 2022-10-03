@@ -12,6 +12,7 @@ from tjpcov_new.covariance_fourier_gaussian_nmt import \
 from tjpcov_new.covariance_io import CovarianceIO
 import yaml
 import healpy as hp
+import sacc
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
@@ -580,7 +581,6 @@ def test_get_covariance_workspace(kwargs):
 def test_get_fields_dict(nmt_conf):
     tr = get_tracers_dict_for_cov()
     cnmt = CovarianceFourierGaussianNmt(input_yml)
-    print(tr)
 
     f = get_fields_dict_for_cov(**nmt_conf)
     f2 = cnmt.get_fields_dict(tr, **nmt_conf)
@@ -919,6 +919,92 @@ def test_get_workspace_dict(kwargs):
 
 
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+
+def test_full_covariance_benchmark():
+    os.makedirs(outdir, exist_ok=True)
+
+    config = get_config(input_yml)
+    bins = get_nmt_bin()
+    config['tjpcov']['binning_info'] = bins
+    cache = None
+    # Load the coupled noise that we need for the benchmark covariance
+    cnmt = CovarianceFourierGaussianNmt(config)
+    s_nlcp = cnmt.io.get_sacc_file().copy()
+    tracer_noise = {}
+    tracer_noise_cp = {}
+    for tr in s_nlcp.tracers.keys():
+        nl_cp = get_tracer_noise(tr, cp=True)
+        tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+        tracer_noise_cp[tr] = nl_cp
+        s_nlcp.tracers[tr].metadata['n_ell_coupled'] = nl_cp
+
+    cnmt.io.sacc_file = s_nlcp.copy()
+
+    cov = cnmt.get_covariance() + 1e-100
+    cov_bm = s_nlcp.covariance.covmat + 1e-100
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+
+    # Check chi2
+    clf = np.array([])
+    for trs in s_nlcp.get_tracer_combinations():
+        cl_trs = get_fiducial_cl(s_nlcp, *trs, remove_be=True)
+        clf = np.concatenate((clf, cl_trs.flatten()))
+    cl = s_nlcp.mean
+
+    delta = clf - cl
+    chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
+    chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+    # Clean after the test
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+    # Check that it also works if they don't use concise data_types
+    s2 = s_nlcp.copy()
+    for dp in s2.data:
+        dt = dp.data_type
+
+        if dt == 'cl_00':
+            dp.data_type = sacc.standard_types.galaxy_density_cl
+        elif dt == 'cl_0e':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_e
+        elif dt == 'cl_0b':
+            dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_b
+        elif dt == 'cl_ee':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_ee
+        elif dt == 'cl_eb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_eb
+        elif dt == 'cl_be':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_be
+        elif dt == 'cl_bb':
+            dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
+        else:
+            raise ValueError('Something went wrong. Data type not recognized')
+
+    cnmt.cl_data = s2
+    cov2 = cnmt.get_covariance() + 1e-100
+    assert np.all(cov == cov2)
+
+    # Clean after the test
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+    # Check that it fails if tracer_noise is used instead of tracer_noise_cp
+    cnmt = CovarianceFourierGaussianNmt(config)
+    cov2 = cnmt.get_covariance(use_coupled_noise=False) + 1e-100
+    assert not np.all(cov == cov2)
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
+    # Check that binning can be passed through cache
+    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt.io.sacc_file = s_nlcp.copy()
+    cov2 = cnmt.get_covariance(cache={'bins': bins}) + 1e-100
+    assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
+
+    # Clean after the test
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+
 
 # Clean up after the tests
 os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
