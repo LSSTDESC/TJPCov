@@ -20,17 +20,17 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         self.binning_info = self.config['tjpcov'].get('binning_info', None)
 
         # nside is needed if mask_files is a hdf5 file
-        self.nside = config['tjpcov'].get('nside', None)
+        self.nside = self.config['tjpcov'].get('nside', None)
 
         # Read NaMaster specific options
-        self.nmt_conf = config.get('NaMaster', {})
+        self.nmt_conf = self.config.get('NaMaster', {})
         for k in ['f', 'w', 'cw']:
             if k not in self.nmt_conf:
                 self.nmt_conf[k] = {}
 
         # Read cache from input file. It will update the cache passed as an
         # argument of the different methods
-        self.cache = config.get('cache', {})
+        self.cache = self.config.get('cache', {})
 
     def _compute_all_blocks(self, tracer_noise, tracer_noise_coupled, **kwargs):
         """
@@ -562,12 +562,12 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
     def get_nell(self, bins=None, nside=None, cache=None):
         """
-        Return the number of ells for the fiducial Cells
+        Return the number of ells for the fiducial Cells. If the sacc file
+        stored bandpowers are wrong. You will need to pass one of the other
+        arguments.
 
         Parameters:
         -----------
-            sacc_data (Sacc):  Data Sacc instance. If the stored bandpowers are
-            wrong. You will need to pass one of the other arguments.
             bins (NmtBin): NmtBin instance with the desired binning.
             nside (int): Healpy map nside.
             cache (dict): Dictionary with cached variables. It will use the cached

@@ -21,6 +21,7 @@ input_yml_txpipe = os.path.join(root, "tjpcov_conf_minimal_txpipe.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
 
 input_sacc = sacc.Sacc.load_fits(root + 'cls_cov.fits')
+nside = 32
 
 # Create temporal folder
 os.makedirs(outdir, exist_ok=True)
@@ -55,8 +56,14 @@ def assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, threshold):
     assert np.abs(chi2 / chi2_bm - 1) < threshold
 
 
-def get_nmt_bin():
-    bpw_edges = [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
+def get_nmt_bin(lmax=3*nside):
+    bpw_edges = np.array([0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72,
+                           78, 84, 90, 96])
+    if lmax != 3*nside:
+        # lmax + 1 because the last ell is not included
+        bpw_edges = bpw_edges[bpw_edges < lmax+1]
+        bpw_edges[-1] = lmax+1
+
     return  nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
 
 
@@ -65,6 +72,24 @@ def get_pair_folder_name(tracer_comb):
     for tr in tracer_comb:
         bn.append(tr.split('__')[0])
     return '_'.join(bn)
+
+
+def get_cl(dtype, fiducial=False):
+    subfolder = ''
+    if fiducial:
+        subfolder = 'fiducial'
+
+    if dtype == 'galaxy_clustering':
+        fname = os.path.join(root, subfolder,
+                             'DESgc_DESgc/cl_DESgc__0_DESgc__0.npz')
+    elif dtype == 'galaxy_shear':
+        fname = os.path.join(root, subfolder,
+                             'DESwl_DESwl/cl_DESwl__0_DESwl__0.npz')
+    elif dtype == 'cross':
+        fname = os.path.join(root, subfolder,
+                             'DESgc_DESwl/cl_DESgc__0_DESwl__0.npz')
+
+    return np.load(fname)
 
 
 def get_data_cl(tr1, tr2, remove_be=False):
@@ -76,6 +101,19 @@ def get_data_cl(tr1, tr2, remove_be=False):
     if remove_be and (tr1 == tr2) and (cl.shape[0] == 4):
         cl = np.delete(cl, 2, 0)
     return cl
+
+
+def get_dummy_sacc():
+    s = sacc.Sacc()
+    s.add_tracer('map', 'PLAcv', quantity='cmb_convergence', spin=0,
+                 ell=None, beam=None)
+    s.add_tracer('NZ', 'DESgc__0', quantity='galaxy_density', spin=0,
+                 nz=None, z=None)
+    s.add_tracer('NZ', 'DESwl__0', quantity='galaxy_shear', spin=2,
+                 nz=None, z=None)
+    s.add_tracer('misc', 'ForError', quantity='generic')
+
+    return s
 
 
 def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
@@ -121,7 +159,7 @@ def get_benchmark_cov(tracer_comb1, tracer_comb2):
     return np.load(fname)['cov']
 
 
-def get_workspace(tr1, tr2):
+def get_workspace_from_trs(tr1, tr2):
     config = get_xcell_yml()
     w = nmt.NmtWorkspace()
     bn = get_pair_folder_name((tr1, tr2))
@@ -129,6 +167,22 @@ def get_workspace(tr1, tr2):
     m2 = config['tracers'][tr2]['mask_name']
     fname = os.path.join(root, bn, f"w__{m1}__{m2}.fits")
     w.read_from(fname)
+    return w
+
+
+def get_workspace_from_dtype(dtype):
+    w = nmt.NmtWorkspace()
+    if dtype == 'galaxy_clustering':
+        fname = os.path.join(root,
+                             'DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits')
+    elif dtype == 'galaxy_shear':
+        fname = os.path.join(root,
+                             'DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits')
+    elif dtype == 'cross':
+        fname = os.path.join(root,
+                             'DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits')
+    w.read_from(fname)
+
     return w
 
 
@@ -321,9 +375,60 @@ def test_get_list_of_tracers_for_cov_wsp():
 def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
     pass
 
-
 def test_get_nell():
-    pass
+    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    nell = 3 * nside
+    bins = get_nmt_bin()
+    w = get_workspace_from_dtype('galaxy_clustering')
+    cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): w}}}
+
+    assert nell == cnmt.get_nell()
+
+    # Now with a sacc file without bandpower windows
+    s = get_dummy_sacc()
+    clf = get_cl('cross')
+    s.add_ell_cl('cl_0e', 'DESgc__0', 'DESwl__0', clf['ell'], clf['cl'][0])
+    cnmt.io.sacc_file = s
+
+    assert nell == cnmt.get_nell(bins=bins)
+    assert nell == cnmt.get_nell(nside=nside)
+    assert nell == cnmt.get_nell(cache=cache)
+
+    # Force ValueError (as when window is wrong)
+    class s():
+        def __init__(self):
+            self.metadata = {}
+            pass
+        def get_data_types(self):
+            raise ValueError
+
+    cnmt.io.sacc_file = s()
+    with pytest.raises(ValueError):
+        assert nell == cnmt.get_nell()
+    # But it works if you pass the nside
+    assert nell == cnmt.get_nell(nside=nside)
+
+    # Test lmax != 3*nside
+    lmax = 50
+    bins = get_nmt_bin(50)
+    nell = 51
+    assert nell == cnmt.get_nell(bins=bins)
+    # Test that if bins nor workspace is given, it tries to use the sacc file
+    # and when fails (if "binnint/ell_max" is not present in the metadata),
+    # it defaults to nell = 3*nside
+    assert 3 *nside == cnmt.get_nell(nside=nside)
+
+    # Check metadata
+    cnmt.io.sacc_file.metadata["binning/ell_max"] = lmax
+    assert nell == cnmt.get_nell()
+
+    # Check that if ell_max > 3*nside-1 in metadata, (and nside given) we cut
+    # nell = 3*nside
+    # Check metadata
+    cnmt.io.sacc_file = s()
+    cnmt.io.sacc_file.metadata["binning/ell_max"] = 100
+    nell = 3*nside
+    assert nell == cnmt.get_nell(nside=nside)
 
 
 def test_get_workspace():
