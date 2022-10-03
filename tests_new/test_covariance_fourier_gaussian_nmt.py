@@ -16,10 +16,11 @@ import sacc
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
+root_new = "./tests_new/benchmarks/32_DES_tjpcov_bm/"
 outdir = root + 'tjpcov_tmp/'
 input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
 input_yml_no_nmtc = os.path.join(root, "tjpcov_conf_minimal_no_nmtconf.yaml")
-input_yml_txpipe = os.path.join(root, "tjpcov_conf_minimal_txpipe.yaml")
+input_yml_txpipe = os.path.join(root_new, "tjpcov_conf_minimal_txpipe.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
 
 input_sacc = sacc.Sacc.load_fits(root + 'cls_cov.fits')
@@ -1005,6 +1006,38 @@ def test_full_covariance_benchmark():
     # Clean after the test
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
+
+def test_txpipe_like_input():
+    # We don't need to pass the bins because we have provided the workspaces
+    # through the cache in the configuration file
+    cnmt = CovarianceFourierGaussianNmt(input_yml_txpipe)
+
+    # Add the coupled noise metadata information to the sacc file
+    s = cnmt.io.get_sacc_file()
+    for tr in s.tracers.keys():
+        print(tr)
+        nl_cp = get_tracer_noise(tr, cp=True)
+        s.tracers[tr].metadata['n_ell_coupled'] = nl_cp
+
+    cov = cnmt.get_covariance() + 1e-100
+    cov_bm = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+
+    # Check chi2
+    clf = np.array([])
+    for trs in s.get_tracer_combinations():
+        cl_trs = get_fiducial_cl(s, *trs, remove_be=True)
+        clf = np.concatenate((clf, cl_trs.flatten()))
+    cl = s.mean
+
+    delta = clf - cl
+    chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
+    chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+    # Clean up after the test
+    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 # Clean up after the tests
 os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
