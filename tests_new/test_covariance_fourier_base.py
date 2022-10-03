@@ -169,10 +169,12 @@ def test_get_tracer_info():
         cb.get_tracer_info(return_noise_coupled=True)
 
     # Check that when returnig the coupled noise, the previous output is the
-    # same
+    # same and the tracer_noise_coupled is a dictionary with all values None,
+    # as no coupled noise info has been passed.
     assert ccl_tracers is ccl_tracers1
     assert tracer_noise is tracer_noise1
-    assert tracer_noise_coupled is None
+    assert tracer_noise.keys() == tracer_noise_coupled.keys()
+    assert not any(tracer_noise_coupled.values())
 
     # Check noise from formula
     arc_min = 1/60 * np.pi / 180  # arc_min in radians
@@ -208,12 +210,3 @@ def test_get_tracer_info():
 
     for tr, nl in tracer_noise_coupled.items():
         assert coupled_noise[tr] == nl
-
-    # Check that tracer_noise_coupled will be None if one of them is missing
-    cb = CovarianceFourierTester(input_yml)
-
-    ccl_tracers, tracer_noise, tracer_noise_coupled = \
-        cb.get_tracer_info(return_noise_coupled=True)
-
-    assert tracer_noise_coupled is None
-
