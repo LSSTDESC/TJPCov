@@ -374,6 +374,10 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
                         (m2, m1, m4, m3), (m3, m4, m1, m2), (m4, m3, m1, m2),
                         (m3, m4, m2, m1), (m4, m3, m2, m1)]
 
+        # Currently, outdir will be always not None. If not specified, it
+        # will be the current directory. I leave this for now since we might
+        # want to disable the option of writing files in the future for small
+        # fast runs in the future.
         if outdir is not None:
             fnames = []
             isfiles = []
