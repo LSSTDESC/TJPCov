@@ -32,19 +32,14 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         # argument of the different methods
         self.cache = self.config.get('cache', {})
 
-    def _compute_all_blocks(self, tracer_noise, tracer_noise_coupled, **kwargs):
+    def _compute_all_blocks(self, **kwargs):
         """
         Compute all the independent covariance blocks.
 
         Parameters:
         -----------
-        tracer_noise (dict): Dictionary with necessary (uncoupled) noise
-        with keys the tracer names. The values must be a float or int, not
-        an array
-        tracer_noise_coupled (dict): As tracer_Noise but with coupled
-        noise.
-        **kwargs: The arguments to pass to your chosen covariance estimation
-        method.
+        **kwargs: The arguments to pass to `get_covariance_block`. See its
+        documentation.
 
         Returns:
         --------
@@ -56,31 +51,11 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         # workspaces. That way two processes will not be computing the same
         # (cov)workspace at the same time.
 
-        if (tracer_noise is not None) and (tracer_noise_coupled is not None):
-            raise ValueError('Only one of tracer_nose or ' +
-                             'tracer_noise_coupled can be given')
-
         sacc_file = self.io.get_sacc_file()
         cl_tracers = sacc_file.get_tracer_combinations()
 
         ccl_tracers, tracer_Noise, tracer_Noise_coupled = \
             self.get_tracer_info(return_noise_coupled=True)
-
-        if (tracer_noise_coupled is not None) or \
-                (tracer_Noise_coupled is not None):
-            tracer_Noise = None
-            if tracer_Noise_coupled is None:
-                tracer_Noise_coupled = {}
-        else:
-            tracer_Noise_coupled = None
-
-
-        # Circunvent the impossibility of inputting noise by hand
-        for tracer in ccl_tracers:
-            if tracer_noise and tracer in tracer_noise:
-                tracer_Noise[tracer] = tracer_noise[tracer]
-            elif tracer_noise_coupled and tracer in tracer_noise_coupled:
-                tracer_Noise_coupled[tracer] = tracer_noise_coupled[tracer]
 
         # Make a list of all pair of tracer combinations needed to compute the
         # independent workspaces
@@ -102,10 +77,7 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             print(tracer_comb1, tracer_comb2)
             cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
                                             tracer_comb2=tracer_comb2,
-                                            ccl_tracers=ccl_tracers,
-                                            tracer_Noise=tracer_Noise,
-                                            tracer_Noise_coupled=tracer_Noise_coupled,
-                                            **kwargs)['final']
+                                            **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
@@ -117,10 +89,7 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             print(tracer_comb1, tracer_comb2)
             cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
                                             tracer_comb2=tracer_comb2,
-                                            ccl_tracers=ccl_tracers,
-                                            tracer_Noise=tracer_Noise,
-                                            tracer_Noise_coupled=tracer_Noise_coupled,
-                                            **kwargs)['final']
+                                            **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
@@ -133,10 +102,7 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             print(tracer_comb1, tracer_comb2)
             cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
                                             tracer_comb2=tracer_comb2,
-                                            ccl_tracers=ccl_tracers,
-                                            tracer_Noise=tracer_Noise,
-                                            tracer_Noise_coupled=tracer_Noise_coupled,
-                                            **kwargs)['final']
+                                            **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 

@@ -282,7 +282,27 @@ def get_cl_dict_for_cov(**kwargs):
 
 # Actual tests
 def test_compute_all_blocks():
-    pass
+    # Test _compute_all_blocks function by modifying the
+    # get_covariance_block method to output the block in the sacc file
+
+    def get_covariance_block(s, tracer_comb1, tracer_comb2):
+        ix1 = s.indices(tracers=tracer_comb1)
+        ix2 = s.indices(tracers=tracer_comb2)
+        return s.covariance.covmat[ix1][:, ix2]
+
+    class CNMTTester(CovarianceFourierGaussianNmt):
+        def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+            s = self.io.sacc_file
+            return get_covariance_block(s, tracer_comb1, tracer_comb2)
+
+    cnmt = CNMTTester(input_yml)
+    blocks, tracers_blocks = cnmt._compute_all_blocks()
+    nblocks = len(cnmt.get_list_of_tracers_for_cov())
+    assert nblocks == len(blocks)
+
+    for bi, trs in zip(blocks, tracers_blocks):
+        assert np.all(bi == get_covariance_block(cnmt.io.sacc_file,
+                                                 trs[0], trs[1]))
 
 
 def test_get_cl_for_cov():
@@ -480,9 +500,9 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 
-@pytest.mark.parametrize('kwards', [{}, {'l_toeplitz': 10, 'l_exact': 10,
+@pytest.mark.parametrize('kwargs', [{}, {'l_toeplitz': 10, 'l_exact': 10,
                                      'dl_band': 10, 'n_iter': 0 }])
-def test_get_covariance_workspace(kwards):
+def test_get_covariance_workspace(kwargs):
     cnmt = CovarianceFourierGaussianNmt(input_yml)
     m1 = m2 = get_mask_from_dtype('galaxy_clustering')
     m3 = m4 = get_mask_from_dtype('galaxy_shear')
@@ -491,7 +511,7 @@ def test_get_covariance_workspace(kwards):
     f3 = f4 = nmt.NmtField(m2, None, spin=2)
 
     cw = nmt.NmtCovarianceWorkspace()
-    cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwards)
+    cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
 
     cl = get_cl('cross', fiducial=False)
     cl_fid = get_cl('cross', fiducial=True)
@@ -521,7 +541,7 @@ def test_get_covariance_workspace(kwards):
     for fields, masks_names in zip(combinations, combinations_names):
         spins = [fi.fl.spin for fi in fields]
         cw_code = cnmt.get_covariance_workspace(*fields, *masks_names,
-                                                **kwards)
+                                                **kwargs)
         fname = os.path.join(outdir,
                              'cw{}{}{}{}__{}__{}__{}__{}.fits'.format(*spins,
                                                                       *masks_names))
@@ -539,7 +559,7 @@ def test_get_covariance_workspace(kwards):
     # one
 
     cw_code = cnmt.get_covariance_workspace(f3, f4, f2, f1, mn3, mn4, mn2, mn1,
-                                            recompute=True, **kwards)
+                                            recompute=True, **kwargs)
 
     fname = os.path.join(outdir, f'cw0022__{mn1}__{mn2}__{mn3}__{mn3}.fits')
     assert not os.path.isfile(fname)
@@ -553,7 +573,7 @@ def test_get_covariance_workspace(kwards):
     # revert the functionality in the future
     # cw_code = cnmt.get_covariance_workspace(f3, f4, f2, f1, mn3, mn4,
     #                                              mn2, mn1,
-    #                                              recompute=True, **kwards)
+    #                                              recompute=True, **kwargs)
     # assert not os.path.isfile(fname)
 
 @pytest.mark.parametrize('nmt_conf', [{}, {'n_iter': 0}])

@@ -96,6 +96,8 @@ def test_compute_all_blocks():
 
     cb = CovarianceBuilderTester(input_yml)
     blocks, tracers_blocks = cb._compute_all_blocks()
+    nblocks = len(cb.get_list_of_tracers_for_cov())
+    assert nblocks == len(blocks)
 
     for bi, trs in zip(blocks, tracers_blocks):
         assert np.all(bi == get_covariance_block(trs[0], trs[1]))
