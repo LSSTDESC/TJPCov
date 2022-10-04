@@ -1,7 +1,7 @@
 from .wigner_transform import wigner_transform, bin_cov
 from .covariance_fourier_gaussian_nmt import CovarianceFourierGaussianNmt
 from .covariance_fourier_ssc import FourierSSCHaloModel
-from .covariance_gaussian_fsky import FourierGaussianFsky, RealGaussianFsky
+from .covariance_gaussian_fsky import CovarianceFourierGaussianFsky, CovarianceRealGaussianFsky
 
 def covariance_from_name(name):
     def all_subclasses(cls):

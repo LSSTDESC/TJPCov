@@ -5,20 +5,57 @@ import os
 import warnings
 import pyccl as ccl
 
-class FourierGaussianFsky(CovarianceFourier):
+class CovarianceFourierGaussianFsky(CovarianceFourier):
     # TODO: Improve this class to use the sacc file information or
     # configuration given in the yaml file. Kept like this for now to check I
     # don't break the tests during the refactoring.
+    cov_type = 'gauss'
+    _reshape_order = 'F'
+
     def __init__(self, config):
-        super.__init__(config)
+        super().__init__(config)
 
         self.fsky = self.config['GaussianFsky'].get('fsky', None)
         if self.fsky is None:
             raise ValueError('You need to set fsky for FourierGaussianFsky')
 
+    def get_binning_info(self, binning='linear'):
+        """
+        Get the ells for bins given the sacc object
+
+        Parameters:
+        -----------
+        binning (str): Binning type.
+
+        Returns:
+        --------
+        ell (array): All the ells covered
+        ell_eff (array): The effective ells
+        ell_edges (array): The bandpower edges
+        """
+        # TODO: This should be obtained from the sacc file or the input
+        # configuration. Check how it is done in TXPipe:
+        # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
+        ell_eff = self.get_ell_eff()
+        nbpw = ell_eff.size
+
+        ellb_min, ellb_max = ell_eff.min(), ell_eff.max()
+        if binning == 'linear':
+            del_ell = (ell_eff[1:] - ell_eff[:-1])[0]
+
+            ell_min = ellb_min - del_ell/2
+            ell_max = ellb_max + del_ell/2
+
+            ell_delta = (ell_max-ell_min)//nbpw
+            ell_edges = np.arange(ell_min, ell_max+1, ell_delta)
+            ell = np.arange(ell_min, ell_max + ell_delta - 2)
+        else:
+            raise NotImplementedError(f'Binning {binning} not implemented yet')
+
+        return ell, ell_eff, ell_edges
+
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             ccl_tracers=None, tracer_Noise=None, binned=True,
-                             for_real=False):
+                             binned=True, for_real=False):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
 
@@ -28,7 +65,9 @@ class FourierGaussianFsky(CovarianceFourier):
             final_b : binned covariance
         """
         cosmo = self.get_cosmology()
-        ell, ell_bins, ell_edges = self.get_ell_theta()
+        ell, ell_bins, ell_edges = self.get_binning_info()
+
+        ccl_tracers, tracer_Noise = self.get_tracer_info()
 
         cl = {}
         cl[13] = ccl.angular_cl(
@@ -69,99 +108,18 @@ class FourierGaussianFsky(CovarianceFourier):
         norm = (2*ell+1)*np.gradient(ell)*self.fsky
         cov /= norm
 
-        if binned and (ell_edges is not None):
+        if binned:
             lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
         return cov
 
-    def set_ell_theta(self, ang_min, ang_max, n_ang,
-                      ang_scale='linear', do_xi=False):
-        """
-        Utility for return custom theta/ell bins (outside sacc)
 
-        Parameters:
-        -----------
-        ang_min (int, float):
-            if do_xi, ang is assumed to be theta (arcmin)
-            if do_xi == False,  ang is assumed to be ell
-        Returns:
-        --------
-            (theta, theta_edges ) (degrees):
-        """
-        # FIXME:
-        # Use sacc is passing this
-        if not do_xi:
-            ang_delta = (ang_max-ang_min)//n_ang
-            ang_edges = np.arange(ang_min, ang_max+1, ang_delta)
-            ang = np.arange(ang_min, ang_max + ang_delta - 2)
-
-        if do_xi:
-            th_min = ang_min/60  # in degrees
-            th_max = ang_max/60
-            n_th_bins = n_ang
-            ang_edges = np.logspace(np.log10(th_min), np.log10(th_max),
-                                    n_th_bins+1)
-            th = np.logspace(np.log10(th_min*0.98), np.log10(1), n_th_bins*30)
-            # binned covariance can be sensitive to the th values. Make sure
-            # you check convergence for your application
-            th2 = np.linspace(1, th_max*1.02, n_th_bins*30)
-
-            ang = np.unique(np.sort(np.append(th, th2)))
-            ang_bins = 0.5 * (ang_edges[1:] + ang_edges[:-1])
-
-            return ang, ang_bins, ang_edges  # TODO FIXIT
-
-        return ang, ang_edges
-
-    def get_ell_theta(self, ang_scale='linear', do_xi=False):
-        """
-        Get ell or theta for bins given the sacc object
-        For now, presuming only log and linear bins
-
-        Parameters:
-        -----------
-
-        Returns:
-        --------
-        """
-        ang_name = "ell" if not do_xi else 'theta'
-
-        # assuming same ell for all bins:
-        sacc_file = self.get_sacc_file()
-        data_type = sacc_file.get_data_types()[0]
-        tracer_comb = sacc_file.get_tracer_combinations()[0]
-        ang_bins = sacc_file.get_tag(ang_name, data_type=data_type,
-                                     tracers=tracer_comb)
-
-        ang_bins = np.array(ang_bins)
-
-        angb_min, angb_max = ang_bins.min(), ang_bins.max()
-        if ang_name == 'theta':
-            # assuming log bins
-            del_ang = (ang_bins[1:]/ang_bins[:-1]).mean()
-            ang_scale = 'log'
-            assert 1 == 1
-
-        elif ang_name == 'ell':
-            # assuming linear bins
-            del_ang = (ang_bins[1:] - ang_bins[:-1])[0]
-            ang_scale = 'linear'
-
-        ang, ang_edges = self.set_ell_theta(angb_min-del_ang/2,
-                                            angb_max+del_ang/2,
-                                            len(ang_bins),
-                                            ang_scale=ang_scale, do_xi=do_xi)
-        # Sanity check
-        if ang_scale == 'linear':
-            assert np.allclose((ang_edges[1:]+ang_edges[:-1])/2, ang_bins), \
-                "differences in produced ell/theta"
-        return ang, ang_bins, ang_edges
-
-
-class RealGaussianFsky(CovarianceReal, FourierGaussianFsky):
+class CovarianceRealGaussianFsky(CovarianceReal):
     def __init__(self, config):
         super().__init__(config)
         self.WT = None
+        self.fourier = CovarianceFourierGaussianFsky(config)
+        self.fsky = self.fourier.fsky
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
                               ccl_tracers=None, tracer_Noise=None,
@@ -176,15 +134,14 @@ class RealGaussianFsky(CovarianceReal, FourierGaussianFsky):
             final_b : binned covariance
         """
 
-        ell, ell_bins, ell_edges = self.get_ell_theta()
+        ell, ell_bins, ell_edges = self.fourier.get_binning_info()
         # TODO: Copied from the __init__ in main.py. This should be
         # changed! Kept for the tests
-        th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
-        theta,  theta_bins, theta_edges,  = th_list
+        # th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
+        theta, theta_bins, theta_edges = self.get_binning_info()
 
-        cov = super().get_covariance_block(tracer_comb1, tracer_comb2,
-                                        ccl_tracers, tracer_Noise,
-                                        for_real=True)
+        cov = self.fourier.get_covariance_block(tracer_comb1, tracer_comb2,
+                                                for_real=True)
         norm = np.pi*4*self.fsky
 
         cov /= norm
@@ -237,7 +194,7 @@ class RealGaussianFsky(CovarianceReal, FourierGaussianFsky):
             ell = ell[(ell > 1)]
 
         WT_kwargs = {'l': ell,
-                     'theta': theta*d2r,
+                     'theta': theta * np.pi / 180,
                      's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
 
         WT = wigner_transform(**WT_kwargs)
@@ -261,3 +218,47 @@ class RealGaussianFsky(CovarianceReal, FourierGaussianFsky):
             if 'src' in i:
                 tracers += ['source']
         return self.WT_factors[tuple(tracers)]
+
+    def get_binning_info(self, binning='log', do_xi=False):
+        """
+        Get the theta for bins given the sacc object
+
+        Parameters:
+        -----------
+        binning (str): Binning type.
+
+        Returns:
+        --------
+        theta (array): All the thetas covered
+        theta_eff (array): The effective thetas
+        theta_edges (array): The bandpower edges
+        """
+        # TODO: This should be obtained from the sacc file or the input
+        # configuration. Check how it is done in TXPipe:
+        # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
+
+        theta_bins = self.get_theta_eff()
+        nbpw = theta_bins.size
+
+        thetab_min, thetab_max = theta_bins.min(), theta_bins.max()
+        if binning == 'log':
+            # assuming log bins
+            del_theta = (theta_bins[1:]/theta_bins[:-1]).mean()
+            theta_min = thetab_min-del_theta/2
+            theta_max = thetab_min+del_theta/2
+
+            th_min = theta_min/60  # in degrees
+            th_max = theta_max/60
+            theta_edges = np.logspace(np.log10(th_min), np.log10(th_max),
+                                    nbpw+1)
+            th = np.logspace(np.log10(th_min*0.98), np.log10(1), nbpw*30)
+            # binned covariance can be sensitive to the th values. Make sure
+            # you check convergence for your application
+            th2 = np.linspace(1, th_max*1.02, nbpw*30)
+
+            theta = np.unique(np.sort(np.append(th, th2)))
+            theta_bins = 0.5 * (theta_edges[1:] + theta_edges[:-1])
+        else:
+            raise NotImplementedError(f'Binning {binning} not implemented yet')
+
+        return theta, theta_bins, theta_edges

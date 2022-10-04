@@ -641,6 +641,27 @@ class CovarianceFourier(CovarianceBuilder):
 class CovarianceReal(CovarianceBuilder):
     # TODO: Move Real space specific methods here
     space_type = 'Real'
-    pass
 
+    def get_theta_eff(self):
+        """
+        Return the effective theta in the sacc file. It assume that all of them
+        have the same effective theta (true with current TXPipe
+        implementation).
+
+        Parameters:
+        -----------
+            sacc_data (Sacc):  Data Sacc instance
+
+        Returns:
+        --------
+            ell (array): Array with the effective theta in the sacc file.
+        """
+        # TODO: Consider moving this method to CovarianceBuilder and merge it
+        # with the one for Fourier space
+        sacc_file = self.io.get_sacc_file()
+        dtype = sacc_file.get_data_types()[0]
+        tracers = sacc_file.get_tracer_combinations()[0]
+        theta, _ = sacc_file.get_theta_xi(dtype, *tracers)
+
+        return theta
 
