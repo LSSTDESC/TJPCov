@@ -13,10 +13,10 @@ class FourierSSCHaloModel(CovarianceFourier):
     def __init__(self, config):
         super().__init__(config)
 
-        self.ssc_conf = config.get('SSC', {})
+        self.ssc_conf = self.config.get('SSC', {})
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             integration_method='qag_quad',
+                             integration_method=None,
                              include_b_modes=True):
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
@@ -33,11 +33,16 @@ class FourierSSCHaloModel(CovarianceFourier):
             ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
             the tracer names
             integration_method (string): integration method to be used
-                for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
-                method backed up by `quad` when it fails) and 'spline' (the
-                integrand is splined and then integrated analytically).
+            for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
+            method backed up by `quad` when it fails) and 'spline' (the
+            integrand is splined and then integrated analytically). If given,
+            it will take priority over the specified in the configuration file
+            through config['SSC']['integration_method']. Elsewise, it will use
+            'qag_quad'.
             include_b_modes (bool): If True, return the full SSC with zeros in
-            for B-modes (if any). If False, return the non-zero block.
+            for B-modes (if any). If False, return the non-zero block. This
+            option cannot be modified through the configuration file to avoid
+            breaking the compatibility with the NaMaster covariance.
 
         Returns:
         --------
@@ -49,6 +54,10 @@ class FourierSSCHaloModel(CovarianceFourier):
         if os.path.isfile(fname):
             cf = np.load(fname)
             return cf['cov' if include_b_modes else 'cov_nob']
+
+        if integration_method is None:
+            integration_method = self.ssc_conf.get('integration_method',
+                                                   'qag_quad')
 
         tr = {}
         tr[1], tr[2] = tracer_comb1
