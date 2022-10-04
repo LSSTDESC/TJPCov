@@ -8,6 +8,7 @@ import warnings
 
 class FourierSSCHaloModel(CovarianceFourier):
     cov_type = 'SSC'
+    _reshape_order = 'F'
 
     def __init__(self, config):
         super().__init__(config)
@@ -15,7 +16,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         self.ssc_conf = config.get('SSC', {})
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             ccl_tracers=None, integration_method='qag_quad',
+                             integration_method='qag_quad',
                              include_b_modes=True):
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
@@ -40,13 +41,11 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         Returns:
         --------
-            cov (dict):  Super sample covariance matrix for a pair of C_ell.
-            keys are 'final' and 'final_b'. The covariance stored is the same
-            in both cases.
+            cov (array):  Super sample covariance matrix for a pair of C_ell.
 
         """
         fname = 'ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
-        fname = os.path.join(self.outdir, fname)
+        fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname):
             cf = np.load(fname)
             return cf['cov' if include_b_modes else 'cov_nob']
@@ -67,9 +66,10 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
+        sacc_file = self.io.get_sacc_file()
         z_max = []
         for i in range(4):
-            tr_sacc = self.cl_data.tracers[tr[i + 1]]
+            tr_sacc = sacc_file.tracers[tr[i + 1]]
             z, nz = tr_sacc.z, tr_sacc.nz
             # z_min.append(z[np.where(nz > 0)[0][0]])
             # z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
@@ -87,6 +87,8 @@ class FourierSSCHaloModel(CovarianceFourier):
         bias2 = self.bias_lens.get(tr[2], 1)
         bias3 = self.bias_lens.get(tr[3], 1)
         bias4 = self.bias_lens.get(tr[4], 1)
+
+        ccl_tracers, _ = self.get_tracer_info()
 
         isnc1 = isinstance(ccl_tracers[tr[1]], ccl.NumberCountsTracer)
         isnc2 = isinstance(ccl_tracers[tr[2]], ccl.NumberCountsTracer)
@@ -138,7 +140,8 @@ class FourierSSCHaloModel(CovarianceFourier):
         ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
-        cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
+        cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2),
+                                    order=self._reshape_order)
 
         np.savez_compressed(fname, cov=cov_full, cov_nob=cov_ssc)
 

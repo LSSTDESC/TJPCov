@@ -8,6 +8,7 @@ import pyccl as ccl
 
 class CovarianceFourierGaussianNmt(CovarianceFourier):
     cov_type = 'gauss'
+    _reshape_order = 'C'
 
     def __init__(self, config):
         super().__init__(config)

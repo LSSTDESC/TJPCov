@@ -381,7 +381,17 @@ class CovarianceFourier(CovarianceBuilder):
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
 
-    def _build_matrix_from_blocks(self, blocks, tracers_cov, order='C',
+    @property
+    def _reshape_order(self):
+        """
+        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
+        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
+        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
+        blocks are as in the sacc file, 'F' should be used.
+        """
+        pass
+
+    def _build_matrix_from_blocks(self, blocks, tracers_cov,
                                   only_independent=False):
         """
         Build full matrix from blocks.
@@ -391,10 +401,6 @@ class CovarianceFourier(CovarianceBuilder):
         blocks (list): List of blocks
         tracers_cov (list): List of tracer combinations corresponding to each
         block in blocks. They must have the same order
-        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
-        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
-        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
-        blocks are as in the sacc file, 'F' should be used.
         only_independent (bool): If True, the blocks only contain the
         covariance for the independent Cells. E.g. for wl-wl, Cell EB = BE. If
         True, BE will not be considered.
@@ -442,7 +448,8 @@ class CovarianceFourier(CovarianceBuilder):
             cov_ij = next(blocks)
             # The reshape works for the NaMaster ordering with order 'C'
             # If the blocks are ordered as in the sacc file, you need order 'F'
-            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2), order=order)
+            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2),
+                                    order=self._reshape_order)
 
             for i, dt1 in enumerate(dtypes1):
                 ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)

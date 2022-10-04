@@ -48,7 +48,12 @@ def get_nmt_bin(lmax=95):
 
 
 def test_build_matrix_from_blocks():
-    cb = CovarianceFourierTester(input_yml)
+    class CFT_orderF(CovarianceFourierTester):
+        _reshape_order = 'F'
+    class CFT_orderC(CovarianceFourierTester):
+        _reshape_order = 'C'
+
+    cb = CFT_orderF(input_yml)
     s = cb.io.get_sacc_file()
     # Remove the autocorrelation of weak lensing because it has only 3 dtypes
     # in the sacc file (eb = be) and the code expects 4.
@@ -65,12 +70,12 @@ def test_build_matrix_from_blocks():
         blocks.append(cov12)
 
     # We test here the reshaping with order 'F' (as in Fortran)
-    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov, order='F')
+    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov)
 
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
     # Now without removing the autocorrelations of shear
-    cb = CovarianceFourierTester(input_yml)
+    cb = CFT_orderF(input_yml)
     s = cb.io.get_sacc_file()
     cov = s.covariance.covmat + 1e-100
 
@@ -81,42 +86,23 @@ def test_build_matrix_from_blocks():
         ix2 = s.indices(tracers=trs2)
         cov12 = cov[ix1][:, ix2]
         blocks.append(cov12)
-    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov, order='F',
-                                        only_independent=True)
+    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov, only_independent=True)
 
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
     # To test the reshaping needed for NaMaster we have to use 'C' (as in C)
-    def get_cov_block_as_NaMaster(cb, trs1, trs2):
-        ncell1 = cb.get_tracer_comb_ncell(trs1)
-        ncell2 = cb.get_tracer_comb_ncell(trs2)
-        dtypes1 = cb.get_datatypes_from_ncell(ncell1)
-        dtypes2 = cb.get_datatypes_from_ncell(ncell2)
-        nbpw = cb.get_nbpw()
-        new_block = np.zeros((nbpw, ncell1, nbpw, ncell2))
-
-        s = cb.io.get_sacc_file()
-
-        for i1, dt1 in enumerate(dtypes1):
-            if (trs1[0] == trs1[1]) and ('wl' in trs1[0]) and (dt1 == 'cl_be'):
-                dt1 = 'cl_eb'
-            for i2, dt2 in enumerate(dtypes2):
-                if (trs2[0] == trs2[1]) and ('wl' in trs2[0]) and \
-                        (dt2 == 'cl_be'):
-                    dt2 = 'cl_eb'
-                ix1 = s.indices(data_type=dt1, tracers=trs1)
-                ix2 = s.indices(data_type=dt2, tracers=trs2)
-                block = s.covariance.covmat[ix1][:, ix2]
-                new_block[:, i1, :, i2] = block
-
-        return new_block
+    cb = CFT_orderC(input_yml)
+    def get_cov_block_as_NaMaster(trs1, trs2):
+        fname = 'cov_{}_{}_{}_{}.npz'.format(*trs1, *trs2)
+        return np.load(os.path.join(root + 'cov', fname))['cov']
 
     trs_cov = cb.get_list_of_tracers_for_cov()
     blocks = []
     for trs1, trs2 in trs_cov:
-        cov12 = get_cov_block_as_NaMaster(cb, trs1, trs2)
+        cov12 = get_cov_block_as_NaMaster(trs1, trs2)
         blocks.append(cov12)
 
+    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov) + 1e-100
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
 
