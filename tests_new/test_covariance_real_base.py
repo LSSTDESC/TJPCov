@@ -6,7 +6,7 @@ import sacc
 import pickle
 import pyccl as ccl
 import pymaster as nmt
-from tjpcov_new import bin_cov
+from tjpcov_new import bin_cov, wigner_transform
 from tjpcov_new.covariance_builder import CovarianceReal, CovarianceProjectedReal
 from tjpcov_new.covariance_io import CovarianceIO
 import yaml
@@ -62,9 +62,36 @@ def test_get_binning_info():
         cpr.get_binning_info('linear')
 
 
-def test_get_cov_WT_spin():
-    pass
+@pytest.mark.parametrize('tr1,tr2',
+                          [('lens0', 'lens0'),
+                           ('src0', 'lens0'),
+                           ('lens0', 'src0'),
+                           ('src0', 'src0'),
+                          ])
+def test_get_cov_WT_spin(tr1, tr2):
+    cpr = CovarianceProjectedRealTester(input_yml_real)
+    spin = cpr.get_cov_WT_spin((tr1, tr2))
+
+    spin2 = []
+    for tr in [tr1, tr2]:
+        if 'lens' in tr:
+            spin2.append(0)
+        elif 'src' in tr:
+            spin2.append(2)
+
+    if spin2 == [2, 2]:
+        spin2 = {'plus': (2, 2), 'minus': (2, -2)}
+    else:
+        spin2 = tuple(spin2)
+
+    assert spin == spin2
 
 
 def test_get_Wigner_transform():
-    pass
+    cpr = CovarianceProjectedRealTester(input_yml_real)
+    wt = cpr.get_Wigner_transform()
+
+    assert isinstance(wt, wigner_transform)
+    assert np.all(wt.l == np.arange(2, cpr.lmax + 1))
+    assert np.all(wt.theta == cpr.get_binning_info()[0])
+    assert wt.s1_s2s == [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]

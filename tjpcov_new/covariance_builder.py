@@ -760,7 +760,7 @@ class CovarianceProjectedReal(CovarianceReal):
         for i in tracer_comb:
             if 'lens' in i:
                 tracers += ['lens']
-            if 'src' in i:
+            if ('src' in i) or ('source' in i):
                 tracers += ['source']
         return WT_factors[tuple(tracers)]
 
@@ -775,10 +775,10 @@ class CovarianceProjectedReal(CovarianceReal):
         if self.WT is None:
             # Removing ell <= 1 (following original implementation)
             ell = np.arange(2, self.lmax + 1)
-            theta, _, _= self.get_binning_info()
+            theta, _, _= self.get_binning_info(in_radians=True)
 
             WT_kwargs = {'l': ell,
-                         'theta': theta * np.pi / 180,
+                         'theta': theta,
                          's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
 
             self.WT = wigner_transform(**WT_kwargs)
