@@ -156,57 +156,6 @@ class CovarianceRealGaussianFsky(CovarianceProjectedReal):
         self.fourier = CovarianceFourierGaussianFsky(config)
         self.fsky = self.fourier.fsky
 
-    def get_binning_info(self, binning='log', in_radians=True):
-        """
-        Get the theta for bins given the sacc object
-
-        Parameters:
-        -----------
-        binning (str): Binning type.
-        in_radians (bool): If the angles must be given in radians. Needed for
-        the Wigner transforms.
-
-        Returns:
-        --------
-        theta (array): All the thetas covered
-        theta_eff (array): The effective thetas
-        theta_edges (array): The bandpower edges
-        """
-        # TODO: This should be obtained from the sacc file or the input
-        # configuration. Check how it is done in TXPipe:
-        # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
-
-        theta_eff = self.get_theta_eff()
-        nbpw = theta_eff.size
-
-        thetab_min, thetab_max = theta_eff.min(), theta_eff.max()
-        if binning == 'log':
-            # assuming constant log bins
-            del_logtheta = np.log10(theta_eff[1:]/theta_eff[:-1]).mean()
-            theta_min = 2 * thetab_min  / (10**del_logtheta + 1)
-            theta_max = 2 * thetab_max  / (1 + 10**(-del_logtheta))
-
-            th_min = theta_min
-            th_max = theta_max
-            theta_edges = np.logspace(np.log10(th_min), np.log10(th_max),
-                                      nbpw+1)
-            th = np.logspace(np.log10(th_min*0.98), np.log10(1), nbpw*30)
-            # binned covariance can be sensitive to the th values. Make sure
-            # you check convergence for your application
-            th2 = np.linspace(1, th_max*1.02, nbpw*30)
-
-            theta = np.unique(np.sort(np.append(th, th2)))
-        else:
-            raise NotImplementedError(f'Binning {binning} not implemented yet')
-
-        if in_radians:
-            arcmin_rad = np.pi / 180 / 60
-            theta *= arcmin_rad
-            theta_eff *= arcmin_rad
-            theta_edges *= arcmin_rad
-
-        return theta, theta_eff, theta_edges
-
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
                               xi_plus_minus1='plus', xi_plus_minus2='plus',
                               binned=True):

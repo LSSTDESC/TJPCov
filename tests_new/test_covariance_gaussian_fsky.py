@@ -133,26 +133,6 @@ def test_Fourier_get_covariance_block():
     assert not np.any(gcov_cl_1b)
 
 
-def test_Real_get_binning_info():
-    # Check we recover the ell effective from the edges
-    theta, theta_eff, theta_edges = \
-        cfsky_real.get_binning_info(in_radians=False)
-
-    assert np.all(theta_eff == cfsky_real.get_theta_eff())
-    assert np.allclose((theta_edges[1:]+theta_edges[:-1])/2, theta_eff)
-
-    # Check in_radians work
-    theta2, theta_eff2, theta_edges2 = \
-        cfsky_real.get_binning_info(in_radians=True)
-    arcmin_rad = np.pi / 180 / 60
-    assert np.all(theta * arcmin_rad == theta2)
-    assert np.all(theta_eff * arcmin_rad == theta_eff2)
-    assert np.all(theta_edges * arcmin_rad == theta_edges2)
-
-    with pytest.raises(NotImplementedError):
-        cfsky_real.get_binning_info('linear')
-
-
 def test_Real_get_covariance_block():
     # Test made independent of pickled objects
     tracer_comb1 = ('lens0', 'lens0')
