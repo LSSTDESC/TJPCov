@@ -55,7 +55,7 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         return ell, ell_eff, ell_edges
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             binned=True, for_real=False):
+                             binned=True, for_real=False, lmax=None):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
 
@@ -65,7 +65,14 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
             final_b : binned covariance
         """
         cosmo = self.get_cosmology()
-        ell, ell_bins, ell_edges = self.get_binning_info()
+        if for_real:
+            if lmax is None:
+                raise ValueError("You need to set lmax if for_real is True")
+            else:
+                ell = np.arange(lmax + 1)
+        else:
+            # binning information not need for Real
+            ell, ell_bins, ell_edges = self.get_binning_info()
 
         ccl_tracers, tracer_Noise = self.get_tracer_info()
 
@@ -115,117 +122,27 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
 
 
 class CovarianceRealGaussianFsky(CovarianceReal):
+    cov_type = 'gauss'
+    _reshape_order = 'F'
     def __init__(self, config):
         super().__init__(config)
         self.WT = None
         self.fourier = CovarianceFourierGaussianFsky(config)
         self.fsky = self.fourier.fsky
+        self.lmax = self.config['RealGaussianFsky'].get('lmax')
+        if self.lmax is None:
+            raise ValueError('You need to specify the lmax you want to ' +
+                             'compute the Fourier covariance up to')
 
-    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                              ccl_tracers=None, tracer_Noise=None,
-                              xi_plus_minus1='plus', xi_plus_minus2='plus',
-                              binned=True):
-        """
-        Compute a single covariance matrix for a given pair of C_ell or xi
-
-        Returns:
-        --------
-            final:  unbinned covariance for C_ell
-            final_b : binned covariance
-        """
-
-        ell, ell_bins, ell_edges = self.fourier.get_binning_info()
-        # TODO: Copied from the __init__ in main.py. This should be
-        # changed! Kept for the tests
-        # th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
-        theta, theta_bins, theta_edges = self.get_binning_info()
-
-        cov = self.fourier.get_covariance_block(tracer_comb1, tracer_comb2,
-                                                for_real=True)
-        norm = np.pi*4*self.fsky
-
-        cov /= norm
-
-        if self.WT is None:  # class modifier of WT initialization
-            print("Preparing WT...")
-
-            self.WT = self.wt_setup(ell, theta)
-            print("Done!")
-
-        s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
-        s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
-        if isinstance(s1_s2_1, dict):
-            s1_s2_1 = s1_s2_1[xi_plus_minus1]
-        if isinstance(s1_s2_2, dict):
-            s1_s2_2 = s1_s2_2[xi_plus_minus2]
-        th, cov = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
-                                                s1_s2_cross=s1_s2_2,
-                                                cl_cov=cov)
-        if binned:
-            d2r = np.pi/180
-            thb, cov = bin_cov(r=th/d2r, r_bins=theta_edges, cov=cov)
-
-        return cov
-
-    def wt_setup(self, ell, theta):
-        """
-        Set this up once before the covariance evaluations
-
-        Parameters:
-        -----------
-        ell (array): array of multipoles
-        theta ( array): array of theta in degrees
-
-        Returns:
-        --------
-        """
-        WT_factors = {}
-        WT_factors['lens', 'source'] = (0, 2)
-        WT_factors['source', 'lens'] = (2, 0)  # same as (0,2)
-        WT_factors['source', 'source'] = {'plus': (2, 2), 'minus': (2, -2)}
-        WT_factors['lens', 'lens'] = (0, 0)
-
-        self.WT_factors = WT_factors
-
-        ell = np.array(ell)
-        if not np.alltrue(ell > 1):
-            # fao check warnings in WT for ell < 2
-            print("Removing ell=1 for Wigner Transformation")
-            ell = ell[(ell > 1)]
-
-        WT_kwargs = {'l': ell,
-                     'theta': theta * np.pi / 180,
-                     's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
-
-        WT = wigner_transform(**WT_kwargs)
-        return WT
-
-    def get_cov_WT_spin(self, tracer_comb=None):
-        """
-        Parameters:
-        -----------
-        tracer_comb (str, str): tracer combination in sacc format
-
-        Returns:
-        --------
-        WT_factors:
-
-        """
-        tracers = []
-        for i in tracer_comb:
-            if 'lens' in i:
-                tracers += ['lens']
-            if 'src' in i:
-                tracers += ['source']
-        return self.WT_factors[tuple(tracers)]
-
-    def get_binning_info(self, binning='log', do_xi=False):
+    def get_binning_info(self, binning='log', in_radians=True):
         """
         Get the theta for bins given the sacc object
 
         Parameters:
         -----------
         binning (str): Binning type.
+        in_radians (bool): If the angles must be given in radians. Needed for
+        the Wigner transforms.
 
         Returns:
         --------
@@ -237,28 +154,121 @@ class CovarianceRealGaussianFsky(CovarianceReal):
         # configuration. Check how it is done in TXPipe:
         # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
 
-        theta_bins = self.get_theta_eff()
-        nbpw = theta_bins.size
+        theta_eff = self.get_theta_eff()
+        nbpw = theta_eff.size
 
-        thetab_min, thetab_max = theta_bins.min(), theta_bins.max()
+        thetab_min, thetab_max = theta_eff.min(), theta_eff.max()
         if binning == 'log':
-            # assuming log bins
-            del_theta = (theta_bins[1:]/theta_bins[:-1]).mean()
-            theta_min = thetab_min-del_theta/2
-            theta_max = thetab_min+del_theta/2
+            # assuming constant log bins
+            del_logtheta = np.log10(theta_eff[1:]/theta_eff[:-1]).mean()
+            theta_min = 2 * thetab_min  / (10**del_logtheta + 1)
+            theta_max = 2 * thetab_max  / (1 + 10**(-del_logtheta))
 
-            th_min = theta_min/60  # in degrees
-            th_max = theta_max/60
+            th_min = theta_min
+            th_max = theta_max
             theta_edges = np.logspace(np.log10(th_min), np.log10(th_max),
-                                    nbpw+1)
+                                      nbpw+1)
             th = np.logspace(np.log10(th_min*0.98), np.log10(1), nbpw*30)
             # binned covariance can be sensitive to the th values. Make sure
             # you check convergence for your application
             th2 = np.linspace(1, th_max*1.02, nbpw*30)
 
             theta = np.unique(np.sort(np.append(th, th2)))
-            theta_bins = 0.5 * (theta_edges[1:] + theta_edges[:-1])
         else:
             raise NotImplementedError(f'Binning {binning} not implemented yet')
 
-        return theta, theta_bins, theta_edges
+        if in_radians:
+            arcmin_rad = np.pi / 180 / 60
+            theta *= arcmin_rad
+            theta_eff *= arcmin_rad
+            theta_edges *= arcmin_rad
+
+        return theta, theta_eff, theta_edges
+
+    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
+                              xi_plus_minus1='plus', xi_plus_minus2='plus',
+                              binned=True):
+        """
+        Compute a single covariance matrix for a given pair of C_ell or xi
+
+        Parameters
+        ----------
+
+        Returns:
+        --------
+        cov (array): Covariance matrix
+        """
+
+        cov = self.fourier.get_covariance_block(tracer_comb1, tracer_comb2,
+                                                for_real=True, lmax=self.lmax)
+        norm = np.pi*4*self.fsky
+
+        cov /= norm
+
+        WT = self.get_Wigner_transform()
+
+        s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
+        s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
+        if isinstance(s1_s2_1, dict):
+            s1_s2_1 = s1_s2_1[xi_plus_minus1]
+        if isinstance(s1_s2_2, dict):
+            s1_s2_2 = s1_s2_2[xi_plus_minus2]
+        # Remove ell <= 1 for WT (following original implementation)
+        ell = np.arange(2, self.lmax + 1)
+        cov = cov[2:][:, 2:]
+        th, cov = WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
+                                           s1_s2_cross=s1_s2_2, cl_cov=cov)
+        if binned:
+            theta, _, theta_edges = self.get_binning_info(in_radians=False)
+            thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
+
+        return cov
+
+    def get_cov_WT_spin(self, tracer_comb=None):
+        """
+        Get the Wigner transform factors
+
+
+        Parameters:
+        -----------
+        tracer_comb (str, str): tracer combination in sacc format
+
+        Returns:
+        --------
+        WT_factors:
+
+        """
+        WT_factors = {}
+        WT_factors['lens', 'source'] = (0, 2)
+        WT_factors['source', 'lens'] = (2, 0)  # same as (0,2)
+        WT_factors['source', 'source'] = {'plus': (2, 2), 'minus': (2, -2)}
+        WT_factors['lens', 'lens'] = (0, 0)
+
+        tracers = []
+        for i in tracer_comb:
+            if 'lens' in i:
+                tracers += ['lens']
+            if 'src' in i:
+                tracers += ['source']
+        return WT_factors[tuple(tracers)]
+
+    def get_Wigner_transform(self):
+        """
+        Return the wigner_transform class
+
+        Returns:
+        --------
+        wigner_transform class
+        """
+        if self.WT is None:
+            # Removing ell <= 1 (following original implementation)
+            ell = np.arange(2, self.lmax + 1)
+            theta, _, _= self.get_binning_info()
+
+            WT_kwargs = {'l': ell,
+                         'theta': theta * np.pi / 180,
+                         's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
+
+            self.WT = wigner_transform(**WT_kwargs)
+
+        return self.WT

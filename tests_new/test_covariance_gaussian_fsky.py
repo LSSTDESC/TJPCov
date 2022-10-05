@@ -6,8 +6,9 @@ import sacc
 import pickle
 import pyccl as ccl
 import pymaster as nmt
-from tjpcov_new import bin_cov
-from tjpcov_new.covariance_gaussian_fsky import CovarianceFourierGaussianFsky
+from tjpcov_new import bin_cov, bin_mat
+from tjpcov_new.covariance_gaussian_fsky import \
+    CovarianceFourierGaussianFsky, CovarianceRealGaussianFsky
 from tjpcov_new.covariance_io import CovarianceIO
 import yaml
 import healpy as hp
@@ -53,9 +54,16 @@ ref_md_ell_bins = depickling('metadata_ell_bins')
 
 # SETUP
 input_yml = "tests_new/data/conf_tjpcov_minimal.yaml"
+input_yml_real = "tests_new/data/conf_tjpcov_minimal_real.yaml"
 cfsky = CovarianceFourierGaussianFsky(input_yml)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
 
+class CRGF_tester(CovarianceRealGaussianFsky):
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        super()._build_matrix_from_blocks(blocks, tracers_cov)
+
+# cfsky_real = CovarianceRealGaussianFsky(input_yml)
+cfsky_real = CRGF_tester(input_yml_real)
 
 def clean_tmp():
     if os.path.isdir('./tests/tmp'):
@@ -69,6 +77,7 @@ def get_config():
 
 def test_smoke():
     cfsky = CovarianceFourierGaussianFsky(input_yml)
+    # cfsky = CovarianceRealGaussianFsky(input_yml)
 
     # Check it raises an error if fsky is not given
     config = get_config()
@@ -77,7 +86,7 @@ def test_smoke():
         cfsky = CovarianceFourierGaussianFsky(config)
 
 
-def test_get_binning_info():
+def test_Fourier_get_binning_info():
     cfsky = CovarianceFourierGaussianFsky(input_yml)
     ell, ell_eff, ell_edges = cfsky.get_binning_info()
 
@@ -88,7 +97,7 @@ def test_get_binning_info():
         cfsky.get_binning_info('log')
 
 
-def test_get_covariance_block():
+def test_Fourier_get_covariance_block():
     # Test made independent of pickled objects
     tracer_comb1 = ('lens0', 'lens0')
     tracer_comb2 = ('lens0', 'lens0')
@@ -108,3 +117,60 @@ def test_get_covariance_block():
                                            tracer_comb2=tracer_comb2)
     np.testing.assert_allclose(gcov_cl_1,
                                cov)
+
+
+def test_Real_get_binning_info():
+    # Check we recover the ell effective from the edges
+    theta, theta_eff, theta_edges = \
+        cfsky_real.get_binning_info(in_radians=False)
+
+    assert np.all(theta_eff == cfsky_real.get_theta_eff())
+    assert np.allclose((theta_edges[1:]+theta_edges[:-1])/2, theta_eff)
+
+    # Check in_radians work
+    theta2, theta_eff2, theta_edges2 = \
+        cfsky_real.get_binning_info(in_radians=True)
+    arcmin_rad = np.pi / 180 / 60
+    assert np.all(theta * arcmin_rad == theta2)
+    assert np.all(theta_eff * arcmin_rad == theta_eff2)
+    assert np.all(theta_edges * arcmin_rad == theta_edges2)
+
+    with pytest.raises(NotImplementedError):
+        cfsky_real.get_binning_info('linear')
+
+
+def test_Real_get_covariance_block():
+    # Test made independent of pickled objects
+    tracer_comb1 = ('lens0', 'lens0')
+    tracer_comb2 = ('lens0', 'lens0')
+
+    print(f"Checking covariance block. \
+          Tracer combination {tracer_comb1} {tracer_comb2}")
+    s = cfsky_real.io.get_sacc_file()
+
+    ell = np.arange(2, cfsky_real.lmax + 1)
+    ccltr = ccl_tracers['lens0']
+    cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise['lens0']
+
+    fsky = cfsky_real.fsky
+    dl = np.gradient(ell)
+    cov = np.diag(2 * cl**2 / (4 * np.pi * fsky))
+
+    WT = cfsky_real.get_Wigner_transform()
+    s1_s2 = cfsky_real.get_cov_WT_spin(tracer_comb=tracer_comb1)
+    th, cov = WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2,
+                                       s1_s2_cross=s1_s2, cl_cov=cov)
+
+    gcov_xi_1 = cfsky_real.get_covariance_block(tracer_comb1=tracer_comb1,
+                                                tracer_comb2=tracer_comb2,
+                                                binned=False)
+    np.testing.assert_allclose(gcov_xi_1, cov)
+
+    gcov_xi_1 = cfsky_real.get_covariance_block(tracer_comb1=tracer_comb1,
+                                                tracer_comb2=tracer_comb2,
+                                                binned=True)
+
+    theta, _, theta_edges = cfsky_real.get_binning_info(in_radians=False)
+    _, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
+    assert gcov_xi_1.shape == (20, 20)
+    assert np.max(np.abs((gcov_xi_1+1e-100) / (cov + 1e-100) - 1)) < 1e-5

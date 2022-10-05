@@ -639,7 +639,7 @@ class CovarianceFourier(CovarianceBuilder):
 
 
 class CovarianceReal(CovarianceBuilder):
-    # TODO: Move Real space specific methods here
+    # TODO: Move Real space specific methods here and check WT for general case
     space_type = 'Real'
 
     def get_theta_eff(self):
@@ -664,4 +664,3 @@ class CovarianceReal(CovarianceBuilder):
         theta, _ = sacc_file.get_theta_xi(dtype, *tracers)
 
         return theta
-
