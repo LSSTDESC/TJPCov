@@ -346,7 +346,8 @@ class CovarianceBuilder(ABC):
         if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
            ('lens' in tracer):
             return 0
-        elif (tr.quantity == 'galaxy_shear') or ('source' in tracer):
+        elif (tr.quantity == 'galaxy_shear') or ('source' in tracer) or \
+            ('src' in tracer):
             return 2
         else:
             raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')

@@ -55,14 +55,25 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         return ell, ell_eff, ell_edges
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             binned=True, for_real=False, lmax=None):
+                             include_b_modes=True, for_real=False, lmax=None):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
 
+        Parameters
+        ----------
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            include_b_modes (bool): If True, return the full SSC with zeros in
+            for B-modes (if any). If False, return the non-zero block. This
+            option cannot be modified through the configuration file to avoid
+            breaking the compatibility with the NaMaster covariance.
+            for_real (bool): If True, returns the covariance before
+            normalization and binning. It requires setting lmax.
+            lmax (int): Maximum ell up to which to compute the covariance
+
         Returns:
         --------
-            final:  unbinned covariance for C_ell
-            final_b : binned covariance
+            cov (array): The covariance
         """
         cosmo = self.get_cosmology()
         if for_real:
@@ -115,8 +126,19 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         norm = (2*ell+1)*np.gradient(ell)*self.fsky
         cov /= norm
 
-        if binned:
-            lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
+        lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
+
+        # Include the B-modes if requested (e.g. needed to build the full
+        # covariance)
+        if include_b_modes:
+            nbpw = lb.size
+            ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
+            ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
+            cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
+            cov_full[:, 0, :, 0] = cov
+            cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2),
+                                        order=self._reshape_order)
+            cov = cov_full
 
         return cov
 

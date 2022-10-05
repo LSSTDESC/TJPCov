@@ -114,9 +114,23 @@ def test_Fourier_get_covariance_block():
     lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
     gcov_cl_1 = cfsky.get_covariance_block(tracer_comb1=tracer_comb1,
-                                           tracer_comb2=tracer_comb2)
-    np.testing.assert_allclose(gcov_cl_1,
-                               cov)
+                                           tracer_comb2=tracer_comb2,
+                                           include_b_modes=False)
+    np.testing.assert_allclose(gcov_cl_1, cov)
+
+    trs = ('src0', 'src0')
+    gcov_cl_1 = cfsky.get_covariance_block(tracer_comb1=trs,
+                                           tracer_comb2=trs,
+                                           include_b_modes=False)
+    gcov_cl_1b = cfsky.get_covariance_block(tracer_comb1=trs,
+                                           tracer_comb2=trs,
+                                           include_b_modes=True)
+
+    nbpw = lb.size
+    assert np.all(gcov_cl_1b[:nbpw][:, :nbpw] == gcov_cl_1)
+    gcov_cl_1b = gcov_cl_1b.reshape((nbpw, 4, nbpw, 4), order='F')
+    gcov_cl_1b[:, 0, :, 0] -= gcov_cl_1
+    assert not np.any(gcov_cl_1b)
 
 
 def test_Real_get_binning_info():
