@@ -168,3 +168,11 @@ def test_Real_get_covariance_block():
     _, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
     assert gcov_xi_1.shape == (20, 20)
     assert np.max(np.abs((gcov_xi_1+1e-100) / (cov + 1e-100) - 1)) < 1e-5
+
+
+def test_smoke_get_covariance():
+    # Check that we can get the full covariance
+    cfsky.get_covariance()
+    # Real test commented out because we don't have a method to build the full
+    # covariance atm
+    # cfsky_real.get_covariance()
