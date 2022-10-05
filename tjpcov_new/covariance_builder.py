@@ -1,4 +1,5 @@
 from . import tools
+from . import wigner_transform
 from .covariance_io import CovarianceIO
 from abc import ABC, abstractmethod
 import pyccl as ccl
@@ -664,3 +665,70 @@ class CovarianceReal(CovarianceBuilder):
         theta, _ = sacc_file.get_theta_xi(dtype, *tracers)
 
         return theta
+
+
+class CovarianceProjectedReal(CovarianceReal):
+    # TODO: The transforms here should be generalized to handle EB-BE-BB modes
+    """
+    Real covariance class for the cases we compute the covariance in Fourier
+    space and then we project to real space.
+    """
+    def __init__(self, config):
+        super().__init__(config)
+        self.WT = None
+        self.lmax = self.config['ProjectedReal'].get('lmax')
+        if self.lmax is None:
+            raise ValueError('You need to specify the lmax you want to ' +
+                             'compute the Fourier covariance up to')
+
+    @property
+    def fourier(self):
+        pass
+
+    def get_cov_WT_spin(self, tracer_comb=None):
+        """
+        Get the Wigner transform factors
+
+        Parameters:
+        -----------
+        tracer_comb (str, str): tracer combination in sacc format
+
+        Returns:
+        --------
+        WT_factors:
+
+        """
+        WT_factors = {}
+        WT_factors['lens', 'source'] = (0, 2)
+        WT_factors['source', 'lens'] = (2, 0)  # same as (0,2)
+        WT_factors['source', 'source'] = {'plus': (2, 2), 'minus': (2, -2)}
+        WT_factors['lens', 'lens'] = (0, 0)
+
+        tracers = []
+        for i in tracer_comb:
+            if 'lens' in i:
+                tracers += ['lens']
+            if 'src' in i:
+                tracers += ['source']
+        return WT_factors[tuple(tracers)]
+
+    def get_Wigner_transform(self):
+        """
+        Return the wigner_transform class
+
+        Returns:
+        --------
+        wigner_transform class
+        """
+        if self.WT is None:
+            # Removing ell <= 1 (following original implementation)
+            ell = np.arange(2, self.lmax + 1)
+            theta, _, _= self.get_binning_info()
+
+            WT_kwargs = {'l': ell,
+                         'theta': theta * np.pi / 180,
+                         's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
+
+            self.WT = wigner_transform(**WT_kwargs)
+
+        return self.WT

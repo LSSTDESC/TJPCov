@@ -6,7 +6,7 @@ import sacc
 import pickle
 import pyccl as ccl
 import pymaster as nmt
-from tjpcov_new import bin_cov, bin_mat
+from tjpcov_new import bin_cov
 from tjpcov_new.covariance_gaussian_fsky import \
     CovarianceFourierGaussianFsky, CovarianceRealGaussianFsky
 from tjpcov_new.covariance_io import CovarianceIO

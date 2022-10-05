@@ -1,5 +1,5 @@
-from . import wigner_transform, bin_cov
-from .covariance_builder import CovarianceFourier, CovarianceReal
+from . import bin_cov
+from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 import numpy as np
 import os
 import warnings
@@ -121,18 +121,18 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         return cov
 
 
-class CovarianceRealGaussianFsky(CovarianceReal):
+class CovarianceRealGaussianFsky(CovarianceProjectedReal):
     cov_type = 'gauss'
     _reshape_order = 'F'
+    # Set the fourier attribute to None and set it later in the __init__
+    fourier = None
     def __init__(self, config):
         super().__init__(config)
-        self.WT = None
+        # Note that the sacc file that the Fourier class will read is in real
+        # space and you cannot use the methods that depend on a Fourier space
+        # sacc file.
         self.fourier = CovarianceFourierGaussianFsky(config)
         self.fsky = self.fourier.fsky
-        self.lmax = self.config['RealGaussianFsky'].get('lmax')
-        if self.lmax is None:
-            raise ValueError('You need to specify the lmax you want to ' +
-                             'compute the Fourier covariance up to')
 
     def get_binning_info(self, binning='log', in_radians=True):
         """
@@ -223,52 +223,3 @@ class CovarianceRealGaussianFsky(CovarianceReal):
             thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
 
         return cov
-
-    def get_cov_WT_spin(self, tracer_comb=None):
-        """
-        Get the Wigner transform factors
-
-
-        Parameters:
-        -----------
-        tracer_comb (str, str): tracer combination in sacc format
-
-        Returns:
-        --------
-        WT_factors:
-
-        """
-        WT_factors = {}
-        WT_factors['lens', 'source'] = (0, 2)
-        WT_factors['source', 'lens'] = (2, 0)  # same as (0,2)
-        WT_factors['source', 'source'] = {'plus': (2, 2), 'minus': (2, -2)}
-        WT_factors['lens', 'lens'] = (0, 0)
-
-        tracers = []
-        for i in tracer_comb:
-            if 'lens' in i:
-                tracers += ['lens']
-            if 'src' in i:
-                tracers += ['source']
-        return WT_factors[tuple(tracers)]
-
-    def get_Wigner_transform(self):
-        """
-        Return the wigner_transform class
-
-        Returns:
-        --------
-        wigner_transform class
-        """
-        if self.WT is None:
-            # Removing ell <= 1 (following original implementation)
-            ell = np.arange(2, self.lmax + 1)
-            theta, _, _= self.get_binning_info()
-
-            WT_kwargs = {'l': ell,
-                         'theta': theta * np.pi / 180,
-                         's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
-
-            self.WT = wigner_transform(**WT_kwargs)
-
-        return self.WT
