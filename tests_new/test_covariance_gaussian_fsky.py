@@ -31,12 +31,6 @@ cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
 
 
-def clean_tmp():
-    if os.path.isdir('./tests/tmp'):
-        shutil.rmtree('./tests/tmp/')
-    os.makedirs('./tests/tmp')
-
-
 def get_config():
     return CovarianceIO(input_yml).config
 
