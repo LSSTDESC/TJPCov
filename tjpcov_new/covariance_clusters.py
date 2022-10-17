@@ -34,31 +34,43 @@ class CovarianceClusters(CovarianceBuilder):
     N = 1024
     overdensity_delta = 200 
 
-    def __init__(self, ovdelta=200, survey_area=4*np.pi):
+    def __init__(self, config, ovdelta=200, survey_area=4*np.pi):
+        super().__init__(config)
+
+        sacc_file = self.io.get_sacc_file()
+        if 'clusters' not in str(sacc_file.tracers.keys()):
+            print('Clusters are not within the SACC file tracers. Not performing cluster covariances.')
+            return
 
         self.cosmo = self.get_cosmology()
-        self.mass_func = hmf.MassFuncTinker10(self.cosmo)
+        mass_def = ccl.halos.MassDef200m()
+        self.mass_func = ccl.halos.MassFuncTinker08(self.cosmo, mass_def=mass_def)
 
-        self.n_z = 128
+        # Read from SACC file relevant quantities
+        self.num_z_bins = sacc_file.metadata['nbins_cluster_redshift']
+        self.num_richness_bins = sacc_file.metadata['nbins_cluster_richness']
+        min_mass = sacc_file.metadata['min_mass']
+        # survey_area = sacc_file.metadata['survey_area']
+
+        min_redshifts = [sacc_file.tracers[x].metadata['z_min'] for x in sacc_file.tracers if x.__contains__('clusters')]
+        max_redshifts = [sacc_file.tracers[x].metadata['z_max'] for x in sacc_file.tracers if x.__contains__('clusters')]
+        min_richness = [sacc_file.tracers[x].metadata['Mproxy_min'] for x in sacc_file.tracers if x.__contains__('clusters')]
+        max_richness = [sacc_file.tracers[x].metadata['Mproxy_max'] for x in sacc_file.tracers if x.__contains__('clusters')]
 
         # Setup Richness Bins
-        self.min_richness = 5
-        self.max_richness = 135
-        self.richness_bin_range = 30
-        self.num_richness_bins = round((self.max_richness-self.min_richness)/self.richness_bin_range)
+        self.min_richness = min(min_richness)
+        self.max_richness = max(max_richness)
         self.richness_bins = np.round(np.logspace(np.log10(self.min_richness),
                                              np.log10(self.max_richness), 
                                              self.num_richness_bins+1), 2)
 
         # Define arrays for bins for Photometric z and z grid
-        self.z_max = 1.2
-        self.z_min = 0.3
-        self.z_bin_range = 0.05
-        self.num_z_bins = round((self.z_max-self.z_min)/self.z_bin_range)
+        self.z_max = max(max_redshifts)
+        self.z_min = min(min_redshifts)
         self.z_bins = np.round(np.linspace(self.z_min, self.z_max, self.num_z_bins+1), 2)
 
         #   minimum log mass in solar masses; 
-        self.min_mass = np.log(1e13)
+        self.min_mass = np.log(min_mass)
         #   maximum log mass in solar masses; above this HMF < 10^-10
         self.max_mass = np.log(1e16)
 
