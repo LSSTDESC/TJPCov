@@ -108,15 +108,8 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
                               ] if tracer_comb1[1] == tracer_comb2[0] else 0
 
 
-        coupling_mat = {}
-        coupling_mat[1324] = np.eye(len(ell))  # placeholder
-        coupling_mat[1423] = np.eye(len(ell))  # placeholder
-
-        cov = {}
-        cov[1324] = np.outer(cl[13]+SN[13], cl[24]+SN[24])*coupling_mat[1324]
-        cov[1423] = np.outer(cl[14]+SN[14], cl[23]+SN[23])*coupling_mat[1423]
-
-        cov = cov[1423]+cov[1324]
+        cov = np.diag((cl[13]+SN[13])*(cl[24]+SN[24]) +
+                      (cl[14]+SN[14])*(cl[23]+SN[23]))
 
         if for_real:
             # If it is to compute the real space covariance, return the
