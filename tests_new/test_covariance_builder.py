@@ -240,6 +240,23 @@ def test_get_tracer_comb_spin():
     assert cb.get_tracer_comb_spin(tracer_comb) == (2, 0)
 
 
+def test_get_tracer_comb_data_types():
+    cb = CovarianceBuilderTester(input_yml)
+
+    tracer_comb = ['DESgc__0', 'DESgc__0']
+    assert cb.get_tracer_comb_data_types(tracer_comb) == ['cl_00']
+
+    tracer_comb = ['DESgc__0', 'DESwl__0']
+    assert cb.get_tracer_comb_data_types(tracer_comb) == ['cl_0e', 'cl_0b']
+
+    tracer_comb = ['DESwl__0', 'DESwl__0']
+    assert cb.get_tracer_comb_data_types(tracer_comb) == ['cl_ee', 'cl_eb', 'cl_bb']
+
+    tracer_comb = ['DESwl__0', 'DESwl__1']
+    assert cb.get_tracer_comb_data_types(tracer_comb) == ['cl_ee', 'cl_eb', 'cl_be',
+                                                    'cl_bb']
+
+
 @pytest.mark.parametrize("tr", ['DESwl__0', 'DESgc__0'])
 def test_get_tracer_nmaps(tr):
     cb = CovarianceBuilderTester(input_yml)

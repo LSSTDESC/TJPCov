@@ -1,5 +1,6 @@
 from . import tools
 from . import wigner_transform
+from . import bin_cov
 from .covariance_io import CovarianceIO
 from abc import ABC, abstractmethod
 import pyccl as ccl
@@ -80,6 +81,16 @@ class CovarianceBuilder(ABC):
                 yield task
             elif i % self.size == self.rank:
                 yield task
+
+    @property
+    def _reshape_order(self):
+        """
+        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
+        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
+        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
+        blocks are as in the sacc file, 'F' should be used.
+        """
+        pass
 
     @abstractmethod
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
@@ -372,6 +383,31 @@ class CovarianceBuilder(ABC):
         else:
             return 2
 
+    def get_tracer_comb_data_types(self, tracer_comb):
+        """
+        Return the tracer data types associated to a pair of tracers in the
+        sacc file.
+
+        Parameters
+        ----------
+        tracer_comb (list): List of a pair of tracer names in the sacc file
+
+        Return
+        ------
+        data_types (list): List of data types associated to the given tracer
+        pair.
+        """
+
+        s = self.io.get_sacc_file()
+        data_types = s.get_data_types()
+
+        dt_output = []
+        for dt in data_types:
+            if len(s.indices(data_type=dt, tracers=tracer_comb)) != 0:
+                dt_output.append(dt)
+
+        return dt_output
+
 
 class CovarianceFourier(CovarianceBuilder):
     # TODO: Move Fourier specific methods here
@@ -382,16 +418,6 @@ class CovarianceFourier(CovarianceBuilder):
         self.ccl_tracers = None
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
-
-    @property
-    def _reshape_order(self):
-        """
-        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
-        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
-        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
-        blocks are as in the sacc file, 'F' should be used.
-        """
-        pass
 
     def _build_matrix_from_blocks(self, blocks, tracers_cov,
                                   only_independent=False):
@@ -423,7 +449,6 @@ class CovarianceFourier(CovarianceBuilder):
         nbpw = self.get_nbpw()
         #
         ndim = s.mean.size
-        cl_tracers = s.get_tracer_combinations()
 
         cov_full = -1 * np.ones((ndim, ndim))
 
@@ -669,7 +694,9 @@ class CovarianceReal(CovarianceBuilder):
 
 
 class CovarianceProjectedReal(CovarianceReal):
-    # TODO: The transforms here should be generalized to handle EB-BE-BB modes
+    # TODO: The transforms here should be generalized to handle EB-BE-BB modes.
+    # For now we will only consider the EE contribution, which should be
+    # dominant
     """
     Real covariance class for the cases we compute the covariance in Fourier
     space and then we project to real space.
@@ -737,7 +764,7 @@ class CovarianceProjectedReal(CovarianceReal):
 
         return theta, theta_eff, theta_edges
 
-    def get_cov_WT_spin(self, tracer_comb=None):
+    def get_cov_WT_spin(self, tracer_comb):
         """
         Get the Wigner transform factors
 
@@ -760,8 +787,12 @@ class CovarianceProjectedReal(CovarianceReal):
         for i in tracer_comb:
             if 'lens' in i:
                 tracers += ['lens']
-            if ('src' in i) or ('source' in i):
+            elif ('src' in i) or ('source' in i):
                 tracers += ['source']
+            else:
+                raise NotImplementedError("This functions requires your " +
+                                          "tracers to be called 'lens', " +
+                                          f"'src' or 'source', given {i}")
         return WT_factors[tuple(tracers)]
 
     def get_Wigner_transform(self):
@@ -784,3 +815,132 @@ class CovarianceProjectedReal(CovarianceReal):
             self.WT = wigner_transform(**WT_kwargs)
 
         return self.WT
+
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        """
+        Build full matrix from blocks.
+
+        Parameters:
+        -----------
+        blocks (list): List of blocks
+        tracers_cov (list): List of tracer combinations corresponding to each
+        block in blocks. They must have the same order
+
+        Returns:
+        --------
+        cov_full (Npt x Npt numpy array):
+            Covariance matrix for all combinations.
+            Npt = (number of bins ) * (number of combinations)
+        """
+        # TODO: Genearlize this for both real and Fourier space and move it to
+        # CovarianceBuilder
+        blocks = iter(blocks)
+
+        s = self.io.get_sacc_file()
+        ndim = s.mean.size
+
+        cov_full = -1 * np.ones((ndim, ndim))
+
+        print('Building the covariance: placing blocks in their place')
+        for tracer_comb1, tracer_comb2 in tracers_cov:
+            # We do not need to do the reshape here because the blocks have
+            # been build looping over the data types present in the sacc file
+            print(tracer_comb1, tracer_comb2)
+
+            cov_ij = next(blocks)
+            ix1 = s.indices(tracers=tracer_comb1)
+            ix2 = s.indices(tracers=tracer_comb2)
+
+            cov_full[np.ix_(ix1, ix2)] = cov_ij
+            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
+
+        if np.any(cov_full == -1):
+            raise Exception('Something went wrong. Probably related to the ' +
+                            'data types')
+
+        return cov_full
+
+    @abstractmethod
+    def _get_fourier_block(self, tracer_comb1, tracer_comb2):
+        raise NotImplementedError("Not yet implemented")
+
+    def get_covariance_block_ij(self, tracer_comb1, tracer_comb2,
+                                xi_plus_minus1='plus', xi_plus_minus2='plus',
+                                binned=True):
+        """
+        Compute a single covariance matrix for a given pair of xi
+
+        Parameters
+        ----------
+        tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+        tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+        xi_plus_minus1 (str): 'plus' if one wants the covariance for the xi+
+        component or 'minus' for the xi-. This is ignored if tracer_comb1 is
+        not a spin 2 (e.g. shear) field.
+        xi_plus_minus2 (str): As xi_plus_minus1 for tracer_comb2.
+
+        Returns:
+        --------
+        cov (array): Covariance matrix
+        """
+        # For now we just use the EE block which should be dominant over the
+        # EB, BE and BB pieces
+        cov = self._get_fourier_block(tracer_comb1, tracer_comb2)
+
+        WT = self.get_Wigner_transform()
+
+        s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
+        s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
+        if isinstance(s1_s2_1, dict):
+            s1_s2_1 = s1_s2_1[xi_plus_minus1]
+        if isinstance(s1_s2_2, dict):
+            s1_s2_2 = s1_s2_2[xi_plus_minus2]
+        # Remove ell <= 1 for WT (following original implementation)
+        ell = np.arange(2, self.lmax + 1)
+        cov = cov[2:][:, 2:]
+        th, cov = WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
+                                           s1_s2_cross=s1_s2_2, cl_cov=cov)
+        if binned:
+            theta, _, theta_edges = self.get_binning_info(in_radians=False)
+            thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
+
+        return cov
+
+    def get_covariance_block(self, tracer_comb1, tracer_comb2):
+        """
+        Compute a the covariance matrix for a given pair of C_ell or xi
+
+        Parameters
+        ----------
+        tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+        tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+
+        Returns:
+        --------
+        cov (array): Covariance matrix
+        """
+
+        data_types1 = self.get_tracer_comb_data_types(tracer_comb1)
+        data_types2 = self.get_tracer_comb_data_types(tracer_comb2)
+
+        nbpw = self.get_nbpw()
+
+        cov = np.zeros((nbpw, len(data_types1), nbpw, len(data_types2)))
+
+        auto =  tracer_comb1 == tracer_comb2
+
+        for i, dt1 in enumerate(data_types1):
+            xi_plus_minus1 = 'plus' if 'plus' in dt1 else 'minus'
+            start_ix = i if auto else 0
+            for j, dt2 in enumerate(data_types2[start_ix:]):
+                xi_plus_minus2 = 'plus' if 'plus' in dt2 else 'minus'
+                cov[:, i, :, j] = self.get_covariance_block_ij(tracer_comb1,
+                                                               tracer_comb2,
+                                                               xi_plus_minus1,
+                                                               xi_plus_minus2)
+                if auto:
+                    cov[:, j, :, i] = cov[:, i, :, j].T
+
+        cov = cov.reshape((nbpw * len(data_types1), nbpw * len(data_types2)),
+                          order=self._reshape_order)
+        return cov
