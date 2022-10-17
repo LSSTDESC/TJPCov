@@ -1088,7 +1088,11 @@ class CovarianceCalculator():
         """
         # FIXME: Only input needed should be two_point_data,
         # which is the sacc data file. Other parameters should be
-        # included within sacc and read from there."""
+        # included within sacc and read from there.
+        # Check: now it is evaluating all the blocks based on sacc file. It seems
+        # better to get all the blocks based on yaml file (the user not needing to
+        # modify the sacc/fits file.)
+        
         if use_nmt:
             raise ValueError('This function does not work with the NaMaster' +
                              'wrapper at the moment. Use get_all_cov_nmt.')
@@ -1329,7 +1333,8 @@ class CovarianceCalculator():
                 cov += self.get_all_cov(**gauss_kwargs)
             else:
                 cov += self.get_all_cov_nmt(**gauss_kwargs)
-
+        
+        # fao 
         if ('SSC' in self.cov_tbc) or ('ssc' in self.cov_tbc):
             print('Computing Super Sample Covariance')
             kwargs = {}
