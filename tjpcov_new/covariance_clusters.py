@@ -34,54 +34,33 @@ class CovarianceClusters(CovarianceBuilder):
     N = 1024
     overdensity_delta = 200 
 
-    # Lazy loaded properties
-    _z_true_vec = None
-    @property 
-    def z_true_vec(self):
-        if self._z_true_vec is None:
-            # Incorrect for ClxCl - maybe defer at this point to concrete method and use Lim_Z_min etc for cl x cl
-            self._z_true_vec = np.linspace(self.z_bins[0], self.z_bins[self.num_z_bins], self.nz)
-        return self._z_true_vec
-
-    _z_true_vec_inv = None
-    @property 
-    def z_true_vec_inverse(self):
-        if self._z_true_vec_inv is None:
-            self._z_true_vec_inv = self.z_true_vec[::-1]
-        return self._z_true_vec_inv
-
-    _sigma_vec = None
-    @property
-    def sigma_vec(self):
-        if self._sigma_vec is None:
-            self._sigma_vec = self.eval_sigma_vec(self.nz)
-        return self._sigma_vec
-
     def __init__(self, ovdelta=200, survey_area=4*np.pi):
 
         self.cosmo = self.get_cosmology()
         self.mass_func = hmf.MassFuncTinker10(self.cosmo)
 
-        self.nz = args.nz
+        self.n_z = 128
 
         # Setup Richness Bins
-        self.min_richness = args.min_richness
-        self.max_richness = args.max_richness
-        self.richness_bin_range = args.richness_bin_range
+        self.min_richness = 5
+        self.max_richness = 135
+        self.richness_bin_range = 30
         self.num_richness_bins = round((self.max_richness-self.min_richness)/self.richness_bin_range)
         self.richness_bins = np.round(np.logspace(np.log10(self.min_richness),
                                              np.log10(self.max_richness), 
                                              self.num_richness_bins+1), 2)
 
         # Define arrays for bins for Photometric z and z grid
-        self.z_bin_range = args.z_bin_range
-        self.num_z_bins = round((args.z_max-args.z_min)/self.z_bin_range)
-        self.z_bins = np.round(np.linspace(args.z_min, args.z_max, self.num_z_bins+1), 2)
+        self.z_max = 1.2
+        self.z_min = 0.3
+        self.z_bin_range = 0.05
+        self.num_z_bins = round((self.z_max-self.z_min)/self.z_bin_range)
+        self.z_bins = np.round(np.linspace(self.z_min, self.z_max, self.num_z_bins+1), 2)
 
         #   minimum log mass in solar masses; 
-        self.min_mass = args.min_mass
+        self.min_mass = np.log(1e13)
         #   maximum log mass in solar masses; above this HMF < 10^-10
-        self.max_mass = args.max_mass
+        self.max_mass = np.log(1e16)
 
         # Cosmology
         self.survey_area = survey_area
@@ -98,30 +77,28 @@ class CovarianceClusters(CovarianceBuilder):
         self.k_vec = np.logspace(np.log(self.ko), np.log(self.kmax), self.N, base=np.exp(1))
         self.r_vec = np.logspace(np.log(self.ro), np.log(self.rmax), self.N, base=np.exp(1))
 
-        #minimum z_true for the integrals. I am assuming z_true>0.02 
+        # minimum z_true for the integrals. I am assuming z_true>0.02 
         self.z_lower_limit = max(0.02, self.z_bins[0]-4*self.z_bin_range) 
-        #maximum z_true for the integrals, assuming 40% larger than max z,
-        # so we dont need to go till infinity
+        # maximum z_true for the integrals, assuming 40% larger than max z, so we dont need to go till infinity
         self.z_upper_limit = self.z_bins[-1]+6*self.z_bin_range 
         
-        # TODO: optimize these ranges like Nelson did
-        # interpolation limits for double_bessel_integral
+        # TODO: optimize these ranges like Nelson did interpolation limits for double_bessel_integral
         # zmin & zmax drawn from Z_true_vec
         self.radial_lower_limit = self.radial_distance(self.z_lower_limit)
         self.radial_upper_limit = self.radial_distance(self.z_upper_limit)
-        self.imin = self._get_min_radial_idx()
-        self.imax = self._get_max_radial_idx()       
+        self.imin = self.get_min_radial_idx()
+        self.imax = self.get_max_radial_idx()       
 
         # Do it ONCE
         self.pk_vec = ccl.linear_matter_power(self.cosmo, self.k_vec, 1)
         self.fk_vec = (self.k_vec/self.ko)**(3. - self.bias_fft)*self.pk_vec
         self.Phi_vec = np.conjugate(np.fft.rfft(self.fk_vec))/self.L
 
+        self.z_true_vec = np.linspace(self.z_bins[0], self.z_bins[self.num_z_bins], self.n_z)
+        self.sigma_vec = self.eval_sigma_vec(self.n_z)
+
     def radial_distance(self,z):
         return ccl.comoving_radial_distance(self.cosmo, 1/(1+ z))
-
-    def printer(self):
-        print(self.N, self.ko)
 
     def photoz(self, z_true, z_i, sigma_0=0.05):
         """ 
@@ -143,12 +120,11 @@ class CovarianceClusters(CovarianceBuilder):
         sigma_z = sigma_0*(1+z_true)
 
         def integrand(z_phot): 
-            return np.exp(- (z_phot - z_true)**2.\
-                                            / (2.*sigma_z**2.)) \
-                                            / (np.sqrt(2.*np.pi) * sigma_z)
+            return np.exp(-(z_phot - z_true)**2. / (2.*sigma_z**2.)) / (np.sqrt(2.*np.pi) * sigma_z)
         
-        integral = (quad(integrand, self.z_bins[z_i], self.z_bins[z_i+1])[0]
-                    / (1.-quad(integrand, -np.inf, 0.)[0]))
+        integral = (
+            quad(integrand, self.z_bins[z_i], self.z_bins[z_i+1])[0] / (1.-quad(integrand, -np.inf, 0.)[0])
+        )
 
         return integral
 
@@ -160,12 +136,8 @@ class CovarianceClusters(CovarianceBuilder):
             dv(z) = dz*dr/dz(z)*(r(z)**2)*photoz(z, bin z_i)
         '''
 
-        cosmo = self.cosmo
-        h0 = self.h0
-
-        dV = self.c*(ccl.comoving_radial_distance(cosmo, 1/(1+z_true))**2)\
-            / (100*h0*ccl.h_over_h0(cosmo, 1/(1+z_true)))\
-            * (self.photoz(z_true, z_i))
+        dV = self.c * (ccl.comoving_radial_distance(self.cosmo, 1/(1+z_true))**2) \
+                    / (100*self.h0*ccl.h_over_h0(self.cosmo, 1/(1+z_true))) * (self.photoz(z_true, z_i))
         return dV
 
 
@@ -184,11 +156,9 @@ class CovarianceClusters(CovarianceBuilder):
         to d(lnM)
         """
 
-        # TODO Replace halo_bias with HaloBias
-        f = lambda ln_m: (1/np.log(10.))\
-            * self.mass_func.get_mass_function(self.cosmo, np.exp(ln_m), 1/(1+z))\
-            * ccl.halo_bias(self.cosmo, np.exp(ln_m), 1/(1+z),
-                            overdensity=self.overdensity_delta)\
+        f = lambda ln_m: (1/np.log(10.)) \
+            * self.mass_func.get_mass_function(self.cosmo, np.exp(ln_m), 1/(1+z)) \
+            * ccl.halo_bias(self.cosmo, np.exp(ln_m), 1/(1+z), overdensity=self.overdensity_delta) \
             * self.mass_richness( ln_m, lbd_i)
 
         return quad(f, self.min_mass, self.max_mass)[0]
@@ -197,11 +167,10 @@ class CovarianceClusters(CovarianceBuilder):
     def integral_mass_no_bias (self, z,lbd_i):
         """ Integral mass for shot noise function
         """
-        f = lambda ln_m:(1/np.log(10))*\
-            self.mass_func.get_mass_function(self.cosmo, np.exp(ln_m), 1/(1+z))\
-                *self.mass_richness(ln_m, lbd_i)
-        # Remember ccl.function returns dn/dlog10m, I am changing 
-        #   integrand to d(lnM)
+        f = lambda ln_m:(1/np.log(10)) \
+            * self.mass_func.get_mass_function(self.cosmo, np.exp(ln_m), 1/(1+z)) \
+            * self.mass_richness(ln_m, lbd_i)
+        # Remember ccl.function returns dn/dlog10m, I am changing integrand to d(lnM)
         return quad(f, self.min_mass, self.max_mass)[0]
 
 
@@ -209,10 +178,7 @@ class CovarianceClusters(CovarianceBuilder):
         """ Calculating Limber approximation for double Bessel 
         integral for l equal zero
         """
-
-        return ccl.linear_matter_power(self.cosmo,
-                                       0.5/ccl.comoving_radial_distance(
-                                        self.cosmo, 1/(1+z)), 1)/(4*np.pi)
+        return ccl.linear_matter_power(self.cosmo, 0.5/ccl.comoving_radial_distance(self.cosmo, 1/(1+z)), 1)/(4*np.pi)
 
 
     def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
@@ -220,38 +186,30 @@ class CovarianceClusters(CovarianceBuilder):
         transforms the double redshift integral into a single redshift integral)
         CAUTION: hard-wired ovdelta and survey_area!
         """
-        cosmo = self.cosmo
-        ovdelta = self.ovdelta
-        survey_area = self.survey_area
 
         def integrand(z_true): 
-            return self.dV(cosmo, z_true, z_i)\
-            * (ccl.growth_factor(cosmo, 1/(1+z_true))**2)\
+            return self.dV(self.cosmo, z_true, z_i) \
+            * (ccl.growth_factor(self.cosmo, 1/(1+z_true))**2) \
             * self.photoz(z_true, z_j)\
-            * self.integral_mass(cosmo, z_true, lbd_i, self.min_mass, self.max_mass, ovdelta)\
-            * self.integral_mass(cosmo, z_true, lbd_j, self.min_mass, self.max_mass, ovdelta)\
-            * self.Limber(cosmo, z_true)
-        return (survey_area**2)*quad(integrand, self.z_lower_limit, self.z_upper_limit)[0]
+            * self.integral_mass(self.cosmo, z_true, lbd_i, self.min_mass, self.max_mass, self.ovdelta) \
+            * self.integral_mass(self.cosmo, z_true, lbd_j, self.min_mass, self.max_mass, self.ovdelta) \
+            * self.Limber(self.cosmo, z_true)
+
+        return (self.survey_area**2) * quad(integrand, self.z_lower_limit, self.z_upper_limit)[0]
 
 
     def shot_noise(self, z_i, lbd_i):
         """Evaluates the Shot Noise term
         """
-        cosmo = self.cosmo
-        survey_area = self.survey_area
-
-        h0 = self.h0
-        survey_area = self.survey_area
 
         def integrand(z): 
-            return self.c*(ccl.comoving_radial_distance(cosmo,
-                                                                 1/(1+z))**2)\
-            / (100*h0*ccl.h_over_h0(cosmo, 1/(1+z)))\
-            * self.integral_mass_no_bias(z, lbd_i)\
+            return self.c*(ccl.comoving_radial_distance(self.cosmo, 1/(1+z))**2) \
+            / (100*self.h0*ccl.h_over_h0(self.cosmo, 1/(1+z))) \
+            * self.integral_mass_no_bias(z, lbd_i) \
             * self.photoz(z, z_i)  # TODO remove the bias!
 
         result = quad(integrand, self.z_lower_limit, self.z_upper_limit)
-        return survey_area*result[0]
+        return self.survey_area * result[0]
 
 
     def I_ell(self, m, R):
@@ -259,25 +217,17 @@ class CovarianceClusters(CovarianceBuilder):
         the formula below only valid for R <=1, l = 0,  
         formula B2 ASZ and 31 from 2-fast paper 
         """
-        tt=[]
-        tt.append( time.time())
-        ro = self.ro #1/kmax
-        ko = self.ko
-        G = self.G #np.log(kmax/ko)
-        L = self.L #2*np.pi*N/G
-        tt.append( time.time())
 
-        bias_fft = self.bias_fft
-        t_m = 2*np.pi*m/G
-        alpha_m = bias_fft-1.j*t_m
-        pre_factor = (ko*ro)**(-alpha_m)
+        t_m = 2*np.pi*m/self.G
+        alpha_m = self.bias_fft-1.j*t_m
+        pre_factor = (self.ko*self.ro)**(-alpha_m)
 
         if R < 1:
-            iell =  pre_factor*0.5*np.cos(np.pi*alpha_m/2)*gamma(alpha_m-2)\
+            iell = pre_factor*0.5*np.cos(np.pi*alpha_m/2)*gamma(alpha_m-2) \
                 * (1/R)*((1+R)**(2-alpha_m)-(1-R)**(2-alpha_m))
             
         elif R == 1:
-            iell =  pre_factor*0.5*np.cos(np.pi*alpha_m/2)*gamma(alpha_m-2)\
+            iell = pre_factor*0.5*np.cos(np.pi*alpha_m/2)*gamma(alpha_m-2) \
                 * ((1+R)**(2-alpha_m))
 
         return iell
@@ -288,23 +238,15 @@ class CovarianceClusters(CovarianceBuilder):
         Approximation: Put the integral_mass outside looping in m 
         TODO: Check the romberg convergence!
         """
-        Z_bins = self.z_bins
-        Lim_z_max = self.z_upper_limit
-        Lim_z_min = self.z_lower_limit
-        Z_bin_range = self.z_bin_range
-        cosmo = self.cosmo
         romb_k = 6
-        if (z1<=np.average(Z_bins)):    
-            vec_left = np.linspace(max(Lim_z_min, z1-6*Z_bin_range),z1, 
-                                    2**(romb_k-1)+1)
-            vec_right = np.linspace(z1, z1+(z1-vec_left[0]),
-                                    2**(romb_k-1)+1)
+
+        if (z1<=np.average(self.z_bins)):    
+            vec_left = np.linspace(max(self.z_lower_limit, z1-6*self.z_bin_range),z1, 2**(romb_k-1)+1)
+            vec_right = np.linspace(z1, z1+(z1-vec_left[0]), 2**(romb_k-1)+1)
             vec_final = np.append(vec_left, vec_right[1:])
         else: 
-            vec_right = np.linspace(z1, min(Lim_z_max, z1+6*Z_bin_range),
-                                    2**(romb_k-1)+1)
-            vec_left = np.linspace(z1-(vec_right[-1]-z1),z1,
-                                    2**(romb_k-1)+1)
+            vec_right = np.linspace(z1, min(self.z_upper_limit, z1+6*self.z_bin_range), 2**(romb_k-1)+1)
+            vec_left = np.linspace(z1-(vec_right[-1]-z1),z1, 2**(romb_k-1)+1)
             vec_final = np.append(vec_left, vec_right[1:])
 
         romb_range = (vec_final[-1]-vec_final[0])/(2**romb_k)
@@ -313,9 +255,9 @@ class CovarianceClusters(CovarianceBuilder):
         if approx:
             for m in range(2**romb_k+1):
                 try:
-                    kernel[m] = self.dV(vec_final[m],bin_z_j)\
-                                *ccl.growth_factor(cosmo, 1/(1+vec_final[m]))\
-                                *self.double_bessel_integral(z1,vec_final[m])
+                    kernel[m] = self.dV(vec_final[m],bin_z_j) \
+                                * ccl.growth_factor(self.cosmo, 1/(1+vec_final[m])) \
+                                * self.double_bessel_integral(z1,vec_final[m])
                 except Exception as ex:
                     print(f'{ex=}')
                                 
@@ -324,77 +266,62 @@ class CovarianceClusters(CovarianceBuilder):
         else:
             for m in range(2**romb_k+1):
                 kernel[m] = self.dV(vec_final[m],bin_z_j)\
-                            *ccl.growth_factor(cosmo, 1/(1+vec_final[m]))\
-                            *self.double_bessel_integral(z1,vec_final[m])\
+                            * ccl.growth_factor(self.cosmo, 1/(1+vec_final[m]))\
+                            * self.double_bessel_integral(z1,vec_final[m])\
                             * self.integral_mass(vec_final[m],bin_lbd_j)
                 factor_approx = 1 
 
         return (romb(kernel, dx=romb_range)) * factor_approx
 
 
-
     def double_bessel_integral(self, z1, z2):
         """Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2
         """
 
-        cosmo = self.cosmo
-        ro = self.ro #1/kmax
-        G = self.G #np.log(kmax/ko)
-        L = self.L #2*np.pi*N/G
-        r_vec = self.r_vec #np.logspace(np.log(ro), np.log(rmax), N, base=np.exp(1))
-        N = self.N
-        Phi_vec = self.Phi_vec #np.conjugate(np.fft.rfft(fk_vec))/L
-        ko = self.ko
-        bias_fft = self.bias_fft
-
         # definition of t, forcing it to be <= 1
-        r1 = ccl.comoving_radial_distance(cosmo, 1/(1+z1))
+        r1 = ccl.comoving_radial_distance(self.cosmo, 1/(1+z1))
+        r2 = r1
+        R = 1
         if z1 != z2:
-            r2 = ccl.comoving_radial_distance(cosmo, 1/(1+z2))
+            r2 = ccl.comoving_radial_distance(self.cosmo, 1/(1+z2))
             R = min(r1, r2)/max(r1, r2)
-        else:
-            r2 = r1
-            R = 1
-        
 
-        I_ell_vec = [ self.I_ell(m, R )\
-                     for m in range(N//2+1)]
+        I_ell_vec = [self.I_ell(m, R ) for m in range(self.N//2+1)]
 
-        back_FFT_vec = np.fft.irfft(Phi_vec*I_ell_vec)*N  # FFT back
-        two_fast_vec = (1/np.pi)*(ko**3)*((r_vec/ro)
-                                          ** (-bias_fft))*back_FFT_vec/G
+        back_FFT_vec = np.fft.irfft(self.Phi_vec*I_ell_vec)*self.N  # FFT back
+        two_fast_vec = (1/np.pi)*(self.ko**3)*((self.r_vec/self.ro) ** (-self.bias_fft))*back_FFT_vec/self.G
 
         imin = self.imin
         imax = self.imax
        
         # we will use this to interpolate the exact r(z1)
-        f = interp1d(r_vec[imin:imax], 
-                    two_fast_vec[imin:imax], kind='cubic') 
+        f = interp1d(self.r_vec[imin:imax], two_fast_vec[imin:imax], kind='cubic') 
         try:
             return f(max(r1, r2))
         except Exception as err:
             print(err,f"""\nValue you tried to interpolate: {max(r1,r2)} Mpc, 
                 Input r {r1}, {r2}
-            Valid range range: [{r_vec[self.imin]}, {r_vec[self.imax]}] Mpc""")
+            Valid range range: [{self.r_vec[self.imin]}, {self.r_vec[self.imax]}] Mpc""")
 
         #CHECK THE INDEX NUMBERS
         # TODO test interpolkind
    
-    def _eval_sigma_vec(self):
-        # Defer the sigma_vec to subclasses (some use inverse others use regular.)
-        return  
+    def eval_sigma_vec(self):
+        sigma_vec = np.zeros((self.n_z, self.n_z))
+
+        for i in range (self.n_z):
+            for j in range (i, self.n_z):
+
+                sigma_vec[i,j] = self.double_bessel_integral(self.z_true_vec[i],self.z_true_vec[j])
+                sigma_vec[j,i] = sigma_vec[i,j]
+
+        return sigma_vec
     
-    def _get_min_radial_idx(self):
-        return np.argwhere(self.r_vec  < 0.95*self.radial_lower_limit)[-1][0]
+    def get_min_radial_idx(self):
+        return np.argwhere(self.r_vec < 0.95*self.radial_lower_limit)[-1][0]
     
-    def _get_max_radial_idx(self):
+    def get_max_radial_idx(self):
         return np.argwhere(self.r_vec  > 1.05*self.radial_upper_limit)[0][0]
-
-
-
-
-
-
 
 
 
@@ -406,23 +333,32 @@ class CovarianceClusterCounts(CovarianceClusters):
     def __init__(self, config):
         super().__init__(config)
 
-        #?
+        # Find out correct way to pull from sacc
         self.ssc_conf = self.config.get('SSC', {})
-    
-    def get_covariance_block2(self, tracer_comb1=None, tracer_comb2=None,
-                             integration_method=None,
-                             include_b_modes=True):
 
         romberg_num = 2**6+1
-        # Pre computes the -geometric- true vectors
-        self._eval_true_vec(romberg_num)
+        self.Z1_true_vec = np.zeros((self.num_z_bins, romberg_num))
+        self.G1_true_vec = np.zeros((self.num_z_bins, romberg_num))
+        self.dV_true_vec = np.zeros((self.num_z_bins, romberg_num))
+        self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, romberg_num))
+    
+    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
+                             integration_method=None,
+                             include_b_modes=True):
+        
+        romberg_num = 2**6+1
+        # Computes the geometric true vectors
+        self.eval_true_vec(romberg_num)
         # Pre computes the true vectors M1 for Cov_N_N
-        self._eval_M1_true_vec(romberg_num)
+        self.eval_M1_true_vec(romberg_num)
 
         final_array = np.zeros((self.num_richness_bins, self.num_richness_bins, self.num_z_bins, self.num_z_bins))
 
+        # li, lj: richness_i, richness_j
+        # zi, zj: redshift_i, redshift_j
         matrixElement = namedtuple('matrixElement', ['li', 'lj', 'zi', 'zj'])
         elemList = []
+
         for richness_i in range(self.num_richness_bins):   
             for richness_j in range(richness_i, self.num_richness_bins):
                 for z_i in range (self.num_z_bins):
@@ -430,26 +366,20 @@ class CovarianceClusterCounts(CovarianceClusters):
                         elemList.append(matrixElement(richness_i, richness_j, z_i, z_j))
 
         for e in elemList:
-            shot_plus_cov = self._covariance_step(e.zi, e.zj, e.li, e.lj, romberg_num)
-            cov_term = shot_plus_cov
+        
+            cov = self._covariance_cluster_NxN(e.zi, e.zj, e.li, e.lj, romberg_num)
+            shot_noise = 0
+            if (e.li == e.lj and e.zi == e.zj):
+                shot_noise = self.shot_noise(e.zi, e.li)
+                        
+            cov_term = shot_noise + cov
             final_array[e.li,e.lj,e.zi,e.zj]= cov_term
             final_array[e.li,e.lj,e.zj,e.zi]= final_array[e.li,e.lj,e.zi,e.zj]
             final_array[e.lj,e.li,e.zi,e.zj]= final_array[e.li,e.lj,e.zi,e.zj]      
 
         return final_array
 
-    def _covariance_step(self, z_i,z_j,richness_i,richness_j, romberg_num):
-
-        if (richness_i == richness_j and z_i == z_j):
-            shot = self.shot_noise(z_i,richness_i)
-        else:
-            shot = 0
-
-        cov = self._covariance_cluster_NxN(z_i, z_j, richness_i, richness_j, romberg_num)
-        
-        return shot + cov
-
-    def _covariance_cluster_NxN(self, bin_z_i, bin_z_j, bin_richness_i, bin_richness_j, romberg_num):
+    def _covariance_cluster_NxN(self, z_i, z_j, richness_i, richness_j, romberg_num):
         """ Cluster counts covariance
         Args:
             bin_z_i (float or ?array): tomographic bins in z_i or z_j
@@ -457,20 +387,19 @@ class CovarianceClusterCounts(CovarianceClusters):
         Returns:
             float: Covariance at given bins
         """
-        dz = (self.Z1_true_vec[bin_z_i, -1]-self.Z1_true_vec[bin_z_i, 0])/(romberg_num-1)
+        dz = (self.Z1_true_vec[z_i, -1]-self.Z1_true_vec[z_i, 0])/(romberg_num-1)
         
         partial_vec = [
-            self.partial2(self.Z1_true_vec[bin_z_i, m], bin_z_j, bin_richness_j) for m in range(romberg_num)
+            self.partial2(self.Z1_true_vec[z_i, m], z_j, richness_j) for m in range(romberg_num)
         ]
         
-        romb_vec = partial_vec*self.dV_true_vec[bin_z_i]*self.M1_true_vec[bin_richness_i, bin_z_i]*self.G1_true_vec[bin_z_i]
+        romb_vec = partial_vec*self.dV_true_vec[z_i]*self.M1_true_vec[richness_i, z_i]*self.G1_true_vec[z_i]
 
         return (self.survey_area**2)*romb(romb_vec, dx=dz)
 
 
-    def _eval_true_vec(self, romb_num):
-        """ Pre computes the -geometric- true vectors  
-        Z1, G1, dV for Cov_N_N. 
+    def eval_true_vec(self, romb_num):
+        """ Computes the -geometric- true vectors Z1, G1, dV for Cov_N_N. 
         Args:
             (int) romb_num: controls romb integral precision. 
                         Typically 10**6 + 1 
@@ -480,58 +409,36 @@ class CovarianceClusterCounts(CovarianceClusters):
             (array) dV_true_vec
         """
 
-        cosmo = self.cosmo
-        Num_z_bins = self.num_z_bins
-        Lim_z_min, Lim_z_max = self.z_lower_limit, self.z_upper_limit   
-        Z_bins = self.z_bins
-        Z_bin_range = self.z_bin_range
+        self.Z1_true_vec = np.zeros((self.num_z_bins, romb_num))
+        self.G1_true_vec = np.zeros((self.num_z_bins, romb_num))
+        self.dV_true_vec = np.zeros((self.num_z_bins, romb_num))
 
-        self.Z1_true_vec = np.zeros((Num_z_bins, romb_num))
-        self.G1_true_vec = np.zeros((Num_z_bins, romb_num))
-        self.dV_true_vec = np.zeros((Num_z_bins, romb_num))
+        for i in range(self.num_z_bins):
 
-        for i in range(Num_z_bins):
-            self.Z1_true_vec[i] = np.linspace(
-                max(Lim_z_min, Z_bins[i]-4*Z_bin_range),
-                min(Lim_z_max, Z_bins[i+1]+6*Z_bin_range), romb_num)
-            self.G1_true_vec[i] = ccl.growth_factor(cosmo, 1/(1+self.Z1_true_vec[i]))
-            self.dV_true_vec[i] = [ self.dV(self.Z1_true_vec[i, m], i)
-                              for m in range(romb_num)]
+            z_low_limit = max(self.z_lower_limit, self.z_bins[i]-4*self.z_bin_range)
+            z_upper_limit = min(self.z_upper_limit, self.z_bins[i+1]+6*self.z_bin_range)
+            
+            self.Z1_true_vec[i] = np.linspace(z_low_limit, z_upper_limit, romb_num)
+            self.G1_true_vec[i] = ccl.growth_factor(self.cosmo, 1/(1+self.Z1_true_vec[i]))
+            self.dV_true_vec[i] = [self.dV(self.Z1_true_vec[i, m], i) for m in range(romb_num)]
 
 
-    def _eval_M1_true_vec(self, romb_num):
-        """ Pre computes the true vectors  
-        M1 for Cov_N_N. 
+    def eval_M1_true_vec(self, romb_num):
+        """ Pre computes the true vectors M1 for Cov_N_N. 
         Args:
             (int) romb_num: controls romb integral precision. 
                         Typically 10**6 + 1 
         """
 
         print('evaluating M1_true_vec (this may take some time)...')
-        Num_Lbd_bins = self.num_richness_bins
-        Num_z_bins = self.num_z_bins
 
-        self.M1_true_vec = np.zeros((Num_Lbd_bins, Num_z_bins, romb_num))
-        for lbd in range(Num_Lbd_bins):
-            print(f'\r{100*(lbd)/Num_Lbd_bins :.1f} %', end="")
+        self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, romb_num))
 
-            for z in range(Num_z_bins):
-
+        for lbd in range(self.num_richness_bins):
+            for z in range(self.num_z_bins):
                 for m in range(romb_num):
-                    self.M1_true_vec[lbd, z, m] = \
-                        self.integral_mass( self.Z1_true_vec[z, m], lbd)
-        print(f'\r100.')
 
-    def _eval_sigma_vec(self):
-        sigma_vec = np.zeros((self.nz,self.nz))
-
-        for i in range (self.nz):
-            for j in range (i, self.nz):
-
-                sigma_vec[i,j] = self.double_bessel_integral(self.z_true_vec[i],self.z_true_vec[j])
-                sigma_vec[j,i] = sigma_vec[i,j]
-
-        return sigma_vec
+                    self.M1_true_vec[lbd, z, m] = self.integral_mass(self.Z1_true_vec[z, m], lbd)
 
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
