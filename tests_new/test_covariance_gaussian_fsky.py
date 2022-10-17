@@ -15,23 +15,6 @@ import healpy as hp
 import sacc
 import shutil
 
-# Some useful functions
-def depickling(name):
-    """get the target data
-    """
-    try:
-        with open(f"tests/val_{name}.pkl", 'rb') as ff:
-            return pickle.load(ff)
-    except:
-        print(f"missing {name}")
-        print(os.listdir("tests/"))
-
-
-def check_numerr(a, b, f=np.array_equal):
-    """ wrapper for test
-    """
-    print('ok' if f(a, b) else 'Check for numerical errors')
-
 # INPUT
 # CCL and sacc input:
 os.makedirs('tests/tmp/', exist_ok=True)
@@ -40,30 +23,13 @@ cosmo = ccl.Cosmology.read_yaml(cosmo_filename)
 with open("tests/tmp/cosmos_desy1_v2p1p0.pkl", 'wb') as ff:
     pickle.dump(cosmo, ff)
 
-xi_fn = "examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
-cl_fn = "examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits"
-
-# Reference Output extracted from ipynb:
-with open("tests/data/tjpcov_cl.pkl", "rb") as ff:
-    ref_cov0cl = pickle.load(ff)
-with open("tests/data/tjpcov_xi.pkl", "rb") as ff:
-    ref_cov0xi = pickle.load(ff)
-
-ref_covnobin = depickling("covnobin")  # ell datavectors bins #EDGES
-ref_md_ell_bins = depickling('metadata_ell_bins')
-
 # SETUP
 input_yml = "tests_new/data/conf_tjpcov_minimal.yaml"
 input_yml_real = "tests_new/data/conf_tjpcov_minimal_real.yaml"
 cfsky = CovarianceFourierGaussianFsky(input_yml)
+cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
 
-class CRGF_tester(CovarianceRealGaussianFsky):
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        super()._build_matrix_from_blocks(blocks, tracers_cov)
-
-# cfsky_real = CovarianceRealGaussianFsky(input_yml)
-cfsky_real = CRGF_tester(input_yml_real)
 
 def clean_tmp():
     if os.path.isdir('./tests/tmp'):
@@ -133,41 +99,25 @@ def test_Fourier_get_covariance_block():
     assert not np.any(gcov_cl_1b)
 
 
-def test_Real_get_covariance_block():
-    # Test made independent of pickled objects
-    tracer_comb1 = ('lens0', 'lens0')
-    tracer_comb2 = ('lens0', 'lens0')
+@pytest.mark.parametrize('tracer_comb1',
+                          [('lens0', 'lens0'),
+                           ('src0', 'lens0'),
+                           ('lens0', 'src0'),
+                           ('src0', 'src0'),
+                          ])
+@pytest.mark.parametrize('tracer_comb2',
+                          [('lens0', 'lens0'),
+                           ('src0', 'lens0'),
+                           ('lens0', 'src0'),
+                           ('src0', 'src0'),
+                          ])
+def test_Real_get_fourier_block(tracer_comb1, tracer_comb2):
+    cov = cfsky_real._get_fourier_block(tracer_comb1, tracer_comb2)
+    cov2 = cfsky.get_covariance_block(tracer_comb1, tracer_comb2,
+                                      for_real=True, lmax=cfsky_real.lmax)
 
-    print(f"Checking covariance block. \
-          Tracer combination {tracer_comb1} {tracer_comb2}")
-    s = cfsky_real.io.get_sacc_file()
-
-    ell = np.arange(2, cfsky_real.lmax + 1)
-    ccltr = ccl_tracers['lens0']
-    cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise['lens0']
-
-    fsky = cfsky_real.fsky
-    dl = np.gradient(ell)
-    cov = np.diag(2 * cl**2 / (4 * np.pi * fsky))
-
-    WT = cfsky_real.get_Wigner_transform()
-    s1_s2 = cfsky_real.get_cov_WT_spin(tracer_comb=tracer_comb1)
-    th, cov = WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2,
-                                       s1_s2_cross=s1_s2, cl_cov=cov)
-
-    gcov_xi_1 = cfsky_real.get_covariance_block(tracer_comb1=tracer_comb1,
-                                                tracer_comb2=tracer_comb2,
-                                                binned=False)
-    np.testing.assert_allclose(gcov_xi_1, cov)
-
-    gcov_xi_1 = cfsky_real.get_covariance_block(tracer_comb1=tracer_comb1,
-                                                tracer_comb2=tracer_comb2,
-                                                binned=True)
-
-    theta, _, theta_edges = cfsky_real.get_binning_info(in_radians=False)
-    _, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
-    assert gcov_xi_1.shape == (20, 20)
-    assert np.max(np.abs((gcov_xi_1+1e-100) / (cov + 1e-100) - 1)) < 1e-5
+    norm = np.pi * 4 * cfsky_real.fsky
+    assert np.all(cov == cov2 / norm)
 
 
 def test_smoke_get_covariance():

@@ -410,7 +410,6 @@ class CovarianceBuilder(ABC):
 
 
 class CovarianceFourier(CovarianceBuilder):
-    # TODO: Move Fourier specific methods here
     space_type = 'Fourier'
 
     def __init__(self, config):
@@ -666,7 +665,6 @@ class CovarianceFourier(CovarianceBuilder):
 
 
 class CovarianceReal(CovarianceBuilder):
-    # TODO: Move Real space specific methods here and check WT for general case
     space_type = 'Real'
 
     def get_theta_eff(self):

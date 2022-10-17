@@ -54,7 +54,7 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
 
         return ell, ell_eff, ell_edges
 
-    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
+    def get_covariance_block(self, tracer_comb1, tracer_comb2,
                              include_b_modes=True, for_real=False, lmax=None):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
@@ -126,6 +126,7 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         norm = (2*ell+1)*np.gradient(ell)*self.fsky
         cov /= norm
 
+        # TODO: Maybe it's a better approximation just to use the ell_effective
         lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
         # Include the B-modes if requested (e.g. needed to build the full
@@ -156,41 +157,23 @@ class CovarianceRealGaussianFsky(CovarianceProjectedReal):
         self.fourier = CovarianceFourierGaussianFsky(config)
         self.fsky = self.fourier.fsky
 
-    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                              xi_plus_minus1='plus', xi_plus_minus2='plus',
-                              binned=True):
+    def _get_fourier_block(self, tracer_comb1, tracer_comb2):
         """
-        Compute a single covariance matrix for a given pair of C_ell or xi
+        Return the Fourier covariance block for two pair of tracers.
 
         Parameters
         ----------
+        tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+        tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
 
         Returns:
         --------
         cov (array): Covariance matrix
         """
-
+        # For now we just use the EE block which should be dominant over the
+        # EB, BE and BB pieces when projecting to real space
         cov = self.fourier.get_covariance_block(tracer_comb1, tracer_comb2,
                                                 for_real=True, lmax=self.lmax)
         norm = np.pi*4*self.fsky
 
-        cov /= norm
-
-        WT = self.get_Wigner_transform()
-
-        s1_s2_1 = self.get_cov_WT_spin(tracer_comb=tracer_comb1)
-        s1_s2_2 = self.get_cov_WT_spin(tracer_comb=tracer_comb2)
-        if isinstance(s1_s2_1, dict):
-            s1_s2_1 = s1_s2_1[xi_plus_minus1]
-        if isinstance(s1_s2_2, dict):
-            s1_s2_2 = s1_s2_2[xi_plus_minus2]
-        # Remove ell <= 1 for WT (following original implementation)
-        ell = np.arange(2, self.lmax + 1)
-        cov = cov[2:][:, 2:]
-        th, cov = WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
-                                           s1_s2_cross=s1_s2_2, cl_cov=cov)
-        if binned:
-            theta, _, theta_edges = self.get_binning_info(in_radians=False)
-            thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
-
-        return cov
+        return cov / norm
