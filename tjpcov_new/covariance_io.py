@@ -59,7 +59,7 @@ class CovarianceIO():
 
         return config
 
-    def create_sacc_cov(self, output='cls_cov.fits'):
+    def create_sacc_cov(self, output='cls_cov.fits', overwrite=False):
         """
         Write created cov to a new sacc object
 
@@ -78,7 +78,7 @@ class CovarianceIO():
 
         s = self.get_sacc_file().copy()
         s.add_covariance(cov)
-        s.save_fits(output, overwrite=True)
+        s.save_fits(output, overwrite=overwrite)
 
         return s
 
