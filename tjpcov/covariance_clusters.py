@@ -26,7 +26,7 @@ class CovarianceClusters(CovarianceBuilder):
         TODO: verify the other limber auxiliary functions and new
         shot noise
         """
-    
+    # get c from CCL
     c = 299792.458          # km/s
     bias_fft = 1.4165
     ko = 1e-4
@@ -59,6 +59,8 @@ class CovarianceClusters(CovarianceBuilder):
 
         # Setup Richness Bins
         self.min_richness = min(min_richness)
+        if self.min_richness == 0:
+            self.min_richness = 1.
         self.max_richness = max(max_richness)
         self.richness_bins = np.round(np.logspace(np.log10(self.min_richness),
                                              np.log10(self.max_richness), 
@@ -67,7 +69,10 @@ class CovarianceClusters(CovarianceBuilder):
         # Define arrays for bins for Photometric z and z grid
         self.z_max = max(max_redshifts)
         self.z_min = min(min_redshifts)
+        if self.z_min == 0:
+            self.z_min = 0.01
         self.z_bins = np.round(np.linspace(self.z_min, self.z_max, self.num_z_bins+1), 2)
+        self.z_bin_range = (self.z_max - self.z_min)/self.num_z_bins
 
         #   minimum log mass in solar masses; 
         self.min_mass = np.log(min_mass)
@@ -77,9 +82,11 @@ class CovarianceClusters(CovarianceBuilder):
         # Cosmology
         self.survey_area = survey_area
         self.ovdelta = ovdelta
-        self.h0 = self.cosmo.h
+        # TODO Read from SACC
+        self.h0 = 0.6736
 
         # FFT parameters:
+        # TODO test 
         self.ro = 1/self.kmax
         self.rmax = 1/self.ko
         self.G = np.log(self.kmax/self.ko)
@@ -104,8 +111,9 @@ class CovarianceClusters(CovarianceBuilder):
         self.fk_vec = (self.k_vec/self.ko)**(3. - self.bias_fft)*self.pk_vec
         self.Phi_vec = np.conjugate(np.fft.rfft(self.fk_vec))/self.L
 
-        self.z_true_vec = np.linspace(self.z_bins[0], self.z_bins[self.num_z_bins], self.n_z)
-        self.sigma_vec = self.eval_sigma_vec(self.n_z)
+        self.z_true_vec = np.linspace(self.z_bins[0], self.z_bins[self.num_z_bins], self.num_z_bins)
+        # Eq 7.6
+        self.sigma_vec = self.eval_sigma_vec()
 
     def radial_distance(self,z):
         return ccl.comoving_radial_distance(self.cosmo, 1/(1+ z))
@@ -221,7 +229,7 @@ class CovarianceClusters(CovarianceBuilder):
         result = quad(integrand, self.z_lower_limit, self.z_upper_limit)
         return self.survey_area * result[0]
 
-
+    # TODO vectorize 
     def I_ell(self, m, R):
         """Calculating the function M_0_0
         the formula below only valid for R <=1, l = 0,  
@@ -284,6 +292,7 @@ class CovarianceClusters(CovarianceBuilder):
         return (romb(kernel, dx=romb_range)) * factor_approx
 
 
+    #TODO Most important integral 
     def double_bessel_integral(self, z1, z2):
         """Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2
         """
@@ -296,7 +305,7 @@ class CovarianceClusters(CovarianceBuilder):
             r2 = ccl.comoving_radial_distance(self.cosmo, 1/(1+z2))
             R = min(r1, r2)/max(r1, r2)
 
-        I_ell_vec = [self.I_ell(m, R ) for m in range(self.N//2+1)]
+        I_ell_vec = [self.I_ell(m, R) for m in range(self.N//2+1)]
 
         back_FFT_vec = np.fft.irfft(self.Phi_vec*I_ell_vec)*self.N  # FFT back
         two_fast_vec = (1/np.pi)*(self.ko**3)*((self.r_vec/self.ro) ** (-self.bias_fft))*back_FFT_vec/self.G
@@ -317,10 +326,10 @@ class CovarianceClusters(CovarianceBuilder):
         # TODO test interpolkind
    
     def eval_sigma_vec(self):
-        sigma_vec = np.zeros((self.n_z, self.n_z))
+        sigma_vec = np.zeros((self.num_z_bins, self.num_z_bins))
 
-        for i in range (self.n_z):
-            for j in range (i, self.n_z):
+        for i in range (self.num_z_bins):
+            for j in range (i, self.num_z_bins):
 
                 sigma_vec[i,j] = self.double_bessel_integral(self.z_true_vec[i],self.z_true_vec[j])
                 sigma_vec[j,i] = sigma_vec[i,j]
@@ -333,12 +342,14 @@ class CovarianceClusters(CovarianceBuilder):
     def get_max_radial_idx(self):
         return np.argwhere(self.r_vec  > 1.05*self.radial_upper_limit)[0][0]
 
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        raise NotImplementedError("Not implemented")
 
 
 class CovarianceClusterCounts(CovarianceClusters):
     # Figure out
-    # cov_type = 'gauss'
-    # _reshape_order = 'F'
+    # cov_type = 'fourier'
+    _reshape_order = 'F'
 
     def __init__(self, config):
         super().__init__(config)
@@ -352,6 +363,9 @@ class CovarianceClusterCounts(CovarianceClusters):
         self.dV_true_vec = np.zeros((self.num_z_bins, romberg_num))
         self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, romberg_num))
     
+    # Compute a single covariance entry
+    # tracer_comb1 = (cluster_0_0,)
+    # tracer_comb2 = (cluster_0_1,)
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
                              integration_method=None,
                              include_b_modes=True):
@@ -386,7 +400,9 @@ class CovarianceClusterCounts(CovarianceClusters):
             final_array[e.li,e.lj,e.zi,e.zj]= cov_term
             final_array[e.li,e.lj,e.zj,e.zi]= final_array[e.li,e.lj,e.zi,e.zj]
             final_array[e.lj,e.li,e.zi,e.zj]= final_array[e.li,e.lj,e.zi,e.zj]      
-
+        
+        # store metadata in some header/log file
+        # covariance_io
         return final_array
 
     def _covariance_cluster_NxN(self, z_i, z_j, richness_i, richness_j, romberg_num):
