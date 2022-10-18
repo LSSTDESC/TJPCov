@@ -357,55 +357,60 @@ class CovarianceClusterCounts(CovarianceClusters):
         # Find out correct way to pull from sacc
         self.ssc_conf = self.config.get('SSC', {})
 
-        romberg_num = 2**6+1
-        self.Z1_true_vec = np.zeros((self.num_z_bins, romberg_num))
-        self.G1_true_vec = np.zeros((self.num_z_bins, romberg_num))
-        self.dV_true_vec = np.zeros((self.num_z_bins, romberg_num))
-        self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, romberg_num))
-    
-    # Compute a single covariance entry
-    # tracer_comb1 = (cluster_0_0,)
-    # tracer_comb2 = (cluster_0_1,)
-    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             integration_method=None,
-                             include_b_modes=True):
-        
-        romberg_num = 2**6+1
+        self.romberg_num = 2**6+1
+        self.Z1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
+        self.G1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
+        self.dV_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
+        self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, self.romberg_num))
+
+        #TODO  this should be moved to evaluate 1 entry at a time, so we can use parallelization
         # Computes the geometric true vectors
-        self.eval_true_vec(romberg_num)
+        self.eval_true_vec()
         # Pre computes the true vectors M1 for Cov_N_N
-        self.eval_M1_true_vec(romberg_num)
+        self.eval_M1_true_vec()
+    
+    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2, **kwargs):
+        self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2, kwargs)
 
-        final_array = np.zeros((self.num_richness_bins, self.num_richness_bins, self.num_z_bins, self.num_z_bins))
+    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2, kwargs)
 
-        # li, lj: richness_i, richness_j
-        # zi, zj: redshift_i, redshift_j
-        matrixElement = namedtuple('matrixElement', ['li', 'lj', 'zi', 'zj'])
-        elemList = []
+    def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2, **kwargs):
 
-        for richness_i in range(self.num_richness_bins):   
-            for richness_j in range(richness_i, self.num_richness_bins):
-                for z_i in range (self.num_z_bins):
-                    for z_j in range(z_i, self.num_z_bins):
-                        elemList.append(matrixElement(richness_i, richness_j, z_i, z_j))
-
-        for e in elemList:
+        # Compute a single covariance entry 'clusters_redshift_richness' e.g.
+        # tracer_comb1 = ('clusters_0_0',) 
+        # tracer_comb2 = ('clusters_0_0',)
+        tracer_split1 = tracer_comb1[0].split('_')
+        tracer_split2 = tracer_comb2[0].split('_')
         
-            cov = self._covariance_cluster_NxN(e.zi, e.zj, e.li, e.lj, romberg_num)
-            shot_noise = 0
-            if (e.li == e.lj and e.zi == e.zj):
-                shot_noise = self.shot_noise(e.zi, e.li)
-                        
-            cov_term = shot_noise + cov
-            final_array[e.li,e.lj,e.zi,e.zj]= cov_term
-            final_array[e.li,e.lj,e.zj,e.zi]= final_array[e.li,e.lj,e.zi,e.zj]
-            final_array[e.lj,e.li,e.zi,e.zj]= final_array[e.li,e.lj,e.zi,e.zj]      
+        z_i = tracer_split1[1]
+        richness_i = tracer_split1[2]
+
+        z_j = tracer_split2[1]
+        richness_j = tracer_split2[2]
+
+
+        dz = (self.Z1_true_vec[z_i, -1]-self.Z1_true_vec[z_i, 0])/(self.romberg_num-1)
+        
+        partial_vec = [
+            self.partial2(self.Z1_true_vec[z_i, m], z_j, richness_j) for m in range(self.romberg_num)
+        ]
+        
+        romb_vec = partial_vec*self.dV_true_vec[z_i]*self.M1_true_vec[richness_i, z_i]*self.G1_true_vec[z_i]
+
+        cov = (self.survey_area**2)*romb(romb_vec, dx=dz)
+
+        shot_noise = 0
+        if (richness_i == richness_j and z_i == z_j):
+            shot_noise = self.shot_noise(z_i, richness_i)
+                    
+        cov_total = shot_noise + cov
         
         # store metadata in some header/log file
         # covariance_io
-        return final_array
+        return cov_total
 
-    def _covariance_cluster_NxN(self, z_i, z_j, richness_i, richness_j, romberg_num):
+    def _covariance_cluster_NxN(self, z_i, z_j, richness_i, richness_j):
         """ Cluster counts covariance
         Args:
             bin_z_i (float or ?array): tomographic bins in z_i or z_j
@@ -413,18 +418,10 @@ class CovarianceClusterCounts(CovarianceClusters):
         Returns:
             float: Covariance at given bins
         """
-        dz = (self.Z1_true_vec[z_i, -1]-self.Z1_true_vec[z_i, 0])/(romberg_num-1)
-        
-        partial_vec = [
-            self.partial2(self.Z1_true_vec[z_i, m], z_j, richness_j) for m in range(romberg_num)
-        ]
-        
-        romb_vec = partial_vec*self.dV_true_vec[z_i]*self.M1_true_vec[richness_i, z_i]*self.G1_true_vec[z_i]
-
-        return (self.survey_area**2)*romb(romb_vec, dx=dz)
 
 
-    def eval_true_vec(self, romb_num):
+
+    def eval_true_vec(self):
         """ Computes the -geometric- true vectors Z1, G1, dV for Cov_N_N. 
         Args:
             (int) romb_num: controls romb integral precision. 
@@ -435,18 +432,14 @@ class CovarianceClusterCounts(CovarianceClusters):
             (array) dV_true_vec
         """
 
-        self.Z1_true_vec = np.zeros((self.num_z_bins, romb_num))
-        self.G1_true_vec = np.zeros((self.num_z_bins, romb_num))
-        self.dV_true_vec = np.zeros((self.num_z_bins, romb_num))
-
         for i in range(self.num_z_bins):
 
             z_low_limit = max(self.z_lower_limit, self.z_bins[i]-4*self.z_bin_range)
             z_upper_limit = min(self.z_upper_limit, self.z_bins[i+1]+6*self.z_bin_range)
             
-            self.Z1_true_vec[i] = np.linspace(z_low_limit, z_upper_limit, romb_num)
+            self.Z1_true_vec[i] = np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
             self.G1_true_vec[i] = ccl.growth_factor(self.cosmo, 1/(1+self.Z1_true_vec[i]))
-            self.dV_true_vec[i] = [self.dV(self.Z1_true_vec[i, m], i) for m in range(romb_num)]
+            self.dV_true_vec[i] = [self.dV(self.Z1_true_vec[i, m], i) for m in range(self.romberg_num)]
 
 
     def eval_M1_true_vec(self, romb_num):
@@ -458,12 +451,9 @@ class CovarianceClusterCounts(CovarianceClusters):
 
         print('evaluating M1_true_vec (this may take some time)...')
 
-        self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, romb_num))
-
         for lbd in range(self.num_richness_bins):
             for z in range(self.num_z_bins):
                 for m in range(romb_num):
-
                     self.M1_true_vec[lbd, z, m] = self.integral_mass(self.Z1_true_vec[z, m], lbd)
 
 class MassRichnessRelation(object):
