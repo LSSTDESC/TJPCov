@@ -12,6 +12,15 @@ class CovarianceCalculator():
         self.covs = None
 
     def get_covariance_classes(self):
+        """
+        Return a dictionary with the covariance terms and instances of their
+        corresponding classes.
+
+        Returns
+        -------
+        classes (dict): Dictionary with keys the covariance types ('gauss',
+        SSC', .. ) and values instances of the corresponding classes.
+        """
         if self.covs is None:
             # cov_type will be a list or string with the class names that you
             # will use to compute the different covariance terms
@@ -19,13 +28,13 @@ class CovarianceCalculator():
             if isinstance(cov_tbc, str):
                 cov_tbc = [cov_tbc]
 
-            self.covs = {}
+            covs = {}
             space_types = []
             for covi in cov_tbc:
                 covi = covariance_from_name(covi)
                 # Check the cov_type has not been already requested (e.g. two
                 # Gaussian contributions)
-                if covi.cov_type in self.covs:
+                if covi.cov_type in covs:
                     raise ValueError(f'Covariance type {covi.cov_type} ' +
                                      'already set. Make sure each type is ' +
                                      'requested only once.')
@@ -38,7 +47,9 @@ class CovarianceCalculator():
                                      ' covariances.')
 
                 space_types.append(covi.space_type)
-                self.covs[covi.cov_type] = covi
+                covs[covi.cov_type] = covi(self.config)
+
+            self.covs = covs
 
         return self.covs
 
@@ -47,7 +58,7 @@ class CovarianceCalculator():
             covs = self.get_covariance_classes()
 
             cov = []
-            for ctype, cmat in covs:
+            for ctype, cmat in covs.items():
                 cov.append(cmat.get_covariance())
 
             self.cov_total = sum(cov)
