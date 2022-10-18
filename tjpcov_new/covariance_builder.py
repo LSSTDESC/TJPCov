@@ -271,7 +271,7 @@ class CovarianceBuilder(CovarianceIO):
 
         """
         mask_names = self.mask_names
-        mn  = {}
+        mn = {}
         for i in [1, 2, 3, 4]:
             mn[i] = mask_names[tracer_names[i]]
         return mn

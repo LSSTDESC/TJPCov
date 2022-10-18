@@ -123,7 +123,8 @@ class CovarianceIO():
         for dt in dt_long:
             pd = sacc.parse_data_type_name(dt)
 
-            if pd.statistic != 'cl':
+            if pd.statistic != 'cl': # FAO: Is this assuming only Cl's 
+                                     # and not Xi or cluster data?
                 raise ValueError(f'data_type {dt} not recognized. Is it a Cell?')
 
             if pd.subtype is None:
