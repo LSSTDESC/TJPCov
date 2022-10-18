@@ -21,11 +21,13 @@ os.makedirs('tests/tmp/', exist_ok=True)
 
 class CovarianceBuilderTester(CovarianceBuilder):
     # Based on https://stackoverflow.com/a/28299369
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        super()._build_matrix_from_blocks(blocks, tracers_cov)
-
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
+                                      **kwargs):
+        super().get_covariance_block_for_sacc(tracer_comb1, tracer_comb2,
+                                              **kwargs)
 
 
 def get_nmt_bin(lmax=95):
@@ -69,12 +71,6 @@ def test_split_tasks_by_rank():
     assert tasks[1::2] == tasks_splitted
 
 
-def test_build_matrix_from_blocks_not_implemented():
-    with pytest.raises(NotImplementedError):
-        cb = CovarianceBuilderTester(input_yml)
-        cb._build_matrix_from_blocks([], [])
-
-
 def test_compute_all_blocks():
     def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
         f1 = int(tracer_comb1[0].split('__')[1]) + 1
@@ -91,8 +87,11 @@ def test_compute_all_blocks():
             super()._build_matrix_from_blocks(blocks, tracers_cov)
 
         def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-            return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+            super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
+        def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
+                                          **kwargs):
+            return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
     cb = CovarianceBuilderTester(input_yml)
     blocks, tracers_blocks = cb._compute_all_blocks()
@@ -166,7 +165,11 @@ def test_get_covariance():
         def _build_matrix_from_blocks(self, blocks, tracers_cov):
             return build_matrix_from_blocks(blocks, tracers_cov)
 
-        def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        def get_covariance_block(self, **kwargs):
+            super().get_covariance_block(**kwargs)
+
+        def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
+                                          **kwargs):
             return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
 

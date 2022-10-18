@@ -76,9 +76,9 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         print('Computing the blocks for independent workspaces')
         for tracer_comb1, tracer_comb2 in self._split_tasks_by_rank(trs_wsp):
             print(tracer_comb1, tracer_comb2)
-            cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
-                                            tracer_comb2=tracer_comb2,
-                                            **kwargs)
+            cov = self.get_covariance_block_for_sacc(tracer_comb1=tracer_comb1,
+                                                     tracer_comb2=tracer_comb2,
+                                                     **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
@@ -88,9 +88,9 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         print('Computing the blocks for independent covariance workspaces')
         for tracer_comb1, tracer_comb2 in self._split_tasks_by_rank(trs_cwsp):
             print(tracer_comb1, tracer_comb2)
-            cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
-                                            tracer_comb2=tracer_comb2,
-                                            **kwargs)
+            cov = self.get_covariance_block_for_sacc(tracer_comb1=tracer_comb1,
+                                                     tracer_comb2=tracer_comb2,
+                                                     **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
@@ -101,9 +101,9 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         # Now loop over the remaining tracers
         for tracer_comb1, tracer_comb2 in self._split_tasks_by_rank(tracers_cov):
             print(tracer_comb1, tracer_comb2)
-            cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
-                                            tracer_comb2=tracer_comb2,
-                                            **kwargs)
+            cov = self.get_covariance_block_for_sacc(tracer_comb1=tracer_comb1,
+                                                     tracer_comb2=tracer_comb2,
+                                                     **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 

@@ -92,9 +92,47 @@ class CovarianceBuilder(ABC):
         """
         pass
 
-    @abstractmethod
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        raise NotImplementedError("Not implemented")
+        """
+        Build full matrix from blocks.
+
+        Parameters:
+        -----------
+        blocks (list): List of blocks
+        tracers_cov (list): List of tracer combinations corresponding to each
+        block in blocks. They must have the same order
+
+        Returns:
+        --------
+        cov (array): Covariance matrix for all combinations in the sacc file.
+        """
+        # TODO: Genearlize this for both real and Fourier space and move it to
+        # CovarianceBuilder
+        blocks = iter(blocks)
+
+        s = self.io.get_sacc_file()
+        ndim = s.mean.size
+
+        cov_full = -1 * np.ones((ndim, ndim))
+
+        print('Building the covariance: placing blocks in their place')
+        for tracer_comb1, tracer_comb2 in tracers_cov:
+            # We do not need to do the reshape here because the blocks have
+            # been build looping over the data types present in the sacc file
+            print(tracer_comb1, tracer_comb2)
+
+            cov_ij = next(blocks)
+            ix1 = s.indices(tracers=tracer_comb1)
+            ix2 = s.indices(tracers=tracer_comb2)
+
+            cov_full[np.ix_(ix1, ix2)] = cov_ij
+            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
+
+        if np.any(cov_full == -1):
+            raise Exception('Something went wrong. Probably related to the ' +
+                            'data types')
+
+        return cov_full
 
     def _compute_all_blocks(self, **kwargs):
         """
@@ -124,9 +162,9 @@ class CovarianceBuilder(ABC):
             print(tracer_comb1, tracer_comb2)
             # TODO: Options to compute the covariance block should be defined
             # at initialization and/or through kwargs?
-            cov = self.get_covariance_block(tracer_comb1=tracer_comb1,
-                                            tracer_comb2=tracer_comb2,
-                                            **kwargs)
+            cov = self.get_covariance_block_for_sacc(tracer_comb1=tracer_comb1,
+                                                     tracer_comb2=tracer_comb2,
+                                                     **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
@@ -161,6 +199,18 @@ class CovarianceBuilder(ABC):
 
     @abstractmethod
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        # This function returns the covariance block with all elements (e.g.
+        # EE-EB-BE-BB in the case of shear-shear), which might not be all
+        # present in the sacc file
+        # TODO: Consider leaving it only for the Fourier covariances since we
+        # only really need the _for_sacc function for this class to work
+        raise NotImplementedError("Not implemented")
+
+    @abstractmethod
+    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
+                                      **kwargs):
+        # This function returns the covariance block with the elements in the
+        # sacc file (e.g. only EE in the case of shear-shear)
         raise NotImplementedError("Not implemented")
 
     def get_covariance(self, **kwargs):
@@ -418,82 +468,61 @@ class CovarianceFourier(CovarianceBuilder):
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
 
-    def _build_matrix_from_blocks(self, blocks, tracers_cov,
-                                  only_independent=False):
+    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
+                                      **kwargs):
         """
-        Build full matrix from blocks.
+        Return the covariance block for the two pair of tracers as needed for
+        the sacc file (e.g. if in the sacc file there are no B-modes, the
+        covariance would only have the EE-EE component)
 
         Parameters:
         -----------
-        blocks (list): List of blocks
-        tracers_cov (list): List of tracer combinations corresponding to each
-        block in blocks. They must have the same order
-        only_independent (bool): If True, the blocks only contain the
-        covariance for the independent Cells. E.g. for wl-wl, Cell EB = BE. If
-        True, BE will not be considered.
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            kwargs: Arguments accepted by `get_covariance_block`
 
         Returns:
         --------
-        cov_full (Npt x Npt numpy array):
-            Covariance matrix for all combinations.
-            Npt = (number of bins ) * (number of combinations)
+            cov (array):  Gaussian covariance matrix for a pair of C_ell for
+            the data types considered in the sacc file.
         """
-        # TODO: Genearlize this for both real and Fourier space and move it to
-        # CovarianceBuilder
-        blocks = iter(blocks)
-
-        # Covariance construction based on
-        # https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L86-L123
-        s = self.io.get_sacc_with_concise_dtypes()
         nbpw = self.get_nbpw()
-        #
-        ndim = s.mean.size
 
-        cov_full = -1 * np.ones((ndim, ndim))
+        ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
+        dtypes1 = self.get_datatypes_from_ncell(ncell1)
 
-        print('Building the covariance: placing blocks in their place')
-        for tracer_comb1, tracer_comb2 in tracers_cov:
-            print(tracer_comb1, tracer_comb2)
-            # Although these two variables do not vary as ncell2 and dtypes2,
-            # it is cleaner to tho the loop this way
-            ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
-            dtypes1 = self.get_datatypes_from_ncell(ncell1)
+        ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
+        dtypes2 = self.get_datatypes_from_ncell(ncell2)
 
-            ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
-            dtypes2 = self.get_datatypes_from_ncell(ncell2)
+        # The reshape works for the NaMaster ordering with order 'C'
+        # If the blocks are ordered as in the sacc file, you need order 'F'
+        cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+        cov = cov.reshape((nbpw, ncell1, nbpw, ncell2),
+                          order=self._reshape_order)
 
-            if only_independent:
-                if (tracer_comb1[0] == tracer_comb1[1]) and (ncell1 == 4):
-                    ncell1 -= 1
-                    dtypes1.remove('cl_be')
+        # Keep only elements in the sacc file
+        s = self.io.get_sacc_with_concise_dtypes()
+        ix1_todelete = []
+        ix2_todelete = []
+        for i, dt1 in enumerate(dtypes1):
+            ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
+            if len(ix1) == 0:
+                ix1_todelete.append(i)
+            for j, dt2 in enumerate(dtypes2):
+                ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
+                if len(ix2) == 0:
+                    ix2_todelete.append(j)
 
-                if (tracer_comb2[0] == tracer_comb2[1]) and (ncell2 == 4):
-                    ncell2 -= 1
-                    dtypes2.remove('cl_be')
+        cov = np.delete(cov, ix1_todelete, axis=1)
+        cov = np.delete(cov, ix2_todelete, axis=3)
 
-            cov_ij = next(blocks)
-            # The reshape works for the NaMaster ordering with order 'C'
-            # If the blocks are ordered as in the sacc file, you need order 'F'
-            cov_ij = cov_ij.reshape((nbpw, ncell1, nbpw, ncell2),
-                                    order=self._reshape_order)
+        ix1 = s.indices(tracers=tracer_comb1)
+        ix2 = s.indices(tracers=tracer_comb2)
+        # Use order='F' to have a block covariance in the same order as in the
+        # sacc file
+        cov = cov.reshape((ix1.size, ix2.size), order='F')
 
-            for i, dt1 in enumerate(dtypes1):
-                ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
-                if len(ix1) == 0:
-                    continue
-                for j, dt2 in enumerate(dtypes2):
-                    ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
-                    if len(ix2) == 0:
-                        continue
-                    covi = cov_ij[:, i, :, j]
-                    cov_full[np.ix_(ix1, ix2)] = covi
-                    cov_full[np.ix_(ix2, ix1)] = covi.T
-
-        if np.any(cov_full == -1):
-            raise Exception('Something went wrong. Probably related to the ' +
-                            'data types')
-
-        return cov_full
+        return cov
 
     def get_datatypes_from_ncell(self, ncell):
         """
@@ -814,55 +843,11 @@ class CovarianceProjectedReal(CovarianceReal):
 
         return self.WT
 
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """
-        Build full matrix from blocks.
-
-        Parameters:
-        -----------
-        blocks (list): List of blocks
-        tracers_cov (list): List of tracer combinations corresponding to each
-        block in blocks. They must have the same order
-
-        Returns:
-        --------
-        cov_full (Npt x Npt numpy array):
-            Covariance matrix for all combinations.
-            Npt = (number of bins ) * (number of combinations)
-        """
-        # TODO: Genearlize this for both real and Fourier space and move it to
-        # CovarianceBuilder
-        blocks = iter(blocks)
-
-        s = self.io.get_sacc_file()
-        ndim = s.mean.size
-
-        cov_full = -1 * np.ones((ndim, ndim))
-
-        print('Building the covariance: placing blocks in their place')
-        for tracer_comb1, tracer_comb2 in tracers_cov:
-            # We do not need to do the reshape here because the blocks have
-            # been build looping over the data types present in the sacc file
-            print(tracer_comb1, tracer_comb2)
-
-            cov_ij = next(blocks)
-            ix1 = s.indices(tracers=tracer_comb1)
-            ix2 = s.indices(tracers=tracer_comb2)
-
-            cov_full[np.ix_(ix1, ix2)] = cov_ij
-            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
-
-        if np.any(cov_full == -1):
-            raise Exception('Something went wrong. Probably related to the ' +
-                            'data types')
-
-        return cov_full
-
     @abstractmethod
     def _get_fourier_block(self, tracer_comb1, tracer_comb2):
         raise NotImplementedError("Not yet implemented")
 
-    def get_covariance_block_ij(self, tracer_comb1, tracer_comb2,
+    def get_covariance_block(self, tracer_comb1, tracer_comb2,
                                 xi_plus_minus1='plus', xi_plus_minus2='plus',
                                 binned=True):
         """
@@ -904,7 +889,7 @@ class CovarianceProjectedReal(CovarianceReal):
 
         return cov
 
-    def get_covariance_block(self, tracer_comb1, tracer_comb2):
+    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
         """
         Compute a the covariance matrix for a given pair of C_ell or xi
 

@@ -26,6 +26,9 @@ class CovarianceRealTester(CovarianceReal):
     def get_covariance_block(self, tracer_comb1, tracer_comb2):
         super().get_covariance_block(tracer_comb1, tracer_comb2)
 
+    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
+        super().get_covariance_block_for_sacc(tracer_comb1, tracer_comb2)
+
 
 class CovarianceProjectedRealTester(CovarianceProjectedReal):
     fourier = None
@@ -129,7 +132,7 @@ def test_build_matrix_from_blocks():
                            ('lens0', 'src0'),
                            ('src0', 'src0'),
                           ])
-def test_get_covariance_block_ij(tracer_comb1, tracer_comb2):
+def test_get_covariance_block(tracer_comb1, tracer_comb2):
     cpr = CovarianceProjectedRealTester(input_yml_real)
     lmax = cpr.lmax
     ell = np.arange(2, lmax + 1)
@@ -152,13 +155,13 @@ def test_get_covariance_block_ij(tracer_comb1, tracer_comb2):
                                        s1_s2_cross=s1_s2_2,
                                        cl_cov=fourier_block[2:][:, 2:])
 
-    gcov_xi_1 = cb.get_covariance_block_ij(tracer_comb1=tracer_comb1,
+    gcov_xi_1 = cb.get_covariance_block(tracer_comb1=tracer_comb1,
                                            tracer_comb2=tracer_comb2,
                                            binned=False)
 
     assert np.max(np.abs((gcov_xi_1+1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
-    gcov_xi_1 = cb.get_covariance_block_ij(tracer_comb1=tracer_comb1,
+    gcov_xi_1 = cb.get_covariance_block(tracer_comb1=tracer_comb1,
                                            tracer_comb2=tracer_comb2,
                                            binned=True)
 
@@ -174,7 +177,7 @@ def test_get_covariance_block_ij(tracer_comb1, tracer_comb2):
                            ('lens0', 'src0'),
                            ('src0', 'src0'),
                           ])
-def test_get_covariance_block(tracer_comb1, tracer_comb2):
+def test_get_covariance_block_for_sacc(tracer_comb1, tracer_comb2):
     cpr = CovarianceProjectedRealTester(input_yml_real)
     lmax = cpr.lmax
     ell = np.arange(2, lmax + 1)
@@ -187,7 +190,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     cb = CovTester(input_yml_real)
     nbpw = cb.get_nbpw()
-    cov = cb.get_covariance_block(tracer_comb1, tracer_comb2)
+    cov = cb.get_covariance_block_for_sacc(tracer_comb1, tracer_comb2)
 
     s = cb.io.get_sacc_file()
     ix1 = s.indices(tracers=tracer_comb1)
@@ -204,7 +207,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     for i, dt1i in enumerate(dt1):
         for j, dt2j in enumerate(dt2):
             assert np.all(cov[:, i, :, j] ==
-                          cb.get_covariance_block_ij(tracer_comb1,
+                          cb.get_covariance_block(tracer_comb1,
                                                      tracer_comb2,
                                                      pm['minus' in dt1i],
                                                      pm['minus' in dt2j]))

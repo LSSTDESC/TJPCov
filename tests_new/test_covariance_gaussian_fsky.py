@@ -30,14 +30,13 @@ cfsky = CovarianceFourierGaussianFsky(input_yml)
 cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
 
-
 def get_config():
     return CovarianceIO(input_yml).config
 
 
 def test_smoke():
     cfsky = CovarianceFourierGaussianFsky(input_yml)
-    # cfsky = CovarianceRealGaussianFsky(input_yml)
+    cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
 
     # Check it raises an error if fsky is not given
     config = get_config()
