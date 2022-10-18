@@ -8,14 +8,15 @@ import warnings
 
 class FourierSSCHaloModel(CovarianceFourier):
     cov_type = 'SSC'
+    _reshape_order = 'F'
 
     def __init__(self, config):
         super().__init__(config)
 
-        self.ssc_conf = config.get('SSC', {})
+        self.ssc_conf = self.config.get('SSC', {})
 
     def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             ccl_tracers=None, integration_method='qag_quad',
+                             integration_method=None,
                              include_b_modes=True):
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
@@ -32,24 +33,31 @@ class FourierSSCHaloModel(CovarianceFourier):
             ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
             the tracer names
             integration_method (string): integration method to be used
-                for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
-                method backed up by `quad` when it fails) and 'spline' (the
-                integrand is splined and then integrated analytically).
+            for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
+            method backed up by `quad` when it fails) and 'spline' (the
+            integrand is splined and then integrated analytically). If given,
+            it will take priority over the specified in the configuration file
+            through config['SSC']['integration_method']. Elsewise, it will use
+            'qag_quad'.
             include_b_modes (bool): If True, return the full SSC with zeros in
-            for B-modes (if any). If False, return the non-zero block.
+            for B-modes (if any). If False, return the non-zero block. This
+            option cannot be modified through the configuration file to avoid
+            breaking the compatibility with the NaMaster covariance.
 
         Returns:
         --------
-            cov (dict):  Super sample covariance matrix for a pair of C_ell.
-            keys are 'final' and 'final_b'. The covariance stored is the same
-            in both cases.
+            cov (array):  Super sample covariance matrix for a pair of C_ell.
 
         """
         fname = 'ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
-        fname = os.path.join(self.outdir, fname)
+        fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname):
             cf = np.load(fname)
             return cf['cov' if include_b_modes else 'cov_nob']
+
+        if integration_method is None:
+            integration_method = self.ssc_conf.get('integration_method',
+                                                   'qag_quad')
 
         tr = {}
         tr[1], tr[2] = tracer_comb1
@@ -67,9 +75,10 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
+        sacc_file = self.io.get_sacc_file()
         z_max = []
         for i in range(4):
-            tr_sacc = self.cl_data.tracers[tr[i + 1]]
+            tr_sacc = sacc_file.tracers[tr[i + 1]]
             z, nz = tr_sacc.z, tr_sacc.nz
             # z_min.append(z[np.where(nz > 0)[0][0]])
             # z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
@@ -88,6 +97,8 @@ class FourierSSCHaloModel(CovarianceFourier):
         bias3 = self.bias_lens.get(tr[3], 1)
         bias4 = self.bias_lens.get(tr[4], 1)
 
+        ccl_tracers, _ = self.get_tracer_info()
+
         isnc1 = isinstance(ccl_tracers[tr[1]], ccl.NumberCountsTracer)
         isnc2 = isinstance(ccl_tracers[tr[2]], ccl.NumberCountsTracer)
         isnc3 = isinstance(ccl_tracers[tr[3]], ccl.NumberCountsTracer)
@@ -105,8 +116,7 @@ class FourierSSCHaloModel(CovarianceFourier):
                                                       is_number_counts4=isnc4,
                                                       )
 
-        mn = self.get_mask_names_dict(self.mask_names, tr)
-        masks = self.get_masks_dict(self.mask_fn, mn, tr, {}, self.nside)
+        masks = self.get_masks_dict(tr, {})
         # TODO: Optimize this, avoid computing the mask_wl for all blocks.
         # Note that this is correct for same footprint cross-correlations. In
         # case of multisurvey analyses this approximation might break.
@@ -139,7 +149,8 @@ class FourierSSCHaloModel(CovarianceFourier):
         ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
-        cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
+        cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2),
+                                    order=self._reshape_order)
 
         np.savez_compressed(fname, cov=cov_full, cov_nob=cov_ssc)
 

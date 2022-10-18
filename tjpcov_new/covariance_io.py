@@ -13,8 +13,8 @@ class CovarianceIO():
         """
         CovarianceIO class for TJPCov.
 
-        This is a base class that handles the input/output of the covariances.
-        It does not computation.
+        This is the class that handles the input/output of the covariances.
+        It does not compute anything.
 
         Parameters
         ----------
@@ -25,6 +25,7 @@ class CovarianceIO():
 
         # Output directory where to save all the time consuming calculations
         self.outdir = self.config['tjpcov'].get('outdir', './')
+        os.makedirs(self.outdir, exist_ok=True)
 
     def _read_config(self, config):
         if isinstance(config, dict):
@@ -74,16 +75,11 @@ class CovarianceIO():
         """
         output = os.path.join(self.get_outdir(), output)
 
-        cov = self.get_covariance()
-
         s = self.get_sacc_file().copy()
         s.add_covariance(cov)
         s.save_fits(output, overwrite=overwrite)
 
         return s
-
-    def get_covariance(self):
-        raise NotImplementedError("Do not use the base class directly")
 
     def get_outdir(self):
         return self.outdir
