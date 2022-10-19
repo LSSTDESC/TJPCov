@@ -1,7 +1,7 @@
 import numpy as np
 import pyccl as ccl
 
-from . import bin_cov
+from .wigner_transform import bin_cov
 from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 
 

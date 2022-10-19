@@ -6,7 +6,8 @@ import numpy as np
 import pyccl as ccl
 import sacc
 
-from . import bin_cov, tools, wigner_transform
+from .wigner_transform import bin_cov, wigner_transform
+from . import tools
 from .covariance_io import CovarianceIO
 
 
