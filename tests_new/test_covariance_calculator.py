@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from tjpcov_new.covariance_calculator import CovarianceCalculator
-from tjpcov_new.covariance_gaussian_fsky import CovarianceFourierGaussianFsky
+from tjpcov_new.covariance_fourier_gaussian_nmt import \
+    CovarianceFourierGaussianNmt
 from tjpcov_new.covariance_fourier_ssc import FourierSSCHaloModel
 import os
 import pytest
@@ -19,7 +20,7 @@ def test_get_covariance_classes():
     cc = CovarianceCalculator(input_yml)
     classes = cc.get_covariance_classes()
 
-    assert isinstance(classes['gauss'], CovarianceFourierGaussianFsky)
+    assert isinstance(classes['gauss'], CovarianceFourierGaussianNmt)
     assert isinstance(classes['SSC'], FourierSSCHaloModel)
 
     # Test it raises an error if two gauss contributions are requested
@@ -42,11 +43,22 @@ def test_get_covariance():
     cc = CovarianceCalculator(input_yml)
     cov = cc.get_covariance() + 1e-100
 
-    cov_gauss = CovarianceFourierGaussianFsky(input_yml).get_covariance()
-    cov_ssc = CovarianceFourierGaussianFsky(input_yml).get_covariance()
+    cov_gauss = CovarianceFourierGaussianNmt(input_yml).get_covariance()
+    cov_ssc = FourierSSCHaloModel(input_yml).get_covariance()
     cov2 = (cov_gauss + cov_ssc) + 1e-100
 
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
+
+
+def test_get_covariance_terms():
+    cc = CovarianceCalculator(input_yml)
+    cov_terms = cc.get_covariance_terms()
+
+    cov_gauss = CovarianceFourierGaussianNmt(input_yml).get_covariance()
+    cov_ssc = FourierSSCHaloModel(input_yml).get_covariance()
+
+    assert np.all(cov_terms['gauss'] == cov_gauss)
+    assert np.all(cov_terms['SSC'] == cov_ssc)
 
 
 def test_create_sacc_cov():
@@ -58,8 +70,21 @@ def test_create_sacc_cov():
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
 
+    # Test the different terms are saved
+    assert os.path.isfile(outdir + '/cls_cov_gauss.fits')
+    assert os.path.isfile(outdir + '/cls_cov_SSC.fits')
+    os.remove(outdir + '/cls_cov.fits')
+    os.remove(outdir + '/cls_cov_gauss.fits')
+    os.remove(outdir + '/cls_cov_SSC.fits')
+
     # Custom name
-    cc.create_sacc_cov('prueba.fits')
-    s = sacc.Sacc.load_fits(outdir + '/prueba.fits')
+    cc.create_sacc_cov('test.fits', save_terms=False)
+    s = sacc.Sacc.load_fits(outdir + '/test.fits')
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
+
+    # Test the different terms are not saved
+    assert not os.path.isfile(outdir + '/test_gauss.fits')
+    assert not os.path.isfile(outdir + '/test_SSC.fits')
+
+    os.remove(outdir + '/test.fits')
