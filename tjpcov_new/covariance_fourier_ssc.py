@@ -63,7 +63,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         tr[1], tr[2] = tracer_comb1
         tr[3], tr[4] = tracer_comb2
 
-        cosmo = self.cosmo
+        cosmo = self.get_cosmology()
         mass_def = ccl.halos.MassDef200m()
         hmf = ccl.halos.MassFuncTinker08(cosmo,
                                          mass_def=mass_def)
@@ -131,6 +131,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         mask_wl *= (2 * np.arange(mask_wl.size) + 1)
         mask_wl /= np.sum(m12) * np.sum(m34) * area**2
 
+        # TODO: Allow using fsky instead of the masks?
         sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a, mask_wl=mask_wl)
 
         ell = self.get_ell_eff()

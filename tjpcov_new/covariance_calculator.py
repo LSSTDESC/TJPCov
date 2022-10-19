@@ -1,6 +1,7 @@
 from .covariance_io import CovarianceIO
 from . import covariance_from_name
 import numpy as np
+import os
 
 
 class CovarianceCalculator():
@@ -9,7 +10,8 @@ class CovarianceCalculator():
         self.config = self.io.config
 
         self.cov_total = None
-        self.covs = None
+        self.cov_terms = None
+        self.cov_classes = None
 
     def get_covariance_classes(self):
         """
@@ -21,20 +23,20 @@ class CovarianceCalculator():
         classes (dict): Dictionary with keys the covariance types ('gauss',
         SSC', .. ) and values instances of the corresponding classes.
         """
-        if self.covs is None:
+        if self.cov_classes is None:
             # cov_type will be a list or string with the class names that you
             # will use to compute the different covariance terms
             cov_tbc = self.config['tjpcov'].get('cov_type', [])
             if isinstance(cov_tbc, str):
                 cov_tbc = [cov_tbc]
 
-            covs = {}
+            cov_classes = {}
             space_types = []
             for covi in cov_tbc:
                 covi = covariance_from_name(covi)
                 # Check the cov_type has not been already requested (e.g. two
                 # Gaussian contributions)
-                if covi.cov_type in covs:
+                if covi.cov_type in cov_classes:
                     raise ValueError(f'Covariance type {covi.cov_type} ' +
                                      'already set. Make sure each type is ' +
                                      'requested only once.')
@@ -47,24 +49,39 @@ class CovarianceCalculator():
                                      ' covariances.')
 
                 space_types.append(covi.space_type)
-                covs[covi.cov_type] = covi(self.config)
+                cov_classes[covi.cov_type] = covi(self.config)
 
-            self.covs = covs
+            self.cov_classes = cov_classes
 
-        return self.covs
+        return self.cov_classes
 
     def get_covariance(self):
         if self.cov_total is None:
-            covs = self.get_covariance_classes()
+            cov_terms = self.get_covariance_terms()
 
-            cov = []
-            for ctype, cmat in covs.items():
-                cov.append(cmat.get_covariance())
-
-            self.cov_total = sum(cov)
+            self.cov_total = sum(cov_terms.values())
 
         return self.cov_total
 
-    def create_sacc_cov(self, output='cls_cov.fits'):
+    def get_covariance_terms(self):
+        if self.cov_terms is None:
+            cov_classes = self.get_covariance_classes()
+
+            cov_terms = {}
+            for ctype, cmat in cov_classes.items():
+                cov_terms[ctype] = cmat.get_covariance()
+
+            self.cov_terms = cov_terms
+
+        return self.cov_terms
+
+    def create_sacc_cov(self, output='cls_cov.fits', save_terms=True):
         cov = self.get_covariance()
         self.io.create_sacc_cov(cov, output)
+
+        if save_terms:
+            cov_terms = self.get_covariance_terms()
+            for term, cov in cov_terms.items():
+                fname, ext = os.path.splitext(output)
+                fname += f'_{term}{ext}'
+                self.io.create_sacc_cov(cov, fname)
