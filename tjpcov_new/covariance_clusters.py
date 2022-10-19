@@ -351,9 +351,6 @@ class CovarianceClusterCounts(CovarianceClusters):
     def __init__(self, config):
         super().__init__(config)
 
-        # Find out correct way to pull from sacc
-        self.ssc_conf = self.config.get('SSC', {})
-
         self.romberg_num = 2**6+1
         self.Z1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
         self.G1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
