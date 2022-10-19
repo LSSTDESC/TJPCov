@@ -1,13 +1,13 @@
-from . import tools
-from . import wigner_transform
-from . import bin_cov
-from .covariance_io import CovarianceIO
-from abc import ABC, abstractmethod
-import pyccl as ccl
 import pickle
-import sacc
-import numpy as np
 import warnings
+from abc import ABC, abstractmethod
+
+import numpy as np
+import pyccl as ccl
+import sacc
+
+from . import bin_cov, tools, wigner_transform
+from .covariance_io import CovarianceIO
 
 
 class CovarianceBuilder(ABC):
@@ -41,21 +41,23 @@ class CovarianceBuilder(ABC):
         self.cosmo = None
 
         # TODO: Think a better place to put this
-        self.bias_lens = {k.replace('bias_',''):v for k,v in
+        self.bias_lens = {k.replace('bias_', ''): v for k, v in
                           self.config['tjpcov'].items() if 'bias_' in k}
 
         self.IA = self.config['tjpcov'].get('IA')
 
         d2r = np.pi/180
-        self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in
+        self.Ngal = {k.replace('Ngal_', ''): v*3600/d2r**2 for k, v in
                      self.config['tjpcov'].items() if 'Ngal' in k}
-        self.sigma_e = {k.replace('sigma_e_',''):v for k, v in
+        self.sigma_e = {k.replace('sigma_e_', ''): v for k, v in
                         self.config['tjpcov'].items() if 'sigma_e' in k}
 
         self.cov = None
 
         self.nbpw = None
 
+        # TODO: Move this somewhere else. They shouldn't be needed for fsky
+        # approx.
         # We leave the masks in the base class because they are needed for most
         # methods. Even for fsky we can use them to estimate the fsky if not
         # provided. However, we might want to move it to a different class
@@ -67,14 +69,20 @@ class CovarianceBuilder(ABC):
 
     def _split_tasks_by_rank(self, tasks):
         """
-        Iterate through a list of items, yielding ones this process is responsible for/
-        Tasks are allocated in a round-robin way.
+        Iterate through a list of items, yielding the ones this process is
+        responsible for. The tasks are allocated in a round-robin way.
+
         Parameters
         ----------
         tasks: iterable
             Tasks to split up
+
+        Returns
+        -------
+        generator:
+            Tasks associated to this process
         """
-        # Copied from https://github.com/LSSTDESC/ceci/blob/7043ae5776d9b2c210a26dde6f84bcc2366c56e7/ceci/stage.py#L586
+        # Copied from https://github.com/LSSTDESC/ceci/blob/7043ae5776d9b2c210a26dde6f84bcc2366c56e7/ceci/stage.py#L586  # noqa: E501
 
         for i, task in enumerate(tasks):
             if self.rank is None:
@@ -106,8 +114,6 @@ class CovarianceBuilder(ABC):
         --------
         cov (array): Covariance matrix for all combinations in the sacc file.
         """
-        # TODO: Genearlize this for both real and Fourier space and move it to
-        # CovarianceBuilder
         blocks = iter(blocks)
 
         s = self.io.get_sacc_file()
@@ -168,7 +174,6 @@ class CovarianceBuilder(ABC):
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
-
         return blocks, tracers_blocks
 
     def get_cosmology(self):
@@ -183,7 +188,7 @@ class CovarianceBuilder(ABC):
                 ext = cosmo.split('.')[-1]
                 if ext in ['yaml', 'yml']:
                     self.cosmo = ccl.Cosmology.read_yaml(cosmo)
-                elif ext  == 'pkl':
+                elif ext == 'pkl':
                     with open(cosmo, 'rb') as ccl_cosmo_file:
                         self.cosmo = pickle.load(ccl_cosmo_file)
                 else:
@@ -259,16 +264,16 @@ class CovarianceBuilder(ABC):
 
         Parameters:
         -----------
-            tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
-            the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>.
+            tracer_names (dict):  Dictionary of the tracer names of the same
+            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
+            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
+            into the first and second Cell you are computing the covariance
+            for; i.e. <Cell^12 Cell^34>.
 
         Returns:
         --------
-            masks_names_dict (dict):  Dictionary with the mask names assotiated to the
-            fields to be correlated.
+            masks_names_dict (dict):  Dictionary with the mask names assotiated
+            to the fields to be correlated.
 
         """
         mask_names = self.mask_names
@@ -284,19 +289,19 @@ class CovarianceBuilder(ABC):
 
         Parameters:
         -----------
-            tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
-            the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>.
-            cache (dict): Dictionary with cached variables. It will use the cached
-            masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4' and the
-            values the loaded maps.
+            tracer_names (dict):  Dictionary of the tracer names of the same
+            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
+            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
+            into the first and second Cell you are computing the covariance
+            for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+            cached masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4'
+            and the values the loaded maps.
 
         Returns:
         --------
-            masks_dict (dict):  Dictionary with the masks assotiated to the fields
-            to be correlated.
+            masks_dict (dict):  Dictionary with the masks assotiated to the
+            fields to be correlated.
 
         """
         mask_files = self.mask_files
@@ -353,11 +358,11 @@ class CovarianceBuilder(ABC):
 
         Parameters:
         -----------
-            tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
-            the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>.
+            tracer_names (dict):  Dictionary of the tracer names of the same
+            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
+            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
+            into the first and second Cell you are computing the covariance
+            for; i.e. <Cell^12 Cell^34>.
 
         Returns:
         --------
@@ -408,10 +413,11 @@ class CovarianceBuilder(ABC):
            ('lens' in tracer):
             return 0
         elif (tr.quantity == 'galaxy_shear') or ('source' in tracer) or \
-            ('src' in tracer):
+             ('src' in tracer):
             return 2
         else:
-            raise NotImplementedError(f'tracer.quantity {tr.quantity} not implemented.')
+            raise NotImplementedError(f"tracer.quantity {tr.quantity} not " +
+                                      "implemented.")
 
     def get_tracer_nmaps(self, tracer):
         """
@@ -501,7 +507,7 @@ class CovarianceFourier(CovarianceBuilder):
                           order=self._reshape_order)
 
         # Keep only elements in the sacc file
-        s = self.io.get_sacc_with_concise_dtypes()
+        s = self.get_sacc_with_concise_dtypes()
         ix1_todelete = []
         ix2_todelete = []
         for i, dt1 in enumerate(dtypes1):
@@ -526,21 +532,19 @@ class CovarianceFourier(CovarianceBuilder):
 
     def get_datatypes_from_ncell(self, ncell):
         """
-        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a number
-        of cells for a pair of tracers
+        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a
+        number of cells for a pair of tracers
 
         Parameters:
         -----------
             ncell (int):  Number of Cell for a pair of tracers
         Returns:
         --------
-            datatypes (list):  List of data types assotiated to the given degrees
-            of freedom
+            datatypes (list):  List of data types assotiated to the given
+            degrees of freedom
 
         """
-        # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212
-        # TODO: Can this be genearlized for real space and promoted to the
-        # CovarianceBuilder parent class?
+        # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212  # noqa: E501
         if ncell == 1:
             cl_types = ['cl_00']
         elif ncell == 2:
@@ -554,8 +558,8 @@ class CovarianceFourier(CovarianceBuilder):
 
     def get_ell_eff(self):
         """
-        Return the effective ell in the sacc file. It assume that all of them have
-        the same effective ell (true with current TXPipe implementation).
+        Return the effective ell in the sacc file. It assume that all of them
+        have the same effective ell (true with current TXPipe implementation).
 
         Parameters:
         -----------
@@ -595,7 +599,8 @@ class CovarianceFourier(CovarianceBuilder):
             pd = sacc.parse_data_type_name(dt)
 
             if pd.statistic != 'cl':
-                raise ValueError(f'data_type {dt} not recognized. Is it a Cell?')
+                raise ValueError(f'data_type {dt} not recognized. Is it ' +
+                                 'a Cell?')
 
             if pd.subtype is None:
                 dc = 'cl_00'
@@ -612,8 +617,7 @@ class CovarianceFourier(CovarianceBuilder):
             elif pd.subtype == 'be':
                 dc = 'cl_be'
             else:
-                raise ValueError(f'Data type subtype {pd.subtype} not recognized')
-
+                raise ValueError(f'Data subtype {pd.subtype} not recognized')
 
             # Change the data_type to its concise versio
             for dp in s.get_data_points(dt):
@@ -682,10 +686,11 @@ class CovarianceFourier(CovarianceBuilder):
                 tracer_dat = sacc_file.get_tracer(tracer)
 
                 # Coupled noise read from tracer metadata in the sacc file
-                tracer_Noise_coupled[tracer] = tracer_dat.metadata.get('n_ell_coupled', None)
+                tracer_Noise_coupled[tracer] = \
+                    tracer_dat.metadata.get('n_ell_coupled', None)
 
-                if (tracer_dat.quantity == 'galaxy_shear') or ('src' in tracer) \
-                        or ('source' in tracer):
+                if (tracer_dat.quantity == 'galaxy_shear') or \
+                   ('src' in tracer) or ('source' in tracer):
                     # CCL Tracer
                     z = tracer_dat.z
                     dNdz = tracer_dat.nz
@@ -694,17 +699,18 @@ class CovarianceFourier(CovarianceBuilder):
                     else:
                         IA_bin = self.IA*np.ones(len(z))
                         ia_bias = (z, IA_bin)
-                    ccl_tracers[tracer] = ccl.WeakLensingTracer(cosmo,
-                                                                dndz=(z, dNdz),
-                                                                ia_bias=ia_bias)
+                    ccl_tracers[tracer] = \
+                        ccl.WeakLensingTracer(cosmo, dndz=(z, dNdz),
+                                              ia_bias=ia_bias)
                     # Noise
                     if tracer in self.sigma_e:
-                        tracer_Noise[tracer] = self.sigma_e[tracer]**2/self.Ngal[tracer]
+                        tracer_Noise[tracer] = \
+                            self.sigma_e[tracer]**2/self.Ngal[tracer]
                     else:
                         tracer_Noise[tracer] = None
 
                 elif (tracer_dat.quantity == 'galaxy_density') or \
-                    ('lens' in tracer):
+                     ('lens' in tracer):
                     # CCL Tracer
                     z = tracer_dat.z
                     dNdz = tracer_dat.nz
@@ -724,8 +730,8 @@ class CovarianceFourier(CovarianceBuilder):
                                                                z_source=1100)
 
             if None in list(tracer_Noise.values()):
-                warnings.warn('Missing noise for some tracers in file. You will ' +
-                              'have to pass it with the cache')
+                warnings.warn('Missing noise for some tracers in file. ' +
+                              'You will have to pass it with the cache')
 
             if None in list(tracer_Noise_coupled.values()):
                 warnings.warn('Missing n_ell_coupled info for some tracers in '
@@ -737,7 +743,8 @@ class CovarianceFourier(CovarianceBuilder):
             self.tracer_Noise_coupled = tracer_Noise_coupled
 
         if return_noise_coupled:
-            return self.ccl_tracers, self.tracer_Noise, self.tracer_Noise_coupled
+            return self.ccl_tracers, self.tracer_Noise, \
+                self.tracer_Noise_coupled
 
         return self.ccl_tracers, self.tracer_Noise
 
@@ -757,10 +764,8 @@ class CovarianceReal(CovarianceBuilder):
 
         Returns:
         --------
-            ell (array): Array with the effective theta in the sacc file.
+            theta (array): Array with the effective theta in the sacc file.
         """
-        # TODO: Consider moving this method to CovarianceBuilder and merge it
-        # with the one for Fourier space
         sacc_file = self.io.get_sacc_file()
         dtype = sacc_file.get_data_types()[0]
         tracers = sacc_file.get_tracer_combinations()[0]
@@ -816,8 +821,8 @@ class CovarianceProjectedReal(CovarianceReal):
         if binning == 'log':
             # assuming constant log bins
             del_logtheta = np.log10(theta_eff[1:]/theta_eff[:-1]).mean()
-            theta_min = 2 * thetab_min  / (10**del_logtheta + 1)
-            theta_max = 2 * thetab_max  / (1 + 10**(-del_logtheta))
+            theta_min = 2 * thetab_min / (10**del_logtheta + 1)
+            theta_max = 2 * thetab_max / (1 + 10**(-del_logtheta))
 
             th_min = theta_min
             th_max = theta_max
@@ -882,7 +887,7 @@ class CovarianceProjectedReal(CovarianceReal):
         if self.WT is None:
             # Removing ell <= 1 (following original implementation)
             ell = np.arange(2, self.lmax + 1)
-            theta, _, _= self.get_binning_info(in_radians=True)
+            theta, _, _ = self.get_binning_info(in_radians=True)
 
             WT_kwargs = {'l': ell,
                          'theta': theta,
@@ -897,8 +902,8 @@ class CovarianceProjectedReal(CovarianceReal):
         raise NotImplementedError("Not yet implemented")
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2,
-                                xi_plus_minus1='plus', xi_plus_minus2='plus',
-                                binned=True):
+                             xi_plus_minus1='plus', xi_plus_minus2='plus',
+                             binned=True):
         """
         Compute a single covariance matrix for a given pair of xi
 
@@ -959,17 +964,17 @@ class CovarianceProjectedReal(CovarianceReal):
 
         cov = np.zeros((nbpw, len(data_types1), nbpw, len(data_types2)))
 
-        auto =  tracer_comb1 == tracer_comb2
+        auto = tracer_comb1 == tracer_comb2
 
         for i, dt1 in enumerate(data_types1):
             xi_plus_minus1 = 'plus' if 'plus' in dt1 else 'minus'
             start_ix = i if auto else 0
             for j, dt2 in enumerate(data_types2[start_ix:]):
                 xi_plus_minus2 = 'plus' if 'plus' in dt2 else 'minus'
-                cov[:, i, :, j] = self.get_covariance_block_ij(tracer_comb1,
-                                                               tracer_comb2,
-                                                               xi_plus_minus1,
-                                                               xi_plus_minus2)
+                cov[:, i, :, j] = self.get_covariance_block(tracer_comb1,
+                                                            tracer_comb2,
+                                                            xi_plus_minus1,
+                                                            xi_plus_minus2)
                 if auto:
                     cov[:, j, :, i] = cov[:, i, :, j].T
 

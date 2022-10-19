@@ -1,9 +1,11 @@
-from .covariance_builder import CovarianceFourier
-import numpy as np
-import pymaster as nmt
 import os
 import warnings
+
+import numpy as np
 import pyccl as ccl
+import pymaster as nmt
+
+from .covariance_builder import CovarianceFourier
 
 
 class CovarianceFourierGaussianNmt(CovarianceFourier):
@@ -52,9 +54,6 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         # workspaces. That way two processes will not be computing the same
         # (cov)workspace at the same time.
 
-        sacc_file = self.io.get_sacc_file()
-        cl_tracers = sacc_file.get_tracer_combinations()
-
         ccl_tracers, tracer_Noise, tracer_Noise_coupled = \
             self.get_tracer_info(return_noise_coupled=True)
 
@@ -66,7 +65,6 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         # Make a list of all remaining combinations
         tracers_cov = self.get_list_of_tracers_for_cov_without_trs_wsp_cwsp()
-
 
         # Save blocks and the corresponding tracers, as comm.gather does not
         # return the blocks in the original order.
@@ -99,14 +97,14 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         print('Computing the remaining blocks')
         # Now loop over the remaining tracers
-        for tracer_comb1, tracer_comb2 in self._split_tasks_by_rank(tracers_cov):
+        for tracer_comb1, tracer_comb2 in \
+                self._split_tasks_by_rank(tracers_cov):
             print(tracer_comb1, tracer_comb2)
             cov = self.get_covariance_block_for_sacc(tracer_comb1=tracer_comb1,
                                                      tracer_comb2=tracer_comb2,
                                                      **kwargs)
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
-
 
         return blocks, tracers_blocks
 
@@ -116,8 +114,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         Parameters:
         -----------
-            clab (array): Fiducial Cell for the tracers a and b, used for in the
-            covariance estimation
+            clab (array): Fiducial Cell for the tracers a and b, used for in
+            the covariance estimation
             nlab (array): Coupled noise for the tracers a and b
             ma (array): Mask of the field a
             mb (array): Mask of the field b
@@ -266,10 +264,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
                 if s[i1] == 2:
                     SN[i][0, :2] = SN[i][-1, :2] = 0
 
-
         if np.any(cl[13]) or np.any(cl[24]) or np.any(cl[14]) or \
                 np.any(cl[23]):
-
 
             # TODO: Modify depending on how TXPipe caches things
             # Mask, mask_names, field and workspaces dictionaries
@@ -309,7 +305,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         return cov
 
-    def get_covariance_workspace(self, f1, f2, f3, f4, m1, m2, m3, m4, **kwargs):
+    def get_covariance_workspace(self, f1, f2, f3, f4, m1, m2, m3, m4,
+                                 **kwargs):
         """
         Return the covariance workspace of the fields f1, f2, f3, f4
 
@@ -325,8 +322,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             m4 (str): Mask name assotiated to the field 4
             workspace. If None, no file will be saved.
             **kwargs:  Extra arguments to pass to
-            `nmt.compute_coupling_coefficients`. In addition, if recompute=True is
-            passed, the cw will be recomputed even if found in the disk.
+            `nmt.compute_coupling_coefficients`. In addition, if recompute=True
+            is passed, the cw will be recomputed even if found in the disk.
 
         Returns:
         --------
@@ -334,7 +331,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         """
         outdir = self.io.outdir
-        spins = {m1: f1.fl.spin, m2: f2.fl.spin, m3: f3.fl.spin, m4: f4.fl.spin}
+        spins = {m1: f1.fl.spin, m2: f2.fl.spin, m3: f3.fl.spin,
+                 m4: f4.fl.spin}
 
         # Any other symmetry?
         combinations = [(m1, m2, m3, m4), (m2, m1, m3, m4), (m1, m2, m4, m3),
@@ -371,8 +369,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
                 cw.write_to(fnames[0])
             for fn, isf in zip(fnames[1:], isfiles[1:]):
                 # This will only be run if they don't exist or recompute = True
-                # Recheck the file exist in case other process has removed it in
-                # the mean time.
+                # Recheck the file exist in case other process has removed it
+                # in the mean time.
                 if isf and os.path.isfile(fn):
                     # Remove old covariance workspace if you have recomputed it
                     os.remove(fn)
@@ -389,14 +387,14 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         Parameters:
         -----------
-            tracer_names (dict):  Dictionary of the tracer names of the same form
-            as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
-            the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>.
-            cache (dict): Dictionary with cached variables. It will use the cached
-            field if found. The keys must be 'f1', 'f2', 'f3' or 'f4' and the
-            values the corresponding NmtFields.
+            tracer_names (dict):  Dictionary of the tracer names of the same
+            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
+            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
+            into the first and second Cell you are computing the covariance
+            for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+            cached field if found. The keys must be 'f1', 'f2', 'f3' or 'f4'
+            and the values the corresponding NmtFields.
             masks (dict): Dictionary of the masks of the fields correlated with
             keys 1, 2, 3 or 4 and values the loaded masks.
             **kwargs: Arguments to pass to NaMaster when computing the
@@ -405,8 +403,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         Returns:
         --------
-            fields_dict (dict):  Dictionary with the masks assotiated to the fields
-            to be correlated.
+            fields_dict (dict):  Dictionary with the masks assotiated to the
+            fields to be correlated.
 
         """
         mask_names = self.get_mask_names_dict(tracer_names)
@@ -424,8 +422,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             if key in cache:
                 f[i] = cache[key]
             else:
-                # We add the spin to make sure we distinguish fields of different
-                # types even though they share the same mask
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
                 k = mask_names[i] + str(spins[i])
                 if k not in f_by_mask_name:
                     f_by_mask_name[k] = nmt.NmtField(masks[i], None,
@@ -475,7 +473,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
     def get_list_of_tracers_for_cov_wsp(self, remove_trs_wsp=False):
         """
-        Return the tracers needed to compute the independent covariance workspaces.
+        Return the tracers needed to compute the independent covariance
+        workspaces.
 
         Parameters:
         -----------
@@ -544,16 +543,16 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
         -----------
             bins (NmtBin): NmtBin instance with the desired binning.
             nside (int): Healpy map nside.
-            cache (dict): Dictionary with cached variables. It will use the cached
-            workspaces to read the bandpower windows.
+            cache (dict): Dictionary with cached variables. It will use the
+            cached workspaces to read the bandpower windows.
 
         Returns:
         --------
-            nell (int): Number of ells for the fidicual Cells points; i.e. lmax or
-            3*nside
+            nell (int): Number of ells for the fidicual Cells points; i.e. lmax
+            or 3*nside
         """
-        # Extracting the workspace from the cache first to use it later in a easy
-        # way.
+        # Extracting the workspace from the cache first to use it later in a
+        # easy way.
         if (cache is not None) and ('workspaces' in cache):
             w = list(list(cache['workspaces'].values())[0].values())[0]
         else:
@@ -577,23 +576,29 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
                 nell = bpw.nell
             except ValueError as e:
                 # If the window functions are wrong. Do magic
-                warnings.warn('The window functions in the sacc file are wrong: ')
+                warnings.warn(
+                    'The window functions in the sacc file are wrong:'
+                )
                 warnings.warn(str(e))
                 if "binning/ell_max" in s.metadata:
-                    warnings.warn('Trying to circunvent this error: we will use' +
-                                  'nell = lmax + 1 as given in the metadata')
+                    warnings.warn(
+                        'Trying to circunvent this error: we will use' +
+                        'nell = lmax + 1 as given in the metadata')
                     nell = s.metadata["binning/ell_max"] + 1
                     if nside is not None and nell > 3*nside:
-                        warnings.warn('lmax is larger than 3*nside. We will use ' +
-                                      'nell = 3*nside')
+                        warnings.warn(
+                            'lmax is larger than 3*nside. We will use ' +
+                            'nell = 3*nside')
                         nell = 3 * nside
                 elif nside is not None:
-                    warnings.warn('Trying to circunvent this error: we will try' +
-                                  'with nell = 3*nside')
+                    warnings.warn(
+                        'Trying to circunvent this error: we will try' +
+                        'with nell = 3*nside')
                     nell = 3*nside
                 else:
-                    raise ValueError('nside, NmtBin or NmtWorkspace instances ' +
-                                     'must be passed')
+                    raise ValueError(
+                        'nside, NmtBin or NmtWorkspace instances ' +
+                        'must be passed')
         return nell
 
     def get_workspace(self, f1, f2, m1, m2, bins, **kwargs):
@@ -607,8 +612,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
             m1 (str): Mask name assotiated to the field 1
             m2 (str): Mask name assotiated to the field 2
             bins (NmtBin):  NmtBin instance
-            mask_names (dict): Dictionary with tracer names as key and maks names
-            as values.
+            mask_names (dict): Dictionary with tracer names as key and maks
+            names as values.
             **kwargs:  Extra arguments to pass to
             `w.compute_coupling_matrix`. In addition, if recompute=True is
             passed, the cw will be recomputed even if found in the disk.
@@ -670,16 +675,17 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         Parameters:
         -----------
-            tracer_names (dict):  Dictionary of the masks names assotiated to the
-            fields to be correlated. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go into
-            the first and second Cell you are computing the covariance for; i.e.
-            <Cell^12 Cell^34>.
+            tracer_names (dict):  Dictionary of the masks names assotiated to
+            the fields to be correlated. It has to be given as {1: name1, 2:
+            name2, 3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+            that go into the first and second Cell you are computing the
+            covariance for; i.e. <Cell^12 Cell^34>.
             bins (NmtBin): NmtBin instance with the desired binning.
-            cache (dict): Dictionary with cached variables. It will use the cached
-            field if found. The keys must be 'w12', 'w34', 'w13', 'w23', 'w14' or
-            'w24' and the values the corresponding NmtWorkspaces. Alternatively,
-            you can pass a dictionary with keys as (mask_name1, mask_name2).
+            cache (dict): Dictionary with cached variables. It will use the
+            cached field if found. The keys must be 'w12', 'w34', 'w13', 'w23',
+            'w14' or 'w24' and the values the corresponding NmtWorkspaces.
+            Alternatively, you can pass a dictionary with keys as (mask_name1,
+            mask_name2).
             field (dict): Dictionary of the NmtFields of the fields correlated
             with keys 1, 2, 3 or 4 and values the NmtFields.
             masks (dict): Dictionary of the masks of the fields correlated with
@@ -690,9 +696,9 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         Returns:
         --------
-            workspaces_dict (dict):  Dictionary with the workspaces assotiated to
-            the different field combinations needed for the covariance. Its keys
-            are 13, 23, 14, 24, 12, 34; with values the corresponding
+            workspaces_dict (dict):  Dictionary with the workspaces assotiated
+            to the different field combinations needed for the covariance. Its
+            keys are 13, 23, 14, 24, 12, 34; with values the corresponding
             NmtWorkspaces.
 
         """
@@ -709,8 +715,8 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
 
         w = {}
         w_by_mask_name = {}
-        # 12 and 34 must be first to avoid asigning them None if their maks do not
-        # overlap
+        # 12 and 34 must be first to avoid asigning them None if their maks do
+        # not overlap
         for i in [12, 34, 13, 23, 14, 24]:
             i1, i2 = [int(j) for j in str(i)]
             # Workspace
@@ -735,17 +741,19 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
                     w_by_mask_name_s = {}
                     w_by_mask_name[sk] = w_by_mask_name_s
                 else:
-                    w_by_mask_name_s =  w_by_mask_name[sk]
+                    w_by_mask_name_s = w_by_mask_name[sk]
 
                 if k in w_by_mask_name_s:
                     w[i] = w_by_mask_name_s[k]
                 elif k[::-1] in w_by_mask_name_s:
                     w[i] = w_by_mask_name_s[k[::-1]]
-                elif (i not in [12, 34]) and (np.mean(masks[i1] * masks[i2]) == 0):
-                    # w13, w23, w14, w24 are needed to couple the theoretical Cell
-                    # and are not needed if the masks do not overlap. However,
-                    # w12 and w34 are needed for nmt.gaussian_covariance, which
-                    # will complain if they are None
+                elif (i not in [12, 34]) and \
+                     (np.mean(masks[i1] * masks[i2]) == 0):
+                    # w13, w23, w14, w24 are needed to couple the theoretical
+                    # Cell and are not needed if the masks do not overlap.
+                    # However, w12 and w34 are needed for
+                    # nmt.gaussian_covariance, which will complain if they are
+                    # None
                     w_by_mask_name_s[k] = None
                     w[i] = w_by_mask_name_s[k]
                 elif (cache_wsp is not None) and \

@@ -1,9 +1,10 @@
-from .covariance_builder import CovarianceFourier
+import os
+
 import healpy as hp
 import numpy as np
-import os
 import pyccl as ccl
-import warnings
+
+from .covariance_builder import CovarianceFourier
 
 
 class FourierSSCHaloModel(CovarianceFourier):
@@ -70,8 +71,9 @@ class FourierSSCHaloModel(CovarianceFourier):
                                          mass_def=mass_def)
         hbf = ccl.halos.HaloBiasTinker10(cosmo,
                                          mass_def=mass_def)
-        nfw = ccl.halos.HaloProfileNFW(ccl.halos.ConcentrationDuffy08(mass_def),
-                                       fourier_analytic=True)
+        nfw = ccl.halos.HaloProfileNFW(
+            ccl.halos.ConcentrationDuffy08(mass_def), fourier_analytic=True
+        )
         hmc = ccl.halos.HMCalculator(cosmo, hmf, hbf, mass_def)
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
@@ -80,7 +82,8 @@ class FourierSSCHaloModel(CovarianceFourier):
         z_max = []
         for i in range(4):
             tr_sacc = sacc_file.tracers[tr[i + 1]]
-            z, nz = tr_sacc.z, tr_sacc.nz
+            z = tr_sacc.z
+            # z, nz = tr_sacc.z, tr_sacc.nz
             # z_min.append(z[np.where(nz > 0)[0][0]])
             # z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
             z_max.append(z.max())
@@ -136,15 +139,17 @@ class FourierSSCHaloModel(CovarianceFourier):
         sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a, mask_wl=mask_wl)
 
         ell = self.get_ell_eff()
-        cov_ssc = ccl.covariances.angular_cl_cov_SSC(cosmo,
-                                                     cltracer1=ccl_tracers[tr[1]],
-                                                     cltracer2=ccl_tracers[tr[2]],
-                                                     cltracer3=ccl_tracers[tr[3]],
-                                                     cltracer4=ccl_tracers[tr[4]],
-                                                     ell=ell,
-                                                     tkka=tk3D,
-                                                     sigma2_B=(a, sigma2_B),
-                                                     integration_method=integration_method)
+        cov_ssc = ccl.covariances.angular_cl_cov_SSC(
+                  cosmo,
+                  cltracer1=ccl_tracers[tr[1]],
+                  cltracer2=ccl_tracers[tr[2]],
+                  cltracer3=ccl_tracers[tr[3]],
+                  cltracer4=ccl_tracers[tr[4]],
+                  ell=ell,
+                  tkka=tk3D,
+                  sigma2_B=(a, sigma2_B),
+                  integration_method=integration_method
+        )
 
         nbpw = ell.size
         ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
