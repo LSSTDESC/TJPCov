@@ -7,6 +7,7 @@ import yaml
 import jinja2
 import importlib
 import os
+from datetime import datetime
 
 class CovarianceIO():
     def __init__(self, config):
@@ -60,13 +61,16 @@ class CovarianceIO():
 
         return config
 
-    def create_sacc_cov(self, cov, output='cls_cov.fits'):
+    def create_sacc_cov(self, cov, output='cls_cov.fits', overwrite=False):
         """
         Write created cov to a new sacc object
 
         Parameters:
         ----------
         output (str): filename output.
+        overwrite (bool): True if you want to overwrite an existing file. If
+        False, it will not overwrite the file but will append the UTC time to
+        the output to avoid losing the computed covariance.
 
         Returns:
         -------
@@ -77,7 +81,18 @@ class CovarianceIO():
 
         s = self.get_sacc_file().copy()
         s.add_covariance(cov)
-        s.save_fits(output, overwrite=True)
+
+        if os.path.isfile(output) and (not overwrite):
+            date = datetime.utcnow()
+            timestamp = date.strftime("%Y%m%d%H%M%S")
+            output_new = output + f'_{timestamp}'
+            warnings.warn(f"Output file {output} already exists. " +
+                          "Appending the UTC time to the filename to avoid " +
+                          "losing the covariance computation. Writing sacc " +
+                          "file to {output_new}")
+            output = output_new
+
+        s.save_fits(output, overwrite=overwrite)
 
         return s
 

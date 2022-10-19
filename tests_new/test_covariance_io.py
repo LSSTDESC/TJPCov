@@ -4,6 +4,8 @@ import os
 import pytest
 import numpy as np
 import sacc
+from datetime import datetime
+from glob import glob
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
@@ -47,6 +49,21 @@ def test_create_sacc_cov():
     # Check that it also writes the file with a different name
     s2 = cio.create_sacc_cov(cov, 'cls_cov2.fits')
     s2 = sacc.Sacc.load_fits(outdir + 'cls_cov2.fits')
+
+    # Check that it will not overwrite a file but create a new one with the utc
+    # time stamped
+    s = cio.create_sacc_cov(cov)
+    date = datetime.utcnow()
+    # Timestamp without the seconds since there can be a delay between this
+    # timestamp and the one when creating the sacc file.
+    timestamp = date.strftime("%Y%m%d%H%M")
+    files = glob(outdir + f'cls_cov.fits_{timestamp}*')
+    assert len(files) == 1
+
+    # Check that it will overwrite if overwrite is True
+    cio.create_sacc_cov(0*cov, overwrite=True)
+    s2 = sacc.Sacc.load_fits(outdir + 'cls_cov.fits')
+    assert np.all(s2.covariance.covmat == 0)
 
 
 def test_get_outdir():
