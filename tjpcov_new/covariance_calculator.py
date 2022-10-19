@@ -1,7 +1,7 @@
-from .covariance_io import CovarianceIO
-from . import covariance_from_name
-import numpy as np
 import os
+
+from . import covariance_from_name
+from .covariance_io import CovarianceIO
 
 
 class CovarianceCalculator():
