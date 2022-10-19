@@ -1,8 +1,11 @@
-from .wigner_transform import wigner_transform, bin_cov
+# flake8: noqa
 from .covariance_builder import CovarianceBuilder
 from .covariance_fourier_gaussian_nmt import CovarianceFourierGaussianNmt
 from .covariance_fourier_ssc import FourierSSCHaloModel
-from .covariance_gaussian_fsky import CovarianceFourierGaussianFsky, CovarianceRealGaussianFsky
+from .covariance_gaussian_fsky import (CovarianceFourierGaussianFsky,
+                                       CovarianceRealGaussianFsky)
+from .wigner_transform import bin_cov, wigner_transform
+
 
 def covariance_from_name(name):
     def all_subclasses(cls):

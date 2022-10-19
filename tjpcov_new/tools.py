@@ -4,6 +4,7 @@ import h5py
 import healpy as hp
 import numpy as np
 
+
 def read_map_from_hdf5(fname, name, nside):
     with h5py.File(fname, 'r') as f:
         pixel = f[f'maps/{name}/pixel']
@@ -13,6 +14,7 @@ def read_map_from_hdf5(fname, name, nside):
         m[pixel] = value
 
         return m
+
 
 def read_map(fname, name=None, nside=None):
     if h5py.is_hdf5(fname):

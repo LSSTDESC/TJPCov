@@ -1,9 +1,9 @@
+import numpy as np
+import pyccl as ccl
+
 from . import bin_cov
 from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
-import numpy as np
-import os
-import warnings
-import pyccl as ccl
+
 
 class CovarianceFourierGaussianFsky(CovarianceFourier):
     # TODO: Improve this class to use the sacc file information or
@@ -88,14 +88,14 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         ccl_tracers, tracer_Noise = self.get_tracer_info()
 
         cl = {}
-        cl[13] = ccl.angular_cl(
-            cosmo, ccl_tracers[tracer_comb1[0]], ccl_tracers[tracer_comb2[0]], ell)
-        cl[24] = ccl.angular_cl(
-            cosmo, ccl_tracers[tracer_comb1[1]], ccl_tracers[tracer_comb2[1]], ell)
-        cl[14] = ccl.angular_cl(
-            cosmo, ccl_tracers[tracer_comb1[0]], ccl_tracers[tracer_comb2[1]], ell)
-        cl[23] = ccl.angular_cl(
-            cosmo, ccl_tracers[tracer_comb1[1]], ccl_tracers[tracer_comb2[0]], ell)
+        cl[13] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[0]],
+                                ccl_tracers[tracer_comb2[0]], ell)
+        cl[24] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[1]],
+                                ccl_tracers[tracer_comb2[1]], ell)
+        cl[14] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[0]],
+                                ccl_tracers[tracer_comb2[1]], ell)
+        cl[23] = ccl.angular_cl(cosmo, ccl_tracers[tracer_comb1[1]],
+                                ccl_tracers[tracer_comb2[0]], ell)
 
         SN = {}
         SN[13] = tracer_Noise[tracer_comb1[0]
@@ -106,7 +106,6 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
                               ] if tracer_comb1[0] == tracer_comb2[1] else 0
         SN[23] = tracer_Noise[tracer_comb1[1]
                               ] if tracer_comb1[1] == tracer_comb2[0] else 0
-
 
         cov = np.diag((cl[13]+SN[13])*(cl[24]+SN[24]) +
                       (cl[14]+SN[14])*(cl[23]+SN[23]))
@@ -142,6 +141,7 @@ class CovarianceRealGaussianFsky(CovarianceProjectedReal):
     _reshape_order = 'F'
     # Set the fourier attribute to None and set it later in the __init__
     fourier = None
+
     def __init__(self, config):
         super().__init__(config)
         # Note that the sacc file that the Fourier class will read is in real
