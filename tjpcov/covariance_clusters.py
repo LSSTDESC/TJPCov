@@ -277,7 +277,7 @@ class CovarianceClusters(CovarianceBuilder):
                                 * ccl.growth_factor(self.cosmo, 1/(1+vec_final[m])) \
                                 * self.double_bessel_integral(z1,vec_final[m])
                 except Exception as ex:
-                    print(f'{ex=}')
+                    a = 1
                                 
             factor_approx = self.integral_mass(z1, bin_lbd_j)
 
@@ -342,13 +342,10 @@ class CovarianceClusters(CovarianceBuilder):
     def get_max_radial_idx(self):
         return np.argwhere(self.r_vec  > 1.05*self.radial_upper_limit)[0][0]
 
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        raise NotImplementedError("Not implemented")
-
 
 class CovarianceClusterCounts(CovarianceClusters):
     # Figure out
-    # cov_type = 'fourier'
+    cov_type = 'fourier'
     _reshape_order = 'F'
 
     def __init__(self, config):
@@ -370,12 +367,12 @@ class CovarianceClusterCounts(CovarianceClusters):
         self.eval_M1_true_vec()
     
     def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2, **kwargs):
-        self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2, kwargs)
+        return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2, kwargs)
+        return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
-    def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2, **kwargs):
+    def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
 
         # Compute a single covariance entry 'clusters_redshift_richness' e.g.
         # tracer_comb1 = ('clusters_0_0',) 
@@ -383,11 +380,11 @@ class CovarianceClusterCounts(CovarianceClusters):
         tracer_split1 = tracer_comb1[0].split('_')
         tracer_split2 = tracer_comb2[0].split('_')
         
-        z_i = tracer_split1[1]
-        richness_i = tracer_split1[2]
+        z_i = int(tracer_split1[1])
+        richness_i = int(tracer_split1[2])
 
-        z_j = tracer_split2[1]
-        richness_j = tracer_split2[2]
+        z_j = int(tracer_split2[1])
+        richness_j = int(tracer_split2[2])
 
 
         dz = (self.Z1_true_vec[z_i, -1]-self.Z1_true_vec[z_i, 0])/(self.romberg_num-1)
@@ -408,6 +405,7 @@ class CovarianceClusterCounts(CovarianceClusters):
         
         # store metadata in some header/log file
         # covariance_io
+        print(f'{cov_total:.2e}')
         return cov_total
 
     def _covariance_cluster_NxN(self, z_i, z_j, richness_i, richness_j):
@@ -442,7 +440,7 @@ class CovarianceClusterCounts(CovarianceClusters):
             self.dV_true_vec[i] = [self.dV(self.Z1_true_vec[i, m], i) for m in range(self.romberg_num)]
 
 
-    def eval_M1_true_vec(self, romb_num):
+    def eval_M1_true_vec(self):
         """ Pre computes the true vectors M1 for Cov_N_N. 
         Args:
             (int) romb_num: controls romb integral precision. 
@@ -453,7 +451,7 @@ class CovarianceClusterCounts(CovarianceClusters):
 
         for lbd in range(self.num_richness_bins):
             for z in range(self.num_z_bins):
-                for m in range(romb_num):
+                for m in range(self.romberg_num):
                     self.M1_true_vec[lbd, z, m] = self.integral_mass(self.Z1_true_vec[z, m], lbd)
 
 class MassRichnessRelation(object):
