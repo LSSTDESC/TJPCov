@@ -7,8 +7,10 @@ import pyccl as ccl
 import pytest
 
 from tjpcov_new import bin_cov
-from tjpcov_new.covariance_gaussian_fsky import (CovarianceFourierGaussianFsky,
-                                                 CovarianceRealGaussianFsky)
+from tjpcov_new.covariance_gaussian_fsky import (
+    CovarianceFourierGaussianFsky,
+    CovarianceRealGaussianFsky,
+)
 from tjpcov_new.covariance_io import CovarianceIO
 
 # INPUT

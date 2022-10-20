@@ -4,8 +4,10 @@ import pytest
 import sacc
 
 from tjpcov_new import bin_cov, wigner_transform
-from tjpcov_new.covariance_builder import (CovarianceProjectedReal,
-                                           CovarianceReal)
+from tjpcov_new.covariance_builder import (
+    CovarianceProjectedReal,
+    CovarianceReal,
+)
 
 input_yml_real = "tests_new/data/conf_tjpcov_minimal_real.yaml"
 xi_fn = "examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"

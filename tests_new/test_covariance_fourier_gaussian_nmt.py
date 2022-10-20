@@ -9,8 +9,9 @@ import pytest
 import sacc
 import yaml
 
-from tjpcov_new.covariance_fourier_gaussian_nmt import \
-    CovarianceFourierGaussianNmt
+from tjpcov_new.covariance_fourier_gaussian_nmt import (
+    CovarianceFourierGaussianNmt,
+)
 from tjpcov_new.covariance_io import CovarianceIO
 
 
