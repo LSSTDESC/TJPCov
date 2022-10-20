@@ -1,21 +1,11 @@
 #!/usr/bin/python3
-import os
-import pytest
 import numpy as np
+import pytest
 import sacc
-import pickle
-import pyccl as ccl
-import pymaster as nmt
+
 from tjpcov_new import bin_cov, wigner_transform
-from tjpcov_new.covariance_builder import (
-    CovarianceReal,
-    CovarianceProjectedReal,
-)
-from tjpcov_new.covariance_io import CovarianceIO
-import yaml
-import healpy as hp
-import sacc
-import shutil
+from tjpcov_new.covariance_builder import (CovarianceProjectedReal,
+                                           CovarianceReal)
 
 input_yml_real = "tests_new/data/conf_tjpcov_minimal_real.yaml"
 xi_fn = "examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
@@ -154,7 +144,6 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
             return fourier_block
 
     cb = CovTester(input_yml_real)
-    s = cb.io.get_sacc_file()
 
     WT = cb.get_Wigner_transform()
     s1_s2_1 = cb.get_cov_WT_spin(tracer_comb=tracer_comb1)
@@ -198,7 +187,6 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 def test_get_covariance_block_for_sacc(tracer_comb1, tracer_comb2):
     cpr = CovarianceProjectedRealTester(input_yml_real)
     lmax = cpr.lmax
-    ell = np.arange(2, lmax + 1)
     fourier_block = np.random.rand(lmax + 1, lmax + 1)
 
     class CovTester(CovarianceProjectedRealTester):

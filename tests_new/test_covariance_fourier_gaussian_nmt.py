@@ -1,19 +1,17 @@
 #!/usr/bin/python3
 
 import os
-import pytest
-import numpy as np
-import sacc
-import pickle
-import pyccl as ccl
-import pymaster as nmt
-from tjpcov_new.covariance_fourier_gaussian_nmt import (
-    CovarianceFourierGaussianNmt,
-)
-from tjpcov_new.covariance_io import CovarianceIO
-import yaml
+
 import healpy as hp
+import numpy as np
+import pymaster as nmt
+import pytest
 import sacc
+import yaml
+
+from tjpcov_new.covariance_fourier_gaussian_nmt import \
+    CovarianceFourierGaussianNmt
+from tjpcov_new.covariance_io import CovarianceIO
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
@@ -29,6 +27,7 @@ nside = 32
 
 # Create temporal folder
 os.makedirs(outdir, exist_ok=True)
+
 
 # Useful functions
 def get_config(fname):
@@ -538,7 +537,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
         cnmt.mask_files[
             tracer_comb1[0]
-        ] = "./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz"
+        ] = "./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz"  # noqa: E501
         cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2)
         os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
@@ -641,11 +640,11 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
 )
 def test_get_covariance_workspace(kwargs):
     cnmt = CovarianceFourierGaussianNmt(input_yml)
-    m1 = m2 = get_mask_from_dtype("galaxy_clustering")
-    m3 = m4 = get_mask_from_dtype("galaxy_shear")
+    m1 = get_mask_from_dtype("galaxy_clustering")
+    m3 = get_mask_from_dtype("galaxy_shear")
 
     f1 = f2 = nmt.NmtField(m1, None, spin=0)
-    f3 = f4 = nmt.NmtField(m2, None, spin=2)
+    f3 = f4 = nmt.NmtField(m3, None, spin=2)
 
     cw = nmt.NmtCovarianceWorkspace()
     cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
@@ -953,7 +952,6 @@ def test_get_nell():
 )
 def test_get_workspace(kwargs):
     cnmt = CovarianceFourierGaussianNmt(input_yml)
-    kwargs_w = kwargs.copy()
 
     # Compute NmtBins
     bins = get_nmt_bin()
@@ -1119,7 +1117,6 @@ def test_full_covariance_benchmark():
     config = get_config(input_yml)
     bins = get_nmt_bin()
     config["tjpcov"]["binning_info"] = bins
-    cache = None
     # Load the coupled noise that we need for the benchmark covariance
     cnmt = CovarianceFourierGaussianNmt(config)
     s_nlcp = cnmt.io.get_sacc_file().copy()

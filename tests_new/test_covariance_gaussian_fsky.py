@@ -1,21 +1,15 @@
 #!/usr/bin/python3
 import os
-import pytest
-import numpy as np
-import sacc
 import pickle
+
+import numpy as np
 import pyccl as ccl
-import pymaster as nmt
+import pytest
+
 from tjpcov_new import bin_cov
-from tjpcov_new.covariance_gaussian_fsky import (
-    CovarianceFourierGaussianFsky,
-    CovarianceRealGaussianFsky,
-)
+from tjpcov_new.covariance_gaussian_fsky import (CovarianceFourierGaussianFsky,
+                                                 CovarianceRealGaussianFsky)
 from tjpcov_new.covariance_io import CovarianceIO
-import yaml
-import healpy as hp
-import sacc
-import shutil
 
 # INPUT
 # CCL and sacc input:
@@ -38,14 +32,14 @@ def get_config():
 
 
 def test_smoke():
-    cfsky = CovarianceFourierGaussianFsky(input_yml)
-    cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
+    CovarianceFourierGaussianFsky(input_yml)
+    CovarianceRealGaussianFsky(input_yml_real)
 
     # Check it raises an error if fsky is not given
     config = get_config()
     config["GaussianFsky"] = {}
     with pytest.raises(ValueError):
-        cfsky = CovarianceFourierGaussianFsky(config)
+        CovarianceFourierGaussianFsky(config)
 
 
 def test_Fourier_get_binning_info():
@@ -63,8 +57,6 @@ def test_Fourier_get_covariance_block():
     # Test made independent of pickled objects
     tracer_comb1 = ("lens0", "lens0")
     tracer_comb2 = ("lens0", "lens0")
-
-    s = cfsky.io.sacc_file
 
     ell, ell_bins, ell_edges = cfsky.get_binning_info()
     ccltr = ccl_tracers["lens0"]

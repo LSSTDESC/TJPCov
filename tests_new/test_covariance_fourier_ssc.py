@@ -1,17 +1,15 @@
 #!/usr/bin/python3
 import os
-import pytest
-import numpy as np
-import sacc
-import pickle
-import pyccl as ccl
-import pymaster as nmt
-from tjpcov_new.covariance_fourier_ssc import FourierSSCHaloModel
-from tjpcov_new.covariance_io import CovarianceIO
-import yaml
-import healpy as hp
-import sacc
 import shutil
+
+import healpy as hp
+import numpy as np
+import pyccl as ccl
+import pytest
+import sacc
+import yaml
+
+from tjpcov_new.covariance_fourier_ssc import FourierSSCHaloModel
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml_ssc = os.path.join(root, "tjpcov_conf_minimal_ssc.yaml")
@@ -76,7 +74,7 @@ def get_cl_footprint(tr1, tr2, tr3, tr4):
 
 
 def test_smoke():
-    css = FourierSSCHaloModel(input_yml_ssc)
+    FourierSSCHaloModel(input_yml_ssc)
 
 
 @pytest.mark.parametrize(

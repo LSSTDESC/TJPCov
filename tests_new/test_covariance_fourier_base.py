@@ -1,12 +1,12 @@
 import os
-import pytest
+
 import numpy as np
-import sacc
-import pickle
 import pyccl as ccl
 import pymaster as nmt
-from tjpcov_new.covariance_builder import CovarianceFourier
+import pytest
+import sacc
 
+from tjpcov_new.covariance_builder import CovarianceFourier
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = root + "tjpcov_tmp/"
@@ -105,7 +105,6 @@ def test_get_covariance_block_for_sacc():
     cov = s.covariance.covmat + 1e-100
 
     trs_cov = cb.get_list_of_tracers_for_cov()
-    blocks = []
     for trs1, trs2 in trs_cov:
         ix1 = s.indices(tracers=trs1)
         ix2 = s.indices(tracers=trs2)
@@ -135,7 +134,6 @@ def test_get_covariance_block_for_sacc():
     cov = s.covariance.covmat + 1e-100
 
     trs_cov = cb.get_list_of_tracers_for_cov()
-    blocks = []
     for trs1, trs2 in trs_cov:
         ix1 = s.indices(tracers=trs1)
         ix2 = s.indices(tracers=trs2)

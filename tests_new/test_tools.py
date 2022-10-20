@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-import h5py
 import healpy as hp
 import numpy as np
-from tjpcov import tools
 import pytest
+
+from tjpcov import tools
 
 mask_hdf5_fname = "./tests/data/mask.hdf5"
 mask_fname = "./tests/data/mask.fits.gz"
