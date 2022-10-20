@@ -8,18 +8,22 @@ from .covariance_builder import CovarianceFourier
 
 
 class FourierSSCHaloModel(CovarianceFourier):
-    cov_type = 'SSC'
-    _reshape_order = 'F'
+    cov_type = "SSC"
+    _reshape_order = "F"
 
     def __init__(self, config):
         super().__init__(config)
         print(self.config)
 
-        self.ssc_conf = self.config.get('SSC', {})
+        self.ssc_conf = self.config.get("SSC", {})
 
-    def get_covariance_block(self, tracer_comb1=None, tracer_comb2=None,
-                             integration_method=None,
-                             include_b_modes=True):
+    def get_covariance_block(
+        self,
+        tracer_comb1=None,
+        tracer_comb2=None,
+        integration_method=None,
+        include_b_modes=True,
+    ):
         """
         Compute a single SSC covariance matrix for a given pair of C_ell. If
         outdir is set, it will save the covariance to a file called
@@ -51,15 +55,16 @@ class FourierSSCHaloModel(CovarianceFourier):
             cov (array):  Super sample covariance matrix for a pair of C_ell.
 
         """
-        fname = 'ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1, *tracer_comb2)
+        fname = "ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
         fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname):
             cf = np.load(fname)
-            return cf['cov' if include_b_modes else 'cov_nob']
+            return cf["cov" if include_b_modes else "cov_nob"]
 
         if integration_method is None:
-            integration_method = self.ssc_conf.get('integration_method',
-                                                   'qag_quad')
+            integration_method = self.ssc_conf.get(
+                "integration_method", "qag_quad"
+            )
 
         tr = {}
         tr[1], tr[2] = tracer_comb1
@@ -67,10 +72,8 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         cosmo = self.get_cosmology()
         mass_def = ccl.halos.MassDef200m()
-        hmf = ccl.halos.MassFuncTinker08(cosmo,
-                                         mass_def=mass_def)
-        hbf = ccl.halos.HaloBiasTinker10(cosmo,
-                                         mass_def=mass_def)
+        hmf = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
+        hbf = ccl.halos.HaloBiasTinker10(cosmo, mass_def=mass_def)
         nfw = ccl.halos.HaloProfileNFW(
             ccl.halos.ConcentrationDuffy08(mass_def), fourier_analytic=True
         )
@@ -94,7 +97,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         # Use the a's in the pk spline
         na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
         a, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
-        a = a[1/a < z_max + 1]
+        a = a[1 / a < z_max + 1]
 
         bias1 = self.bias_lens.get(tr[1], 1)
         bias2 = self.bias_lens.get(tr[2], 1)
@@ -108,17 +111,19 @@ class FourierSSCHaloModel(CovarianceFourier):
         isnc3 = isinstance(ccl_tracers[tr[3]], ccl.NumberCountsTracer)
         isnc4 = isinstance(ccl_tracers[tr[4]], ccl.NumberCountsTracer)
 
-        tk3D = ccl.halos.halomod_Tk3D_SSC_linear_bias(cosmo=cosmo, hmc=hmc,
-                                                      prof=nfw,
-                                                      bias1=bias1,
-                                                      bias2=bias2,
-                                                      bias3=bias3,
-                                                      bias4=bias4,
-                                                      is_number_counts1=isnc1,
-                                                      is_number_counts2=isnc2,
-                                                      is_number_counts3=isnc3,
-                                                      is_number_counts4=isnc4,
-                                                      )
+        tk3D = ccl.halos.halomod_Tk3D_SSC_linear_bias(
+            cosmo=cosmo,
+            hmc=hmc,
+            prof=nfw,
+            bias1=bias1,
+            bias2=bias2,
+            bias3=bias3,
+            bias4=bias4,
+            is_number_counts1=isnc1,
+            is_number_counts2=isnc2,
+            is_number_counts3=isnc3,
+            is_number_counts4=isnc4,
+        )
 
         masks = self.get_masks_dict(tr, {})
         # TODO: Optimize this, avoid computing the mask_wl for all blocks.
@@ -132,7 +137,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         blm = hp.map2alm(m34)
 
         mask_wl = hp.alm2cl(alm, blm)
-        mask_wl *= (2 * np.arange(mask_wl.size) + 1)
+        mask_wl *= 2 * np.arange(mask_wl.size) + 1
         mask_wl /= np.sum(m12) * np.sum(m34) * area**2
 
         # TODO: Allow using fsky instead of the masks?
@@ -140,15 +145,15 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         ell = self.get_ell_eff()
         cov_ssc = ccl.covariances.angular_cl_cov_SSC(
-                  cosmo,
-                  cltracer1=ccl_tracers[tr[1]],
-                  cltracer2=ccl_tracers[tr[2]],
-                  cltracer3=ccl_tracers[tr[3]],
-                  cltracer4=ccl_tracers[tr[4]],
-                  ell=ell,
-                  tkka=tk3D,
-                  sigma2_B=(a, sigma2_B),
-                  integration_method=integration_method
+            cosmo,
+            cltracer1=ccl_tracers[tr[1]],
+            cltracer2=ccl_tracers[tr[2]],
+            cltracer3=ccl_tracers[tr[3]],
+            cltracer4=ccl_tracers[tr[4]],
+            ell=ell,
+            tkka=tk3D,
+            sigma2_B=(a, sigma2_B),
+            integration_method=integration_method,
         )
 
         nbpw = ell.size
@@ -156,8 +161,9 @@ class FourierSSCHaloModel(CovarianceFourier):
         ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
-        cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2),
-                                    order=self._reshape_order)
+        cov_full = cov_full.reshape(
+            (nbpw * ncell1, nbpw * ncell2), order=self._reshape_order
+        )
 
         np.savez_compressed(fname, cov=cov_full, cov_nob=cov_ssc)
 

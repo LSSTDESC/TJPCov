@@ -9,9 +9,9 @@ from glob import glob
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-outdir = root + 'tjpcov_tmp/'
+outdir = root + "tjpcov_tmp/"
 input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
-input_sacc = sacc.Sacc.load_fits(root + 'cls_cov.fits')
+input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
 
 
 def get_diag_covariance():
@@ -25,7 +25,7 @@ def test_smoke_input():
     config = CovarianceIO._parse(input_yml)
     CovarianceIO(config)
     with pytest.raises(ValueError):
-        CovarianceIO(['hello'])
+        CovarianceIO(["hello"])
 
     # Check outdir is created
     if os.path.isdir(outdir):
@@ -39,7 +39,7 @@ def test_create_sacc_cov():
     # Circunvent the NotImplementedError
     cov = get_diag_covariance()
     s = cio.create_sacc_cov(cov)
-    s2 = sacc.Sacc.load_fits(outdir + 'cls_cov.fits')
+    s2 = sacc.Sacc.load_fits(outdir + "cls_cov.fits")
 
     assert np.all(s.mean == input_sacc.mean)
     assert np.all(s.covariance.covmat == get_diag_covariance())
@@ -47,8 +47,8 @@ def test_create_sacc_cov():
     assert np.all(s.covariance.covmat == s2.covariance.covmat)
 
     # Check that it also writes the file with a different name
-    s2 = cio.create_sacc_cov(cov, 'cls_cov2.fits')
-    s2 = sacc.Sacc.load_fits(outdir + 'cls_cov2.fits')
+    s2 = cio.create_sacc_cov(cov, "cls_cov2.fits")
+    s2 = sacc.Sacc.load_fits(outdir + "cls_cov2.fits")
 
     # Check that it will not overwrite a file but create a new one with the utc
     # time stamped
@@ -57,12 +57,12 @@ def test_create_sacc_cov():
     # Timestamp without the seconds since there can be a delay between this
     # timestamp and the one when creating the sacc file.
     timestamp = date.strftime("%Y%m%d%H%M")
-    files = glob(outdir + f'cls_cov.fits_{timestamp}*')
+    files = glob(outdir + f"cls_cov.fits_{timestamp}*")
     assert len(files) == 1
 
     # Check that it will overwrite if overwrite is True
-    cio.create_sacc_cov(0*cov, overwrite=True)
-    s2 = sacc.Sacc.load_fits(outdir + 'cls_cov.fits')
+    cio.create_sacc_cov(0 * cov, overwrite=True)
+    s2 = sacc.Sacc.load_fits(outdir + "cls_cov.fits")
     assert np.all(s2.covariance.covmat == 0)
 
 
