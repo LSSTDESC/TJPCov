@@ -15,7 +15,7 @@ import itertools
 # 3. Need to add inverse transform functionality.
 
 class wigner_transform():
-    def __init__(self,theta=[],l=[],s1_s2=[(0,0)],ncpu=None): #logger=None,
+    def __init__(self, theta=[], l=[], s1_s2=[(0, 0)], ncpu=None):  # logger=None,
         """
         Class to compute curved sky Hankel transforms using the wigner-d matrices.
 

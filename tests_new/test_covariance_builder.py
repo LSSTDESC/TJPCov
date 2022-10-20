@@ -6,9 +6,10 @@ import sacc
 import pickle
 import pyccl as ccl
 import pymaster as nmt
+import sys
+sys.path.append(["/home/faoli/programs/lsst/TJPCov", "../tjpcov_new"])
 from tjpcov_new.covariance_builder import CovarianceBuilder
 from scipy.linalg import block_diag
-
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = root + 'tjpcov_tmp/'
