@@ -23,7 +23,7 @@ class CovarianceBuilder(ABC):
         self.io = CovarianceIO(config)
         config = self.config = self.io.config
 
-        use_mpi = self.config['tjpcov'].get('use_mpi', False)
+        use_mpi = self.config["tjpcov"].get("use_mpi", False)
 
         if use_mpi:
             try:
@@ -42,16 +42,25 @@ class CovarianceBuilder(ABC):
         self.cosmo = None
 
         # TODO: Think a better place to put this
-        self.bias_lens = {k.replace('bias_', ''): v for k, v in
-                          self.config['tjpcov'].items() if 'bias_' in k}
+        self.bias_lens = {
+            k.replace("bias_", ""): v
+            for k, v in self.config["tjpcov"].items()
+            if "bias_" in k
+        }
 
-        self.IA = self.config['tjpcov'].get('IA')
+        self.IA = self.config["tjpcov"].get("IA")
 
-        d2r = np.pi/180
-        self.Ngal = {k.replace('Ngal_', ''): v*3600/d2r**2 for k, v in
-                     self.config['tjpcov'].items() if 'Ngal' in k}
-        self.sigma_e = {k.replace('sigma_e_', ''): v for k, v in
-                        self.config['tjpcov'].items() if 'sigma_e' in k}
+        d2r = np.pi / 180
+        self.Ngal = {
+            k.replace("Ngal_", ""): v * 3600 / d2r**2
+            for k, v in self.config["tjpcov"].items()
+            if "Ngal" in k
+        }
+        self.sigma_e = {
+            k.replace("sigma_e_", ""): v
+            for k, v in self.config["tjpcov"].items()
+            if "sigma_e" in k
+        }
 
         self.cov = None
 
@@ -62,11 +71,11 @@ class CovarianceBuilder(ABC):
         # We leave the masks in the base class because they are needed for most
         # methods. Even for fsky we can use them to estimate the fsky if not
         # provided. However, we might want to move it to a different class
-        self.mask_files = config['tjpcov'].get('mask_file')
-        self.mask_names = config['tjpcov'].get('mask_names')
+        self.mask_files = config["tjpcov"].get("mask_file")
+        self.mask_names = config["tjpcov"].get("mask_names")
 
         # nside is needed if mask_files contain hdf5 files
-        self.nside = config['tjpcov'].get('nside')
+        self.nside = config["tjpcov"].get("nside")
 
     def _split_tasks_by_rank(self, tasks):
         """
@@ -122,7 +131,7 @@ class CovarianceBuilder(ABC):
 
         cov_full = -1 * np.ones((ndim, ndim))
 
-        print('Building the covariance: placing blocks in their place')
+        print("Building the covariance: placing blocks in their place")
         for tracer_comb1, tracer_comb2 in tracers_cov:
             # We do not need to do the reshape here because the blocks have
             # been build looping over the data types present in the sacc file
@@ -136,8 +145,9 @@ class CovarianceBuilder(ABC):
             cov_full[np.ix_(ix2, ix1)] = cov_ij.T
 
         if np.any(cov_full == -1):
-            raise Exception('Something went wrong. Probably related to the ' +
-                            'data types')
+            raise Exception(
+                "Something went wrong. Probably related to the data types"
+            )
 
         return cov_full
 
@@ -163,15 +173,15 @@ class CovarianceBuilder(ABC):
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
-        print('Computing independent covariance blocks')
+        print("Computing independent covariance blocks")
         tasks_per_rank = self._split_tasks_by_rank(tracers_cov)
         for tracer_comb1, tracer_comb2 in tasks_per_rank:
             print(tracer_comb1, tracer_comb2)
             # TODO: Options to compute the covariance block should be defined
             # at initialization and/or through kwargs?
-            cov = self.get_covariance_block_for_sacc(tracer_comb1=tracer_comb1,
-                                                     tracer_comb2=tracer_comb2,
-                                                     **kwargs)
+            cov = self.get_covariance_block_for_sacc(
+                tracer_comb1=tracer_comb1, tracer_comb2=tracer_comb2, **kwargs
+            )
             blocks.append(cov)
             tracers_blocks.append((tracer_comb1, tracer_comb2))
 
@@ -179,27 +189,30 @@ class CovarianceBuilder(ABC):
 
     def get_cosmology(self):
         if self.cosmo is None:
-            cosmo = self.config['tjpcov'].get('cosmo')
+            cosmo = self.config["tjpcov"].get("cosmo")
 
-            if cosmo is None or cosmo == 'set':
-                self.cosmo = ccl.Cosmology(**self.config['parameters'])
+            if cosmo is None or cosmo == "set":
+                self.cosmo = ccl.Cosmology(**self.config["parameters"])
             elif isinstance(cosmo, ccl.core.Cosmology):
                 self.cosmo = cosmo
             elif isinstance(cosmo, str):
-                ext = cosmo.split('.')[-1]
-                if ext in ['yaml', 'yml']:
+                ext = cosmo.split(".")[-1]
+                if ext in ["yaml", "yml"]:
                     self.cosmo = ccl.Cosmology.read_yaml(cosmo)
-                elif ext == 'pkl':
-                    with open(cosmo, 'rb') as ccl_cosmo_file:
+                elif ext == "pkl":
+                    with open(cosmo, "rb") as ccl_cosmo_file:
                         self.cosmo = pickle.load(ccl_cosmo_file)
                 else:
-                    raise ValueError('Cosmology path extension must be one ' +
-                                     "of 'yaml', 'yml' or 'pkl'. " +
-                                     f"Found {ext}.")
+                    raise ValueError(
+                        "Cosmology path extension must be one "
+                        f"of 'yaml', 'yml' or 'pkl'. Found {ext}."
+                    )
             else:
-                raise ValueError("cosmo entry looks wrong. It has to be one" +
-                                 "of ['set', ccl.core.Cosmology instance, " +
-                                 "a yaml file or a pickle")
+                raise ValueError(
+                    "cosmo entry looks wrong. It has to be one"
+                    "of ['set', ccl.core.Cosmology instance, "
+                    "a yaml file or a pickle"
+                )
 
         return self.cosmo
 
@@ -213,8 +226,9 @@ class CovarianceBuilder(ABC):
         raise NotImplementedError("Not implemented")
 
     @abstractmethod
-    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
-                                      **kwargs):
+    def get_covariance_block_for_sacc(
+        self, tracer_comb1, tracer_comb2, **kwargs
+    ):
         # This function returns the covariance block with the elements in the
         # sacc file (e.g. only EE in the case of shear-shear)
         raise NotImplementedError("Not implemented")
@@ -314,7 +328,7 @@ class CovarianceBuilder(ABC):
             cache = {}
         for i in [1, 2, 3, 4]:
             # Mask
-            key = f'm{i}'
+            key = f"m{i}"
             if key in cache:
                 mask[i] = cache[key]
             else:
@@ -410,15 +424,20 @@ class CovarianceBuilder(ABC):
         """
         sacc_file = self.io.get_sacc_file()
         tr = sacc_file.get_tracer(tracer)
-        if (tr.quantity in ['cmb_convergence', 'galaxy_density']) or \
-           ('lens' in tracer):
+        if (tr.quantity in ["cmb_convergence", "galaxy_density"]) or (
+            "lens" in tracer
+        ):
             return 0
-        elif (tr.quantity == 'galaxy_shear') or ('source' in tracer) or \
-             ('src' in tracer):
+        elif (
+            (tr.quantity == "galaxy_shear")
+            or ("source" in tracer)
+            or ("src" in tracer)
+        ):
             return 2
         else:
-            raise NotImplementedError(f"tracer.quantity {tr.quantity} not " +
-                                      "implemented.")
+            raise NotImplementedError(
+                f"tracer.quantity {tr.quantity} not implemented."
+            )
 
     def get_tracer_nmaps(self, tracer):
         """
@@ -467,7 +486,7 @@ class CovarianceBuilder(ABC):
 
 
 class CovarianceFourier(CovarianceBuilder):
-    space_type = 'Fourier'
+    space_type = "Fourier"
 
     def __init__(self, config):
         super().__init__(config)
@@ -475,8 +494,9 @@ class CovarianceFourier(CovarianceBuilder):
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
 
-    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2,
-                                      **kwargs):
+    def get_covariance_block_for_sacc(
+        self, tracer_comb1, tracer_comb2, **kwargs
+    ):
         """
         Return the covariance block for the two pair of tracers as needed for
         the sacc file (e.g. if in the sacc file there are no B-modes, the
@@ -504,8 +524,9 @@ class CovarianceFourier(CovarianceBuilder):
         # The reshape works for the NaMaster ordering with order 'C'
         # If the blocks are ordered as in the sacc file, you need order 'F'
         cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
-        cov = cov.reshape((nbpw, ncell1, nbpw, ncell2),
-                          order=self._reshape_order)
+        cov = cov.reshape(
+            (nbpw, ncell1, nbpw, ncell2), order=self._reshape_order
+        )
 
         # Keep only elements in the sacc file
         s = self.get_sacc_with_concise_dtypes()
@@ -527,7 +548,7 @@ class CovarianceFourier(CovarianceBuilder):
         ix2 = s.indices(tracers=tracer_comb2)
         # Use order='F' to have a block covariance in the same order as in the
         # sacc file
-        cov = cov.reshape((ix1.size, ix2.size), order='F')
+        cov = cov.reshape((ix1.size, ix2.size), order="F")
 
         return cov
 
@@ -547,13 +568,13 @@ class CovarianceFourier(CovarianceBuilder):
         """
         # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212  # noqa: E501
         if ncell == 1:
-            cl_types = ['cl_00']
+            cl_types = ["cl_00"]
         elif ncell == 2:
-            cl_types = ['cl_0e', 'cl_0b']
+            cl_types = ["cl_0e", "cl_0b"]
         elif ncell == 4:
-            cl_types = ['cl_ee', 'cl_eb', 'cl_be', 'cl_bb']
+            cl_types = ["cl_ee", "cl_eb", "cl_be", "cl_bb"]
         else:
-            raise ValueError('ncell does not match 1, 2, or 4.')
+            raise ValueError("ncell does not match 1, 2, or 4.")
 
         return cl_types
 
@@ -593,32 +614,33 @@ class CovarianceFourier(CovarianceBuilder):
 
         dt_long = []
         for dt in dtypes:
-            if len(dt.split('_')) > 2:
+            if len(dt.split("_")) > 2:
                 dt_long.append(dt)
 
         for dt in dt_long:
             pd = sacc.parse_data_type_name(dt)
 
-            if pd.statistic != 'cl':
-                raise ValueError(f'data_type {dt} not recognized. Is it ' +
-                                 'a Cell?')
+            if pd.statistic != "cl":
+                raise ValueError(
+                    f"data_type {dt} not recognized. Is it a Cell?"
+                )
 
             if pd.subtype is None:
-                dc = 'cl_00'
-            elif pd.subtype == 'e':
-                dc = 'cl_0e'
-            elif pd.subtype == 'b':
-                dc = 'cl_0b'
-            elif pd.subtype == 'ee':
-                dc = 'cl_ee'
-            elif pd.subtype == 'bb':
-                dc = 'cl_bb'
-            elif pd.subtype == 'eb':
-                dc = 'cl_eb'
-            elif pd.subtype == 'be':
-                dc = 'cl_be'
+                dc = "cl_00"
+            elif pd.subtype == "e":
+                dc = "cl_0e"
+            elif pd.subtype == "b":
+                dc = "cl_0b"
+            elif pd.subtype == "ee":
+                dc = "cl_ee"
+            elif pd.subtype == "bb":
+                dc = "cl_bb"
+            elif pd.subtype == "eb":
+                dc = "cl_eb"
+            elif pd.subtype == "be":
+                dc = "cl_be"
             else:
-                raise ValueError(f'Data subtype {pd.subtype} not recognized')
+                raise ValueError(f"Data subtype {pd.subtype} not recognized")
 
             # Change the data_type to its concise versio
             for dp in s.get_data_points(dt):
@@ -687,71 +709,86 @@ class CovarianceFourier(CovarianceBuilder):
                 tracer_dat = sacc_file.get_tracer(tracer)
 
                 # Coupled noise read from tracer metadata in the sacc file
-                tracer_Noise_coupled[tracer] = \
-                    tracer_dat.metadata.get('n_ell_coupled', None)
+                tracer_Noise_coupled[tracer] = tracer_dat.metadata.get(
+                    "n_ell_coupled", None
+                )
 
-                if (tracer_dat.quantity == 'galaxy_shear') or \
-                   ('src' in tracer) or ('source' in tracer):
+                if (
+                    (tracer_dat.quantity == "galaxy_shear")
+                    or ("src" in tracer)
+                    or ("source" in tracer)
+                ):
                     # CCL Tracer
                     z = tracer_dat.z
                     dNdz = tracer_dat.nz
                     if self.IA is None:
                         ia_bias = None
                     else:
-                        IA_bin = self.IA*np.ones(len(z))
+                        IA_bin = self.IA * np.ones(len(z))
                         ia_bias = (z, IA_bin)
-                    ccl_tracers[tracer] = \
-                        ccl.WeakLensingTracer(cosmo, dndz=(z, dNdz),
-                                              ia_bias=ia_bias)
+                    ccl_tracers[tracer] = ccl.WeakLensingTracer(
+                        cosmo, dndz=(z, dNdz), ia_bias=ia_bias
+                    )
                     # Noise
                     if tracer in self.sigma_e:
-                        tracer_Noise[tracer] = \
-                            self.sigma_e[tracer]**2/self.Ngal[tracer]
+                        tracer_Noise[tracer] = (
+                            self.sigma_e[tracer] ** 2 / self.Ngal[tracer]
+                        )
                     else:
                         tracer_Noise[tracer] = None
 
-                elif (tracer_dat.quantity == 'galaxy_density') or \
-                     ('lens' in tracer):
+                elif (tracer_dat.quantity == "galaxy_density") or (
+                    "lens" in tracer
+                ):
                     # CCL Tracer
                     z = tracer_dat.z
                     dNdz = tracer_dat.nz
                     b = self.bias_lens[tracer] * np.ones(len(z))
                     ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                        cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b))
+                        cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b)
+                    )
 
                     # Noise
                     if tracer in self.Ngal:
-                        tracer_Noise[tracer] = 1./self.Ngal[tracer]
+                        tracer_Noise[tracer] = 1.0 / self.Ngal[tracer]
                     else:
                         tracer_Noise[tracer] = None
 
-                elif tracer_dat.quantity == 'cmb_convergence':
+                elif tracer_dat.quantity == "cmb_convergence":
                     # CCL Tracer
-                    ccl_tracers[tracer] = ccl.CMBLensingTracer(cosmo,
-                                                               z_source=1100)
+                    ccl_tracers[tracer] = ccl.CMBLensingTracer(
+                        cosmo, z_source=1100
+                    )
 
             if None in list(tracer_Noise.values()):
-                warnings.warn('Missing noise for some tracers in file. ' +
-                              'You will have to pass it with the cache')
+                warnings.warn(
+                    "Missing noise for some tracers in file. "
+                    "You will have to pass it with the cache"
+                )
 
             if None in list(tracer_Noise_coupled.values()):
-                warnings.warn('Missing n_ell_coupled info for some tracers in '
-                              + 'the sacc file. You will have to pass it with'
-                              + 'the cache')
+                warnings.warn(
+                    "Missing n_ell_coupled info for some tracers in "
+                    "the sacc file. You will have to pass it with"
+                    "the cache"
+                )
 
             self.ccl_tracers = ccl_tracers
             self.tracer_Noise = tracer_Noise
             self.tracer_Noise_coupled = tracer_Noise_coupled
 
         if return_noise_coupled:
-            return self.ccl_tracers, self.tracer_Noise, \
-                self.tracer_Noise_coupled
+            return (
+                self.ccl_tracers,
+                self.tracer_Noise,
+                self.tracer_Noise_coupled,
+            )
 
         return self.ccl_tracers, self.tracer_Noise
 
 
 class CovarianceReal(CovarianceBuilder):
-    space_type = 'Real'
+    space_type = "Real"
 
     def get_theta_eff(self):
         """
@@ -783,19 +820,22 @@ class CovarianceProjectedReal(CovarianceReal):
     Real covariance class for the cases we compute the covariance in Fourier
     space and then we project to real space.
     """
+
     def __init__(self, config):
         super().__init__(config)
         self.WT = None
-        self.lmax = self.config['ProjectedReal'].get('lmax')
+        self.lmax = self.config["ProjectedReal"].get("lmax")
         if self.lmax is None:
-            raise ValueError('You need to specify the lmax you want to ' +
-                             'compute the Fourier covariance up to')
+            raise ValueError(
+                "You need to specify the lmax you want to "
+                "compute the Fourier covariance up to"
+            )
 
     @property
     def fourier(self):
         pass
 
-    def get_binning_info(self, binning='log', in_radians=True):
+    def get_binning_info(self, binning="log", in_radians=True):
         """
         Get the theta for bins given the sacc object
 
@@ -819,24 +859,25 @@ class CovarianceProjectedReal(CovarianceReal):
         nbpw = theta_eff.size
 
         thetab_min, thetab_max = theta_eff.min(), theta_eff.max()
-        if binning == 'log':
+        if binning == "log":
             # assuming constant log bins
-            del_logtheta = np.log10(theta_eff[1:]/theta_eff[:-1]).mean()
+            del_logtheta = np.log10(theta_eff[1:] / theta_eff[:-1]).mean()
             theta_min = 2 * thetab_min / (10**del_logtheta + 1)
-            theta_max = 2 * thetab_max / (1 + 10**(-del_logtheta))
+            theta_max = 2 * thetab_max / (1 + 10 ** (-del_logtheta))
 
             th_min = theta_min
             th_max = theta_max
-            theta_edges = np.logspace(np.log10(th_min), np.log10(th_max),
-                                      nbpw+1)
-            th = np.logspace(np.log10(th_min*0.98), np.log10(1), nbpw*30)
+            theta_edges = np.logspace(
+                np.log10(th_min), np.log10(th_max), nbpw + 1
+            )
+            th = np.logspace(np.log10(th_min * 0.98), np.log10(1), nbpw * 30)
             # binned covariance can be sensitive to the th values. Make sure
             # you check convergence for your application
-            th2 = np.linspace(1, th_max*1.02, nbpw*30)
+            th2 = np.linspace(1, th_max * 1.02, nbpw * 30)
 
             theta = np.unique(np.sort(np.append(th, th2)))
         else:
-            raise NotImplementedError(f'Binning {binning} not implemented yet')
+            raise NotImplementedError(f"Binning {binning} not implemented yet")
 
         if in_radians:
             arcmin_rad = np.pi / 180 / 60
@@ -860,21 +901,23 @@ class CovarianceProjectedReal(CovarianceReal):
 
         """
         WT_factors = {}
-        WT_factors['lens', 'source'] = (0, 2)
-        WT_factors['source', 'lens'] = (2, 0)  # same as (0,2)
-        WT_factors['source', 'source'] = {'plus': (2, 2), 'minus': (2, -2)}
-        WT_factors['lens', 'lens'] = (0, 0)
+        WT_factors["lens", "source"] = (0, 2)
+        WT_factors["source", "lens"] = (2, 0)  # same as (0,2)
+        WT_factors["source", "source"] = {"plus": (2, 2), "minus": (2, -2)}
+        WT_factors["lens", "lens"] = (0, 0)
 
         tracers = []
         for i in tracer_comb:
-            if 'lens' in i:
-                tracers += ['lens']
-            elif ('src' in i) or ('source' in i):
-                tracers += ['source']
+            if "lens" in i:
+                tracers += ["lens"]
+            elif ("src" in i) or ("source" in i):
+                tracers += ["source"]
             else:
-                raise NotImplementedError("This functions requires your " +
-                                          "tracers to be called 'lens', " +
-                                          f"'src' or 'source', given {i}")
+                raise NotImplementedError(
+                    "This functions requires your "
+                    "tracers to be called 'lens', "
+                    f"'src' or 'source', given {i}"
+                )
         return WT_factors[tuple(tracers)]
 
     def get_Wigner_transform(self):
@@ -890,9 +933,11 @@ class CovarianceProjectedReal(CovarianceReal):
             ell = np.arange(2, self.lmax + 1)
             theta, _, _ = self.get_binning_info(in_radians=True)
 
-            WT_kwargs = {'l': ell,
-                         'theta': theta,
-                         's1_s2': [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]}
+            WT_kwargs = {
+                "l": ell,
+                "theta": theta,
+                "s1_s2": [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)],
+            }
 
             self.WT = wigner_transform(**WT_kwargs)
 
@@ -902,9 +947,14 @@ class CovarianceProjectedReal(CovarianceReal):
     def _get_fourier_block(self, tracer_comb1, tracer_comb2):
         raise NotImplementedError("Not yet implemented")
 
-    def get_covariance_block(self, tracer_comb1, tracer_comb2,
-                             xi_plus_minus1='plus', xi_plus_minus2='plus',
-                             binned=True):
+    def get_covariance_block(
+        self,
+        tracer_comb1,
+        tracer_comb2,
+        xi_plus_minus1="plus",
+        xi_plus_minus2="plus",
+        binned=True,
+    ):
         """
         Compute a single covariance matrix for a given pair of xi
 
@@ -936,8 +986,9 @@ class CovarianceProjectedReal(CovarianceReal):
         # Remove ell <= 1 for WT (following original implementation)
         ell = np.arange(2, self.lmax + 1)
         cov = cov[2:][:, 2:]
-        th, cov = WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
-                                           s1_s2_cross=s1_s2_2, cl_cov=cov)
+        th, cov = WT.projected_covariance2(
+            l_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
+        )
         if binned:
             theta, _, theta_edges = self.get_binning_info(in_radians=False)
             thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
@@ -968,17 +1019,18 @@ class CovarianceProjectedReal(CovarianceReal):
         auto = tracer_comb1 == tracer_comb2
 
         for i, dt1 in enumerate(data_types1):
-            xi_plus_minus1 = 'plus' if 'plus' in dt1 else 'minus'
+            xi_plus_minus1 = "plus" if "plus" in dt1 else "minus"
             start_ix = i if auto else 0
             for j, dt2 in enumerate(data_types2[start_ix:]):
-                xi_plus_minus2 = 'plus' if 'plus' in dt2 else 'minus'
-                cov[:, i, :, j] = self.get_covariance_block(tracer_comb1,
-                                                            tracer_comb2,
-                                                            xi_plus_minus1,
-                                                            xi_plus_minus2)
+                xi_plus_minus2 = "plus" if "plus" in dt2 else "minus"
+                cov[:, i, :, j] = self.get_covariance_block(
+                    tracer_comb1, tracer_comb2, xi_plus_minus1, xi_plus_minus2
+                )
                 if auto:
                     cov[:, j, :, i] = cov[:, i, :, j].T
 
-        cov = cov.reshape((nbpw * len(data_types1), nbpw * len(data_types2)),
-                          order=self._reshape_order)
+        cov = cov.reshape(
+            (nbpw * len(data_types1), nbpw * len(data_types2)),
+            order=self._reshape_order,
+        )
         return cov

@@ -9,12 +9,12 @@ from tjpcov_new.covariance_builder import CovarianceFourier
 
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-outdir = root + 'tjpcov_tmp/'
+outdir = root + "tjpcov_tmp/"
 input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
-input_sacc = sacc.Sacc.load_fits(root + 'cls_cov.fits')
+input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
 
 # Create temporal folder
-os.makedirs('tests/tmp/', exist_ok=True)
+os.makedirs("tests/tmp/", exist_ok=True)
 
 
 class CovarianceFourierTester(CovarianceFourier):
@@ -25,33 +25,37 @@ class CovarianceFourierTester(CovarianceFourier):
 
 def get_dummy_sacc():
     s = sacc.Sacc()
-    s.add_tracer('map', 'PLAcv', quantity='cmb_convergence', spin=0,
-                 ell=None, beam=None)
-    s.add_tracer('NZ', 'DESgc__0', quantity='galaxy_density', spin=0,
-                 nz=None, z=None)
-    s.add_tracer('NZ', 'DESwl__0', quantity='galaxy_shear', spin=2,
-                 nz=None, z=None)
-    s.add_tracer('misc', 'ForError', quantity='generic')
+    s.add_tracer(
+        "map", "PLAcv", quantity="cmb_convergence", spin=0, ell=None, beam=None
+    )
+    s.add_tracer(
+        "NZ", "DESgc__0", quantity="galaxy_density", spin=0, nz=None, z=None
+    )
+    s.add_tracer(
+        "NZ", "DESwl__0", quantity="galaxy_shear", spin=2, nz=None, z=None
+    )
+    s.add_tracer("misc", "ForError", quantity="generic")
 
     return s
 
 
 def get_nmt_bin(lmax=95):
-    bpw_edges = np.array([0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72,
-                           78, 84, 90, 96])
+    bpw_edges = np.array(
+        [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
+    )
     if lmax != 95:
         # lmax + 1 because the upper edge is not included
-        bpw_edges = bpw_edges[bpw_edges < lmax+1]
-        bpw_edges[-1] = lmax+1
+        bpw_edges = bpw_edges[bpw_edges < lmax + 1]
+        bpw_edges[-1] = lmax + 1
 
-    return  nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
+    return nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
 
 
 def test_build_matrix_from_blocks():
     # Test that it works with matrices ordered as in Fortran
 
     class CFT_orderF(CovarianceFourierTester):
-        _reshape_order = 'F'
+        _reshape_order = "F"
 
     cb = CFT_orderF(input_yml)
     s = cb.io.get_sacc_file()
@@ -70,11 +74,11 @@ def test_build_matrix_from_blocks():
 
     # To test the reshaping needed for NaMaster we have to use 'C' (as in C)
     class CFT_orderC(CovarianceFourierTester):
-        _reshape_order = 'C'
+        _reshape_order = "C"
 
         def get_covariance_block(self, trs1, trs2):
-            fname = 'cov_{}_{}_{}_{}.npz'.format(*trs1, *trs2)
-            return np.load(os.path.join(root + 'cov', fname))['cov']
+            fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
+            return np.load(os.path.join(root + "cov", fname))["cov"]
 
     cb = CFT_orderC(input_yml)
     trs_cov = cb.get_list_of_tracers_for_cov()
@@ -90,11 +94,11 @@ def test_build_matrix_from_blocks():
 def test_get_covariance_block_for_sacc():
     # Test with matrices ordered as in C
     class CFT_orderC(CovarianceFourierTester):
-        _reshape_order = 'C'
+        _reshape_order = "C"
 
         def get_covariance_block(self, trs1, trs2):
-            fname = 'cov_{}_{}_{}_{}.npz'.format(*trs1, *trs2)
-            return np.load(os.path.join(root + 'cov', fname))['cov']
+            fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
+            return np.load(os.path.join(root + "cov", fname))["cov"]
 
     cb = CFT_orderC(input_yml)
     s = cb.io.get_sacc_file()
@@ -113,16 +117,16 @@ def test_get_covariance_block_for_sacc():
 
     # Test with matrices oredered as in Fortran
     class CFT_orderF(CovarianceFourierTester):
-        _reshape_order = 'F'
+        _reshape_order = "F"
 
         def get_covariance_block(self, trs1, trs2):
-            fname = 'cov_{}_{}_{}_{}.npz'.format(*trs1, *trs2)
-            cov = np.load(os.path.join(root + 'cov', fname))['cov']
+            fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
+            cov = np.load(os.path.join(root + "cov", fname))["cov"]
             shape = cov.shape
             ncell1 = self.get_tracer_comb_ncell(trs1)
             ncell2 = self.get_tracer_comb_ncell(trs2)
-            cov = cov.reshape((16, ncell1, 16, ncell2), order='C')
-            cov = cov.reshape(shape, order='F')
+            cov = cov.reshape((16, ncell1, 16, ncell2), order="C")
+            cov = cov.reshape(shape, order="F")
 
             return cov
 
@@ -151,10 +155,14 @@ def test_get_datatypes_from_ncell():
     with pytest.raises(ValueError):
         cb.get_datatypes_from_ncell(3)
 
-    assert cb.get_datatypes_from_ncell(1) == ['cl_00']
-    assert cb.get_datatypes_from_ncell(2) == ['cl_0e', 'cl_0b']
-    assert cb.get_datatypes_from_ncell(4) == ['cl_ee', 'cl_eb', 'cl_be',
-                                              'cl_bb']
+    assert cb.get_datatypes_from_ncell(1) == ["cl_00"]
+    assert cb.get_datatypes_from_ncell(2) == ["cl_0e", "cl_0b"]
+    assert cb.get_datatypes_from_ncell(4) == [
+        "cl_ee",
+        "cl_eb",
+        "cl_be",
+        "cl_bb",
+    ]
 
 
 def test_get_ell_eff():
@@ -173,22 +181,22 @@ def test_get_sacc_with_concise_dtypes():
     for dp in s.data:
         dt = dp.data_type
 
-        if dt == 'cl_00':
+        if dt == "cl_00":
             dp.data_type = sacc.standard_types.galaxy_density_cl
-        elif dt == 'cl_0e':
+        elif dt == "cl_0e":
             dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_e
-        elif dt == 'cl_0b':
+        elif dt == "cl_0b":
             dp.data_type = sacc.standard_types.galaxy_shearDensity_cl_b
-        elif dt == 'cl_ee':
+        elif dt == "cl_ee":
             dp.data_type = sacc.standard_types.galaxy_shear_cl_ee
-        elif dt == 'cl_eb':
+        elif dt == "cl_eb":
             dp.data_type = sacc.standard_types.galaxy_shear_cl_eb
-        elif dt == 'cl_be':
+        elif dt == "cl_be":
             dp.data_type = sacc.standard_types.galaxy_shear_cl_be
-        elif dt == 'cl_bb':
+        elif dt == "cl_bb":
             dp.data_type = sacc.standard_types.galaxy_shear_cl_bb
         else:
-            raise ValueError('Something went wrong. Data type not recognized')
+            raise ValueError("Something went wrong. Data type not recognized")
 
     cb = CovarianceFourierTester(input_yml)
     s2 = cb.get_sacc_with_concise_dtypes()
@@ -201,7 +209,7 @@ def test_get_sacc_with_concise_dtypes():
         assert dp.value == dp2.value
         assert dp.tracers == dp2.tracers
         for k in dp.tags:
-            if k == 'window':
+            if k == "window":
                 # Don't check window as it points to a different memory address
                 continue
             assert dp.tags[k] == dp2.tags[k]
@@ -213,21 +221,24 @@ def test_get_tracer_comb_ncell():
     # Use dummy file to test for cmb_convergence too
     cb.io.sacc_file = get_dummy_sacc()
 
-    assert cb.get_tracer_comb_ncell(('PLAcv', 'PLAcv')) == 1
-    assert cb.get_tracer_comb_ncell(('PLAcv', 'DESgc__0')) == 1
-    assert cb.get_tracer_comb_ncell(('DESgc__0', 'DESgc__0')) == 1
-    assert cb.get_tracer_comb_ncell(('PLAcv', 'DESwl__0')) == 2
-    assert cb.get_tracer_comb_ncell(('DESgc__0', 'DESwl__0')) == 2
-    assert cb.get_tracer_comb_ncell(('DESwl__0', 'DESwl__0')) == 4
-    assert cb.get_tracer_comb_ncell(('DESwl__0', 'DESwl__0'),
-                                    independent=True) == 3
+    assert cb.get_tracer_comb_ncell(("PLAcv", "PLAcv")) == 1
+    assert cb.get_tracer_comb_ncell(("PLAcv", "DESgc__0")) == 1
+    assert cb.get_tracer_comb_ncell(("DESgc__0", "DESgc__0")) == 1
+    assert cb.get_tracer_comb_ncell(("PLAcv", "DESwl__0")) == 2
+    assert cb.get_tracer_comb_ncell(("DESgc__0", "DESwl__0")) == 2
+    assert cb.get_tracer_comb_ncell(("DESwl__0", "DESwl__0")) == 4
+    assert (
+        cb.get_tracer_comb_ncell(("DESwl__0", "DESwl__0"), independent=True)
+        == 3
+    )
 
 
 def test_get_tracer_info():
     cb = CovarianceFourierTester(input_yml)
     ccl_tracers1, tracer_noise1 = cb.get_tracer_info()
-    ccl_tracers, tracer_noise, tracer_noise_coupled = \
-        cb.get_tracer_info(return_noise_coupled=True)
+    ccl_tracers, tracer_noise, tracer_noise_coupled = cb.get_tracer_info(
+        return_noise_coupled=True
+    )
 
     # Check that when returnig the coupled noise, the previous output is the
     # same and the tracer_noise_coupled is a dictionary with all values None,
@@ -238,23 +249,23 @@ def test_get_tracer_info():
     assert not any(tracer_noise_coupled.values())
 
     # Check noise from formula
-    arc_min = 1/60 * np.pi / 180  # arc_min in radians
+    arc_min = 1 / 60 * np.pi / 180  # arc_min in radians
     Ngal = 26 / arc_min**2  # Number galaxy density
     sigma_e = 0.26
 
     for tr, nl in tracer_noise.items():
-        if 'gc' in tr:
-            assert np.abs(nl / (1/Ngal) - 1) < 1e-5
+        if "gc" in tr:
+            assert np.abs(nl / (1 / Ngal) - 1) < 1e-5
         else:
-            assert np.abs(nl / (sigma_e**2/Ngal) - 1) < 1e-5
+            assert np.abs(nl / (sigma_e**2 / Ngal) - 1) < 1e-5
 
     # TODO: We should check the CCL tracers are the same
     for tr, ccltr in ccl_tracers.items():
-        if 'gc' in tr:
+        if "gc" in tr:
             assert isinstance(ccltr, ccl.NumberCountsTracer)
-        elif 'wl' in tr:
+        elif "wl" in tr:
             assert isinstance(ccltr, ccl.WeakLensingTracer)
-        elif 'cv' in tr:
+        elif "cv" in tr:
             assert isinstance(ccltr, ccl.CMBLensingTracer)
 
     # Check tracer_noise_coupled. Modify the sacc file to add metadata
@@ -264,10 +275,11 @@ def test_get_tracer_info():
     coupled_noise = {}
     for i, tr in enumerate(cb.io.sacc_file.tracers.keys()):
         coupled_noise[tr] = i
-        cb.io.sacc_file.tracers[tr].metadata['n_ell_coupled'] = i
+        cb.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = i
 
-    ccl_tracers, tracer_noise, tracer_noise_coupled = \
-        cb.get_tracer_info(return_noise_coupled=True)
+    ccl_tracers, tracer_noise, tracer_noise_coupled = cb.get_tracer_info(
+        return_noise_coupled=True
+    )
 
     for tr, nl in tracer_noise_coupled.items():
         assert coupled_noise[tr] == nl
