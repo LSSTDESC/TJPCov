@@ -44,6 +44,13 @@ conda env create --file environment.yml
 To activate your new environment use:
 
 ```
-source activate tjpcov
+conda activate tjpcov
+```
+
+## Namaster dependency
+The latest version TJPCov needs pymaster >= 1.4 . Install it using (after `conda activate tjpcov`): 
+
+```
+python -m pip install git+https://github.com/LSSTDESC/NaMaster.git
 ```
 
