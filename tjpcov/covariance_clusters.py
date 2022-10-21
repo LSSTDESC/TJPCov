@@ -23,9 +23,8 @@ class CovarianceClusters(CovarianceBuilder):
         - Assuming full sky for now
         - Included shot noise (1-halo term)
         - Added full matrix in the end 
-        TODO: verify the other limber auxiliary functions and new
-        shot noise
-        """
+        TODO: verify the other limber auxiliary functions and new shot noise
+    """
     # get c from CCL
     c = 299792.458          # km/s
     bias_fft = 1.4165
@@ -82,11 +81,9 @@ class CovarianceClusters(CovarianceBuilder):
         # Cosmology
         self.survey_area = survey_area
         self.ovdelta = ovdelta
-        # TODO Read from SACC
         self.h0 = 0.6736
 
         # FFT parameters:
-        # TODO test 
         self.ro = 1/self.kmax
         self.rmax = 1/self.ko
         self.G = np.log(self.kmax/self.ko)
@@ -292,7 +289,6 @@ class CovarianceClusters(CovarianceBuilder):
         return (romb(kernel, dx=romb_range)) * factor_approx
 
 
-    #TODO Most important integral 
     def double_bessel_integral(self, z1, z2):
         """Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2
         """
@@ -357,7 +353,7 @@ class CovarianceClusterCounts(CovarianceClusters):
         self.dV_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
         self.M1_true_vec = np.zeros((self.num_richness_bins, self.num_z_bins, self.romberg_num))
 
-        #TODO  this should be moved to evaluate 1 entry at a time, so we can use parallelization
+        #TODO this should be moved to evaluate 1 entry at a time, so we can use parallelization
         # Computes the geometric true vectors
         self.eval_true_vec()
         # Pre computes the true vectors M1 for Cov_N_N
@@ -370,7 +366,13 @@ class CovarianceClusterCounts(CovarianceClusters):
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
-
+        """ Cluster counts covariance
+        Args:
+            bin_z_i (float or ?array): tomographic bins in z_i or z_j
+            bin_lbd_i (float or ?array): bins of richness (usually log spaced)
+        Returns:
+            float: Covariance at given bins
+        """ 
         # Compute a single covariance entry 'clusters_redshift_richness' e.g.
         # tracer_comb1 = ('clusters_0_0',) 
         # tracer_comb2 = ('clusters_0_0',)
@@ -400,21 +402,8 @@ class CovarianceClusterCounts(CovarianceClusters):
                     
         cov_total = shot_noise + cov
         
-        # store metadata in some header/log file
-        # covariance_io
-        print(f'{cov_total:.2e}')
+        # TODO: store metadata in some header/log file
         return cov_total
-
-    def _covariance_cluster_NxN(self, z_i, z_j, richness_i, richness_j):
-        """ Cluster counts covariance
-        Args:
-            bin_z_i (float or ?array): tomographic bins in z_i or z_j
-            bin_lbd_i (float or ?array): bins of richness (usually log spaced)
-        Returns:
-            float: Covariance at given bins
-        """
-
-
 
     def eval_true_vec(self):
         """ Computes the -geometric- true vectors Z1, G1, dV for Cov_N_N. 
