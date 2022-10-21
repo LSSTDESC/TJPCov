@@ -1,18 +1,9 @@
 #!/usr/bin/python3
 import os
-import pytest
 import numpy as np
-import sacc
-import pickle
 import pyccl as ccl
-import pymaster as nmt
-from tjpcov_new import bin_cov
 from tjpcov_new.covariance_clusters import CovarianceClusterCounts
 from tjpcov_new.covariance_io import CovarianceIO
-import yaml
-import healpy as hp
-import sacc
-import shutil
 
 # INPUT
 # CCL and sacc input:
