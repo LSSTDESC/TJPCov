@@ -40,7 +40,9 @@ class CovarianceClusters(CovarianceBuilder):
 
         self.cosmo = self.get_cosmology()
         mass_def = ccl.halos.MassDef200m()
-        self.mass_func = ccl.halos.MassFuncTinker08(self.cosmo, mass_def=mass_def)
+        self.mass_func = ccl.halos.MassFuncTinker08(
+            self.cosmo, mass_def=mass_def
+        )
 
         # Read from SACC file relevant quantities
         self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]
@@ -129,7 +131,9 @@ class CovarianceClusters(CovarianceBuilder):
 
         # Do it ONCE
         self.pk_vec = ccl.linear_matter_power(self.cosmo, self.k_vec, 1)
-        self.fk_vec = (self.k_vec / self.ko) ** (3.0 - self.bias_fft) * self.pk_vec
+        self.fk_vec = (self.k_vec / self.ko) ** (
+            3.0 - self.bias_fft
+        ) * self.pk_vec
         self.Phi_vec = np.conjugate(np.fft.rfft(self.fk_vec)) / self.L
 
         self.z_true_vec = np.linspace(
@@ -161,13 +165,13 @@ class CovarianceClusters(CovarianceBuilder):
         sigma_z = sigma_0 * (1 + z_true)
 
         def integrand(z_phot):
-            return np.exp(-((z_phot - z_true) ** 2.0) / (2.0 * sigma_z**2.0)) / (
-                np.sqrt(2.0 * np.pi) * sigma_z
-            )
+            return np.exp(
+                -((z_phot - z_true) ** 2.0) / (2.0 * sigma_z**2.0)
+            ) / (np.sqrt(2.0 * np.pi) * sigma_z)
 
-        integral = quad(integrand, self.z_bins[z_i], self.z_bins[z_i + 1])[0] / (
-            1.0 - quad(integrand, -np.inf, 0.0)[0]
-        )
+        integral = quad(integrand, self.z_bins[z_i], self.z_bins[z_i + 1])[
+            0
+        ] / (1.0 - quad(integrand, -np.inf, 0.0)[0])
 
         return integral
 
@@ -205,7 +209,9 @@ class CovarianceClusters(CovarianceBuilder):
 
         f = (
             lambda ln_m: (1 / np.log(10.0))
-            * self.mass_func.get_mass_function(self.cosmo, np.exp(ln_m), 1 / (1 + z))
+            * self.mass_func.get_mass_function(
+                self.cosmo, np.exp(ln_m), 1 / (1 + z)
+            )
             * ccl.halo_bias(
                 self.cosmo,
                 np.exp(ln_m),
@@ -221,7 +227,9 @@ class CovarianceClusters(CovarianceBuilder):
         """Integral mass for shot noise function"""
         f = (
             lambda ln_m: (1 / np.log(10))
-            * self.mass_func.get_mass_function(self.cosmo, np.exp(ln_m), 1 / (1 + z))
+            * self.mass_func.get_mass_function(
+                self.cosmo, np.exp(ln_m), 1 / (1 + z)
+            )
             * self.mass_richness(ln_m, lbd_i)
         )
         # Remember ccl.function returns dn/dlog10m, I am changing integrand to d(lnM)
@@ -232,7 +240,9 @@ class CovarianceClusters(CovarianceBuilder):
         integral for l equal zero
         """
         return ccl.linear_matter_power(
-            self.cosmo, 0.5 / ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)), 1
+            self.cosmo,
+            0.5 / ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)),
+            1,
         ) / (4 * np.pi)
 
     def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
@@ -330,7 +340,9 @@ class CovarianceClusters(CovarianceBuilder):
                 z1,
                 2 ** (romb_k - 1) + 1,
             )
-            vec_right = np.linspace(z1, z1 + (z1 - vec_left[0]), 2 ** (romb_k - 1) + 1)
+            vec_right = np.linspace(
+                z1, z1 + (z1 - vec_left[0]), 2 ** (romb_k - 1) + 1
+            )
             vec_final = np.append(vec_left, vec_right[1:])
         else:
             vec_right = np.linspace(
@@ -338,7 +350,9 @@ class CovarianceClusters(CovarianceBuilder):
                 min(self.z_upper_limit, z1 + 6 * self.z_bin_range),
                 2 ** (romb_k - 1) + 1,
             )
-            vec_left = np.linspace(z1 - (vec_right[-1] - z1), z1, 2 ** (romb_k - 1) + 1)
+            vec_left = np.linspace(
+                z1 - (vec_right[-1] - z1), z1, 2 ** (romb_k - 1) + 1
+            )
             vec_final = np.append(vec_left, vec_right[1:])
 
         romb_range = (vec_final[-1] - vec_final[0]) / (2**romb_k)
@@ -382,7 +396,9 @@ class CovarianceClusters(CovarianceBuilder):
 
         I_ell_vec = [self.I_ell(m, R) for m in range(self.N // 2 + 1)]
 
-        back_FFT_vec = np.fft.irfft(self.Phi_vec * I_ell_vec) * self.N  # FFT back
+        back_FFT_vec = (
+            np.fft.irfft(self.Phi_vec * I_ell_vec) * self.N
+        )  # FFT back
         two_fast_vec = (
             (1 / np.pi)
             * (self.ko**3)
@@ -395,7 +411,9 @@ class CovarianceClusters(CovarianceBuilder):
         imax = self.imax
 
         # we will use this to interpolate the exact r(z1)
-        f = interp1d(self.r_vec[imin:imax], two_fast_vec[imin:imax], kind="cubic")
+        f = interp1d(
+            self.r_vec[imin:imax], two_fast_vec[imin:imax], kind="cubic"
+        )
         try:
             return f(max(r1, r2))
         except Exception as err:
@@ -451,7 +469,9 @@ class CovarianceClusterCounts(CovarianceClusters):
         # Pre computes the true vectors M1 for Cov_N_N
         self.eval_M1_true_vec()
 
-    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2, **kwargs):
+    def get_covariance_block_for_sacc(
+        self, tracer_comb1, tracer_comb2, **kwargs
+    ):
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
@@ -517,7 +537,9 @@ class CovarianceClusterCounts(CovarianceClusters):
 
         for i in range(self.num_z_bins):
 
-            z_low_limit = max(self.z_lower_limit, self.z_bins[i] - 4 * self.z_bin_range)
+            z_low_limit = max(
+                self.z_lower_limit, self.z_bins[i] - 4 * self.z_bin_range
+            )
             z_upper_limit = min(
                 self.z_upper_limit, self.z_bins[i + 1] + 6 * self.z_bin_range
             )
@@ -529,7 +551,8 @@ class CovarianceClusterCounts(CovarianceClusters):
                 self.cosmo, 1 / (1 + self.Z1_true_vec[i])
             )
             self.dV_true_vec[i] = [
-                self.dV(self.Z1_true_vec[i, m], i) for m in range(self.romberg_num)
+                self.dV(self.Z1_true_vec[i, m], i)
+                for m in range(self.romberg_num)
             ]
 
     def eval_M1_true_vec(self):
@@ -579,7 +602,8 @@ class MassRichnessRelation(object):
             return (
                 (1.0 / richness)
                 * np.exp(
-                    -((np.log(richness) - average) ** 2.0) / (2.0 * sigma_lambda**2.0)
+                    -((np.log(richness) - average) ** 2.0)
+                    / (2.0 * sigma_lambda**2.0)
                 )
                 / (np.sqrt(2.0 * np.pi) * sigma_lambda)
             )
