@@ -1203,9 +1203,6 @@ def test_txpipe_like_input():
 
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()
-    for tr in s.tracers.keys():
-        nl_cp = get_tracer_noise(tr, cp=True)
-        s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
 
     cov = cnmt.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
