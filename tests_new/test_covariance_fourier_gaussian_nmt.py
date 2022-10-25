@@ -437,7 +437,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Cov with coupled noise (as in benchmark)
     cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
 
     # Test cov_tr1_tr2_tr3_tr4.npz cache
     fname = os.path.join(
