@@ -1,3 +1,4 @@
+from re import L
 from .covariance_clusters import CovarianceClusters
 import numpy as np
 import pyccl as ccl
@@ -7,14 +8,7 @@ from scipy.integrate import quad, romb
 
 
 class CovarianceClusterCounts(CovarianceClusters):
-    """_summary_
-
-    Args:
-        CovarianceClusters (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
+    """Implementation of cluster covariance that calculates the autocorrelation of cluster counts (NxN)"""
 
     # Figure out
     cov_type = "fourier"
@@ -22,8 +16,14 @@ class CovarianceClusterCounts(CovarianceClusters):
 
     def __init__(self, config):
         super().__init__(config)
-
         self.romberg_num = 2**6 + 1
+        self.setup_vectors()
+
+    def setup_vectors(self):
+        """
+        Sets up the arrays according to number of redshift/richness bins.
+        This should be refactored and removed, in favor of the element-by-element computations
+        """
         self.Z1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
         self.G1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
         self.dV_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
@@ -31,7 +31,11 @@ class CovarianceClusterCounts(CovarianceClusters):
             (self.num_richness_bins, self.num_z_bins, self.romberg_num)
         )
 
-        # TODO this should be moved to evaluate 1 entry at a time, so we can use parallelization
+    def precompute_true_vectors(self):
+        """
+        Precomputes the true vectors M1 for Cov_N_N, see comment above
+        """
+        # TODO this should be moved to evaluate 1 entry at a time
         # Computes the geometric true vectors
         self.eval_true_vec()
         # Pre computes the true vectors M1 for Cov_N_N
@@ -40,40 +44,24 @@ class CovarianceClusterCounts(CovarianceClusters):
     def get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        """_summary_
-
-        Args:
-            tracer_comb1 (_type_): _description_
-            tracer_comb2 (_type_): _description_
-
-        Returns:
-            _type_: _description_
+        """
+        This function returns the covariance block with the elements in the sacc file
         """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        """_summary_
-
-        Args:
-            tracer_comb1 (_type_): _description_
-            tracer_comb2 (_type_): _description_
-
-        Returns:
-            _type_: _description_
+        """
+        This function returns the covariance block with the elements in the sacc file
         """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
-        """Cluster counts covariance
+        """Compute a single covariance entry 'clusters_redshift_richness'
+
         Args:
-            bin_z_i (float or ?array): tomographic bins in z_i or z_j
-            bin_lbd_i (float or ?array): bins of richness (usually log spaced)
-        Returns:
-            float: Covariance at given bins
+            tracer_comb1 (_type_): e.g. ('clusters_0_0',)
+            tracer_comb2 (_type_): e.g. ('clusters_0_1',)
         """
-        # Compute a single covariance entry 'clusters_redshift_richness' e.g.
-        # tracer_comb1 = ('clusters_0_0',)
-        # tracer_comb2 = ('clusters_0_0',)
         tracer_split1 = tracer_comb1[0].split("_")
         tracer_split2 = tracer_comb2[0].split("_")
 
@@ -111,15 +99,7 @@ class CovarianceClusterCounts(CovarianceClusters):
         return cov_total
 
     def eval_true_vec(self):
-        """Computes the -geometric- true vectors Z1, G1, dV for Cov_N_N.
-        Args:
-            (int) romb_num: controls romb integral precision.
-                        Typically 10**6 + 1
-        Returns:
-            (array) Z1_true_vec
-            (array) G1_true_vec
-            (array) dV_true_vec
-        """
+        """Computes the -geometric- true vectors Z1, G1, dV for Cov_N_N."""
 
         for i in range(self.num_z_bins):
 
@@ -142,11 +122,7 @@ class CovarianceClusterCounts(CovarianceClusters):
             ]
 
     def eval_M1_true_vec(self):
-        """Pre computes the true vectors M1 for Cov_N_N.
-        Args:
-            (int) romb_num: controls romb integral precision.
-                        Typically 10**6 + 1
-        """
+        """Pre computes the true vectors M1 for Cov_N_N."""
 
         print("evaluating M1_true_vec (this may take some time)...")
 
@@ -156,46 +132,3 @@ class CovarianceClusterCounts(CovarianceClusters):
                     self.M1_true_vec[lbd, z, m] = self.integral_mass(
                         self.Z1_true_vec[z, m], lbd
                     )
-
-
-class MassRichnessRelation(object):
-    """
-    Helper class to hold different mass richness relations
-    """
-
-    @staticmethod
-    def MurataCostanzi(ln_true_mass, richness_bin, richness_bin_next, h0):
-        """
-        Define lognormal mass-richness relation
-        (leveraging paper from Murata et. alli - ArxIv 1707.01907 and Costanzi et al ArxIv 1810.09456v1)
-
-        Args:
-            ln_true_mass: ln(true mass)
-            richness_bin: ith richness bin
-            richness_bin_next: i+1th richness bin
-            h0:
-        Returns:
-            The probability that the true mass ln(ln_true_mass) is observed within
-            the bins richness_bin and richness_bin_next
-        """
-
-        alpha = 3.207  # Murata
-        beta = 0.75  # Costanzi
-        sigma_zero = 2.68  # Costanzi
-        q = 0.54  # Costanzi
-        m_pivot = 3.0e14 / h0  # in solar masses , Murata and Costanzi use it
-
-        sigma_lambda = sigma_zero + q * (ln_true_mass - np.log(m_pivot))
-        average = alpha + beta * (ln_true_mass - np.log(m_pivot))
-
-        def integrand(richness):
-            return (
-                (1.0 / richness)
-                * np.exp(
-                    -((np.log(richness) - average) ** 2.0)
-                    / (2.0 * sigma_lambda**2.0)
-                )
-                / (np.sqrt(2.0 * np.pi) * sigma_lambda)
-            )
-
-        return quad(integrand, richness_bin, richness_bin_next)[0]
