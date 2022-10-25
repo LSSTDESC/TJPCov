@@ -66,7 +66,6 @@ def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
     return cl
 
 
-@pytest.mark.mpi
 def test_split_tasks_by_rank():
     cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
     tasks = list(range(100))
@@ -75,7 +74,6 @@ def test_split_tasks_by_rank():
     assert tasks[cnmt.rank :: cnmt.size] == tasks_splitted
 
 
-@pytest.mark.mpi
 def test_compute_all_blocks():
     cssc = FourierSSCHaloModel(input_yml_mpi)
     blocks, tracers_blocks = cssc._compute_all_blocks()
@@ -89,7 +87,6 @@ def test_compute_all_blocks():
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
-@pytest.mark.mpi
 def test_compute_all_blocks_nmt():
     # CovarianceFourierGaussianNmt has its own _compute_all_blocks
     cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
@@ -104,7 +101,6 @@ def test_compute_all_blocks_nmt():
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
-@pytest.mark.mpi
 def test_get_covariance():
     # This checks that there is no problem during the gathering of blocks
 
