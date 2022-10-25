@@ -1,4 +1,4 @@
 [tool.black]
 line-length = 79
-include = 'tests_new\/.*\.pyi?$|tjpcov_new\/.*\.pyi?$'
+include = 'tests\/.*\.pyi?$|tjpcov\/.*\.pyi?$'
 

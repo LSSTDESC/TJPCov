@@ -52,7 +52,7 @@ jobs:
 
              - name: Test
                run: |
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new --ignore=tests_new/test_mpi.py
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests --ignore=tests/test_mpi.py
                 
              - name: Test mpi (openmpi)
                run: |
@@ -63,7 +63,7 @@ jobs:
                         pip install -U mpi4py
 
                         # Run MPI test (just the computation of blocks)
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new/test_mpi.py 
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py 
                         
                         # Uninstall openmpi
                         sudo apt remove -y openmpi-bin libopenmpi-dev
@@ -76,7 +76,7 @@ jobs:
                         pip install -U mpi4py --no-binary :all:
 
                         # Run MPI tests
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new/test_mpi.py 
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py 
                         
                         # Uninstall mpich
                         sudo apt remove -y mpich libmpich-dev
