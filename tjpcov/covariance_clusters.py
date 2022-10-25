@@ -9,15 +9,15 @@ from scipy.interpolate import interp1d
 
 
 class CovarianceClusters(CovarianceBuilder):
-    """Covariance of Cluster + 3x2pt
-    version 1 , date: - ?? ?? 2019
-    Covariance matrix for a LSST-like case, using CCL packages
-    Evaluate here:
-    - NxN & NxCls (gg, gk, kk)
-    - Assuming full sky for now
-    - Included shot noise (1-halo term)
-    - Added full matrix in the end
-    TODO: verify the other limber auxiliary functions and new shot noise
+    """
+    Contains the extra logic needed to add cluster count covariance to the existing
+    3x2pt covariance, N x C_ell (gg gk kk).
+
+    Args:
+        CovarianceBuilder (_type_): _description_
+
+    Returns:
+        _type_: _description_
     """
 
     # get c from CCL
@@ -143,6 +143,15 @@ class CovarianceClusters(CovarianceBuilder):
         self.sigma_vec = self.eval_sigma_vec()
 
     def radial_distance(self, z):
+        """
+        Given a redshift, returns the comoving radial distance for a given cosmology.
+
+        Args:
+            z (float or array_like): Redshift
+
+        Returns:
+            float or array_like: Comoving radial distance; Mpc.
+        """
         return ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z))
 
     def photoz(self, z_true, z_i, sigma_0=0.05):
@@ -150,16 +159,12 @@ class CovarianceClusters(CovarianceBuilder):
         Evaluation of Photometric redshift (Photo-z),given true redshift
         z_true and photometric bin z_i
 
-        Note: Z_bins & z_i is a bad choice of variables!
-                check how one use the photoz function and adapt it !
-        Note: I am truncating the pdf, so as to absorb the negative redshifts
-            into the positive part of the pdf
         Args:
-            z_true ()
-            z_i
-            sigma_0 (float): set as 0.05
+            z_true (float): true redshift
+            z_i (float): photometric redshift bin
+            sigma_0 (float): defaults to 0.05
         Returns:
-            (array)
+
         """
 
         sigma_z = sigma_0 * (1 + z_true)
@@ -176,8 +181,13 @@ class CovarianceClusters(CovarianceBuilder):
         return integral
 
     def dV(self, z_true, z_i):
-        """Evaluates the comoving volume per steridian as function of
-        z_true for a photometric redshift bin in units of Mpc**3
+        """
+            Evaluates the comoving volume per steridian as function of
+            z_true for a photometric redshift bin in units of Mpc^3
+        Args:
+            z_true (float): true redshift
+            z_i (float): photometric redshift bin
+
         Returns:
             dv(z) = dz*dr/dz(z)*(r(z)**2)*photoz(z, bin z_i)
         """
@@ -191,20 +201,35 @@ class CovarianceClusters(CovarianceBuilder):
         return dV
 
     def mass_richness(self, ln_true_mass, lbd_i):
-        """returns the probability that the true mass ln(M_true) is observed within
+        """
+        Calculates the probability that the true mass ln(M_true) is observed within
         the bins lambda_i and lambda_i + 1
+
+        Args:
+            ln_true_mass (_type_): True mass
+            lbd_i (int): richness bin
+        Returns:
+            _type_: _description_
         """
         richness_bin = self.richness_bins[lbd_i]
         richness_bin_next = self.richness_bins[lbd_i + 1]
+
         return MassRichnessRelation.MurataCostanzi(
             ln_true_mass, richness_bin, richness_bin_next, self.h0
         )
 
     def integral_mass(self, z, lbd_i):
-        """z is the redshift; i is the lambda bin,with lambda from
+        """
+        z is the redshift; i is the lambda bin,with lambda from
         Lambda_bins[i] to Lambda_bins[i+1]
         note: ccl.function returns dn/dlog10m, I am changing integrand below
         to d(lnM)
+
+        Args:
+            z (_type_): redshift
+            lbd_i (_type_): richness bin
+        Returns:
+            _type_: _description_
         """
 
         f = (
@@ -224,7 +249,15 @@ class CovarianceClusters(CovarianceBuilder):
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def integral_mass_no_bias(self, z, lbd_i):
-        """Integral mass for shot noise function"""
+        """
+        Integral mass for shot noise function
+        Args:
+            z (_type_): _description_
+            lbd_i (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         f = (
             lambda ln_m: (1 / np.log(10))
             * self.mass_func.get_mass_function(
@@ -236,9 +269,17 @@ class CovarianceClusters(CovarianceBuilder):
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def Limber(self, z):
-        """Calculating Limber approximation for double Bessel
-        integral for l equal zero
         """
+        Calculating Limber approximation for double Bessel
+        integral for l equal zero
+
+        Args:
+            z (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+
         return ccl.linear_matter_power(
             self.cosmo,
             0.5 / ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)),
@@ -246,9 +287,19 @@ class CovarianceClusters(CovarianceBuilder):
         ) / (4 * np.pi)
 
     def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
-        """Calculating the covariance of diagonal terms using Limber (the delta
+        """
+        Calculating the covariance of diagonal terms using Limber (the delta
         transforms the double redshift integral into a single redshift integral)
         CAUTION: hard-wired ovdelta and survey_area!
+
+        Args:
+            z_i (_type_): _description_
+            z_j (_type_): _description_
+            lbd_i (_type_): _description_
+            lbd_j (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         def integrand(z_true):
@@ -280,7 +331,16 @@ class CovarianceClusters(CovarianceBuilder):
         )[0]
 
     def shot_noise(self, z_i, lbd_i):
-        """Evaluates the Shot Noise term"""
+        """
+        Evaluates the Shot Noise term
+
+        Args:
+            z_i (_type_): _description_
+            lbd_i (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
 
         def integrand(z):
             return (
@@ -299,6 +359,13 @@ class CovarianceClusters(CovarianceBuilder):
         """Calculating the function M_0_0
         the formula below only valid for R <=1, l = 0,
         formula B2 ASZ and 31 from 2-fast paper
+
+        Args:
+            m (_type_): _description_
+            R (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         t_m = 2 * np.pi * m / self.G
@@ -327,10 +394,20 @@ class CovarianceClusters(CovarianceBuilder):
         return iell
 
     def partial2(self, z1, bin_z_j, bin_lbd_j, approx=True):
-        """Romberg integration of a function using scipy.integrate.romberg
+        """
+        Romberg integration of a function using scipy.integrate.romberg
         Faster and more reliable than quad used in partial
         Approximation: Put the integral_mass outside looping in m
         TODO: Check the romberg convergence!
+
+        Args:
+            z1 (_type_): _description_
+            bin_z_j (_type_): _description_
+            bin_lbd_j (_type_): _description_
+            approx (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            _type_: _description_
         """
         romb_k = 6
 
@@ -384,7 +461,16 @@ class CovarianceClusters(CovarianceBuilder):
         return (romb(kernel, dx=romb_range)) * factor_approx
 
     def double_bessel_integral(self, z1, z2):
-        """Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2"""
+        """
+        Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2
+
+        Args:
+            z1 (_type_): _description_
+            z2 (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
 
         # definition of t, forcing it to be <= 1
         r1 = ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z1))
@@ -428,6 +514,11 @@ class CovarianceClusters(CovarianceBuilder):
         # TODO test interpolkind
 
     def eval_sigma_vec(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         sigma_vec = np.zeros((self.num_z_bins, self.num_z_bins))
 
         for i in range(self.num_z_bins):
@@ -441,13 +532,32 @@ class CovarianceClusters(CovarianceBuilder):
         return sigma_vec
 
     def get_min_radial_idx(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return np.argwhere(self.r_vec < 0.95 * self.radial_lower_limit)[-1][0]
 
     def get_max_radial_idx(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return np.argwhere(self.r_vec > 1.05 * self.radial_upper_limit)[0][0]
 
 
 class CovarianceClusterCounts(CovarianceClusters):
+    """_summary_
+
+    Args:
+        CovarianceClusters (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
     # Figure out
     cov_type = "fourier"
     _reshape_order = "F"
@@ -472,9 +582,27 @@ class CovarianceClusterCounts(CovarianceClusters):
     def get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
+        """_summary_
+
+        Args:
+            tracer_comb1 (_type_): _description_
+            tracer_comb2 (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """_summary_
+
+        Args:
+            tracer_comb1 (_type_): _description_
+            tracer_comb2 (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
@@ -573,6 +701,10 @@ class CovarianceClusterCounts(CovarianceClusters):
 
 
 class MassRichnessRelation(object):
+    """
+    Helper class to hold different mass richness relations
+    """
+
     @staticmethod
     def MurataCostanzi(ln_true_mass, richness_bin, richness_bin_next, h0):
         """
