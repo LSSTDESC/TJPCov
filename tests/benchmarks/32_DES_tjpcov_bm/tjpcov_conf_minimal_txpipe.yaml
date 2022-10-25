@@ -3,7 +3,7 @@ tjpcov:
   do_xi: False
 
   # harmonic space sacc input
-  cl_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits
+  sacc_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov_as_txpipe.fits
 
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' # tests/data/cosmos_desy1_v2p1p0.pkl
@@ -40,8 +40,6 @@ tjpcov:
   bias_DESgc__0: 1.48
 
   # IA: 0.5
-
-  binning_info: ignore
 
   nside: 32
 
