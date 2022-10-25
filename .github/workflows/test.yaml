@@ -52,7 +52,7 @@ jobs:
 
              - name: Test
                run: |
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new --ignore=tests_new/test_mpi.py
                 
              - name: Test mpi (openmpi)
                run: |
