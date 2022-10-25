@@ -1,0 +1,153 @@
+#!/usr/bin/python3
+import os
+import numpy as np
+import pyccl as ccl
+import sacc
+from tjpcov_new.covariance_clusters import CovarianceClusterCounts
+from tjpcov_new.covariance_io import CovarianceIO
+
+# INPUT
+# CCL and sacc input:
+os.makedirs("tests/tmp/", exist_ok=True)
+cosmo_filename = "tests/data/cosmo_desy1.yaml"
+cosmo = ccl.Cosmology.read_yaml(cosmo_filename)
+
+# SETUP
+input_yml = "examples/clusters/tjpcov_conf_minimal_clusters.yaml"
+
+
+def get_mock_sacc():
+    # Using values from https://github.com/nrussofer/Cosmological-Covariance-matrices/blob/master/Full%20covariance%20N_N%20part%20vfinal.ipynb
+    # As reference.
+    s = sacc.Sacc()
+    s.metadata["nbins_cluster_redshift"] = 18
+    s.metadata["nbins_cluster_richness"] = 3
+    s.metadata["min_mass"] = 1e13
+
+    # This isnt how tracers actually look, but sort of hacks the class to work without building
+    # an entire sacc file for this test.
+    s.add_tracer(
+        "clusters_0_0",
+        metadata={
+            "Mproxy_name": "richness",
+            "Mproxy_min": 10,
+            "Mproxy_max": 100,
+            "z_name": "redshift",
+            "z_min": 0.3,
+            "z_max": 1.2,
+        },
+    )
+
+    return s
+
+
+def test_integral_mass_no_bias(self):
+    ref1 = 1.463291259900985e-05
+    ref2 = 1.4251538328691035e-05
+    cc_cov = CovarianceClusterCounts(input_yml)
+    cc_cov.io.sacc_file = get_mock_sacc()
+
+    test1 = cc_cov.integral_mass_no_bias(0.3, 0)
+    test2 = cc_cov.integral_mass_no_bias(0.35, 0)
+
+    self.assertAlmostEqual(ref1, test1)
+    self.assertAlmostEqual(ref2, test2)
+
+
+def test_eval_M1_true_vec(self):
+
+    romb_num = 2**6 + 1
+    ref_sum = 0.048185959642970705
+    cc_cov = CovarianceClusterCounts(input_yml)
+    cc_cov.eval_true_vec(romb_num)
+    cc_cov.eval_M1_true_vec(romb_num)
+
+    self.assertAlmostEqual(np.sum(cc_cov.M1_true_vec), ref_sum)
+
+
+def test_double_bessel_integral(self):
+    ref = 8.427201745032292e-05
+    cc_cov = CovarianceClusterCounts(input_yml)
+    test = cc_cov.double_bessel_integral(0.3, 0.3)
+    self.assertAlmostEqual(ref, test)
+
+
+def test_I_ell(self):
+    # Tested in double bessel test
+    pass
+
+
+def test_shot_noise(self):
+    ref = 63973.635143644424
+    cc_cov = CovarianceClusterCounts(input_yml)
+
+    test = cc_cov.shot_noise(0, 0)
+    self.assertAlmostEqual(test, ref)
+
+
+def test_partial2(self):
+    pass
+
+
+def test_eval_true_vec(self):
+    romb_num = 2**6 + 1
+
+    ref_z1_sum = 936.0
+    ref_g1_sum = 795.6517795142859
+    ref_dv_sum = 2295974227982.374
+
+    cc_cov = CovarianceClusterCounts(input_yml)
+    cc_cov.eval_true_vec(romb_num)
+
+    z1_sum = np.sum(cc_cov.Z1_true_vec)
+    g1_sum = np.sum(cc_cov.G1_true_vec)
+    dv_sum = np.sum(cc_cov.dV_true_vec)
+
+    self.assertAlmostEqual(z1_sum, ref_z1_sum)
+    self.assertAlmostEqual(g1_sum, ref_g1_sum)
+    self.assertAlmostEqual(dv_sum, ref_dv_sum)
+
+
+def test_photoz(self):
+    # Tested in dV test
+    pass
+
+
+def test_integral_mass(self):
+    cc_cov = CovarianceClusterCounts(input_yml)
+    ref1 = 2.596895139062984e-05
+    ref2 = 2.5910691906342223e-05
+
+    test1 = cc_cov.integral_mass(0.5, 0)
+    test2 = cc_cov.integral_mass(0.55, 0)
+
+    self.assertAlmostEqual(ref1, test1)
+    self.assertAlmostEqual(ref2, test2)
+
+
+def test_mass_richness(self):
+    cc_cov = CovarianceClusterCounts(input_yml)
+    reference_min = 0.0009528852621284171
+
+    test_min = [
+        cc_cov.mass_richness(cc_cov.min_mass, i)
+        for i in range(cc_cov.num_richness_bins)
+    ]
+    self.assertAlmostEqual(np.sum(test_min), reference_min)
+
+
+def test_dv(self):
+
+    reference_values = [
+        6613.739621696188,
+        55940746.72160228,
+        3781771343.1278453,
+        252063237.8394578,
+        1113852.72571463,
+    ]
+
+    cc_cov = CovarianceClusterCounts(input_yml)
+    z_true = 0.8
+
+    for i, z_i in enumerate([0, 4, 8, 14, 17]):
+        self.assertAlmostEqual(cc_cov.dV(z_true, z_i), reference_values[i])
