@@ -47,12 +47,13 @@ jobs:
                         for i in `cat requirements.txt`; do
                            pip install -U $i;
                         done
-                        # pip install -r requirements.txt
-                        # pip install .
+
+                        # For coeralls
+                        pip install -U pytest-cov coveralls
 
              - name: Test
                run: |
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests --ignore=tests/test_mpi.py
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests --ignore=tests/test_mpi.py  --cov=tjpcov
                 
              - name: Test mpi (openmpi)
                run: |
@@ -63,7 +64,7 @@ jobs:
                         pip install -U mpi4py
 
                         # Run MPI test (just the computation of blocks)
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py 
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py  --cov=tjpcov 
                         
                         # Uninstall openmpi
                         sudo apt remove -y openmpi-bin libopenmpi-dev
@@ -76,8 +77,14 @@ jobs:
                         pip install -U mpi4py --no-binary :all:
 
                         # Run MPI tests
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py 
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py  --cov=tjpcov 
                         
                         # Uninstall mpich
                         sudo apt remove -y mpich libmpich-dev
                         pip uninstall -y mpi4py
+
+             - name: coveralls
+               env:
+                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+               run:
+                 coveralls --service=github

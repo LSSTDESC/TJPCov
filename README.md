@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/LSSTDESC/TJPCov/badge.svg?branch=master)](https://coveralls.io/github/LSSTDESC/TJPCov?branch=master)
+
 # TJPCov
 
 TJPCov is a general covariance calculator interface to be used within LSST DESC.
