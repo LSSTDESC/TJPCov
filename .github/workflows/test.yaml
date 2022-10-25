@@ -49,33 +49,11 @@ jobs:
                         done
                         # pip install -r requirements.txt
                         # pip install .
+
+             - name: Test
+               run: |
+                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new
                 
-             - name: Test general code
-               run: |
-                        # Run other tests
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_base.py
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_tools.py
-
-             - name: Test Gaussian covariance (Knox formula)
-               run: |
-                        # TODO: make these tests pyccl version independent.
-                        # Commented for now
-                        # Run harmonic Space & configuration space with fsky
-                        # approx
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no  ./tests/test_conf_minimal.py
-
-             - name: Test Gaussian covariance (NaMaster)
-               run: |
-                        
-                        # Run Namaster tests
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt_tools.py
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_nmt.py
-
-             - name: Test Super Sample Covariance 
-               run: |
-                        # Run SSC tests
-                        python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_ssc.py
-                        
              - name: Test mpi (openmpi)
                run: |
                         # Install openmpi
@@ -84,8 +62,8 @@ jobs:
                         # can run the code in serial
                         pip install -U mpi4py
 
-                        # Run MPI tests
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
+                        # Run MPI test (just the computation of blocks)
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new/test_mpi.py 
                         
                         # Uninstall openmpi
                         sudo apt remove -y openmpi-bin libopenmpi-dev
@@ -98,7 +76,7 @@ jobs:
                         pip install -U mpi4py --no-binary :all:
 
                         # Run MPI tests
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests_new/test_mpi.py 
                         
                         # Uninstall mpich
                         sudo apt remove -y mpich libmpich-dev

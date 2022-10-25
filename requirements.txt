@@ -4,6 +4,7 @@ Jinja2
 pyyaml
 pyccl>=2.5.0
 pytest
+pytest-mpi
 jupyter
 sacc
 camb

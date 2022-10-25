@@ -1,0 +1,139 @@
+#!/usr/bin/python
+import pytest
+import os
+import sys
+
+import numpy as np
+from mpi4py import MPI
+
+from tjpcov_new.covariance_fourier_gaussian_nmt import \
+    CovarianceFourierGaussianNmt
+from tjpcov_new.covariance_fourier_ssc import FourierSSCHaloModel
+
+root = "./tests/benchmarks/32_DES_tjpcov_bm/"
+outdir = "./tests/tmp/"
+input_yml_mpi = \
+    "./tests_new/benchmarks/32_DES_tjpcov_bm/tjpcov_conf_minimal_mpi.yaml"
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+comm.Barrier()
+if rank == 0:
+    # Create temporal folder
+    os.makedirs("tests/tmp/", exist_ok=True)
+
+# The _split_tasks_by_rank and _compute_all_blocks methods have been tested
+# serially in tests_covariance_builder.py. Here, we will just make sure that
+# they also work in MPI and that we don't have problems when saving the block
+# covariances. That's why we will use CovarianceFourierGaussianNmt.
+
+
+def get_pair_folder_name(tracer_comb):
+    bn = []
+    for tr in tracer_comb:
+        bn.append(tr.split("__")[0])
+    return "_".join(bn)
+
+
+def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
+    bn = get_pair_folder_name((tr1, tr2))
+    fname = os.path.join(root, "fiducial", bn, f"cl_{tr1}_{tr2}.npz")
+    cl = np.load(fname)["cl"]
+    if binned:
+        s = s.copy()
+        s.remove_selection(data_type="cl_0b")
+        s.remove_selection(data_type="cl_eb")
+        s.remove_selection(data_type="cl_be")
+        s.remove_selection(data_type="cl_bb")
+        ix = s.indices(tracers=(tr1, tr2))
+        bpw = s.get_bandpower_windows(ix)
+
+        cl0_bin = bpw.weight.T.dot(cl[0])
+
+        cl_bin = np.zeros((cl.shape[0], cl0_bin.size))
+        cl_bin[0] = cl0_bin
+        cl = cl_bin
+    else:
+        cl
+
+    # Remove redundant terms
+    if remove_be and (tr1 == tr2) and (cl.shape[0] == 4):
+        cl = np.delete(cl, 2, 0)
+    return cl
+
+
+@pytest.mark.mpi
+def test_split_tasks_by_rank():
+    cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
+    tasks = list(range(100))
+    tasks_splitted = list(cnmt._split_tasks_by_rank(tasks))
+
+    assert tasks[cnmt.rank::cnmt.size] == tasks_splitted
+
+
+@pytest.mark.mpi
+def test_compute_all_blocks():
+    cssc = FourierSSCHaloModel(input_yml_mpi)
+    blocks, tracers_blocks = cssc._compute_all_blocks()
+    nblocks = len(list(
+        cssc._split_tasks_by_rank(cssc.get_list_of_tracers_for_cov())
+    ))
+    assert nblocks == len(blocks)
+
+    for bi, trs in zip(blocks, tracers_blocks):
+        cov = cssc.get_covariance_block_for_sacc(trs[0], trs[1])
+        assert np.max(np.abs((bi + 1e-100) /(cov + 1e-100) -1)) < 1e-5
+
+
+@pytest.mark.mpi
+def test_compute_all_blocks_nmt():
+    # CovarianceFourierGaussianNmt has its own _compute_all_blocks
+    cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
+    blocks, tracers_blocks = cnmt._compute_all_blocks()
+    nblocks = len(list(
+        cnmt._split_tasks_by_rank(cnmt.get_list_of_tracers_for_cov())
+    ))
+    assert nblocks == len(blocks)
+
+    for bi, trs in zip(blocks, tracers_blocks):
+        cov = cnmt.get_covariance_block_for_sacc(trs[0], trs[1])
+        assert np.max(np.abs((bi + 1e-100) /(cov + 1e-100) -1)) < 1e-5
+
+
+@pytest.mark.mpi
+def test_get_covariance():
+    # This checks that there is no problem during the gathering of blocks
+
+    # The coupled noise metadata information is in the sacc file and the
+    # workspaces in the config file
+    cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
+    s = cnmt.io.get_sacc_file()
+
+    cov = cnmt.get_covariance()
+
+    if cnmt.rank != 0:
+        return
+    cov = cov + 1e-100
+
+    cov_bm = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+
+    # Check chi2
+    clf = np.array([])
+    for trs in s.get_tracer_combinations():
+        cl_trs = get_fiducial_cl(s, *trs, remove_be=True)
+        clf = np.concatenate((clf, cl_trs.flatten()))
+    cl = s.mean
+
+    delta = clf - cl
+    chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
+    chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+# Clean up after the tests
+comm.Barrier()
+if rank == 0:
+    os.system("rm -rf ./tests/tmp/")

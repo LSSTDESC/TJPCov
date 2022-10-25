@@ -13,7 +13,6 @@ class FourierSSCHaloModel(CovarianceFourier):
 
     def __init__(self, config):
         super().__init__(config)
-        print(self.config)
 
         self.ssc_conf = self.config.get("SSC", {})
 
