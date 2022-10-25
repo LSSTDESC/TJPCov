@@ -64,7 +64,7 @@ jobs:
                         pip install -U mpi4py
 
                         # Run MPI test (just the computation of blocks)
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py  --cov=tjpcov 
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py --cov=tjpcov --cov-append
                         
                         # Uninstall openmpi
                         sudo apt remove -y openmpi-bin libopenmpi-dev
@@ -77,7 +77,7 @@ jobs:
                         pip install -U mpi4py --no-binary :all:
 
                         # Run MPI tests
-                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py  --cov=tjpcov 
+                        mpiexec -n 2 python3 -m pytest -rs --log-cli-level=INFO --capture=no tests/test_mpi.py --cov=tjpcov --cov-append
                         
                         # Uninstall mpich
                         sudo apt remove -y mpich libmpich-dev
