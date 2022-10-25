@@ -6,14 +6,16 @@ import sys
 import numpy as np
 from mpi4py import MPI
 
-from tjpcov_new.covariance_fourier_gaussian_nmt import \
-    CovarianceFourierGaussianNmt
+from tjpcov_new.covariance_fourier_gaussian_nmt import (
+    CovarianceFourierGaussianNmt,
+)
 from tjpcov_new.covariance_fourier_ssc import FourierSSCHaloModel
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = "./tests/tmp/"
-input_yml_mpi = \
+input_yml_mpi = (
     "./tests_new/benchmarks/32_DES_tjpcov_bm/tjpcov_conf_minimal_mpi.yaml"
+)
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -70,21 +72,21 @@ def test_split_tasks_by_rank():
     tasks = list(range(100))
     tasks_splitted = list(cnmt._split_tasks_by_rank(tasks))
 
-    assert tasks[cnmt.rank::cnmt.size] == tasks_splitted
+    assert tasks[cnmt.rank :: cnmt.size] == tasks_splitted
 
 
 @pytest.mark.mpi
 def test_compute_all_blocks():
     cssc = FourierSSCHaloModel(input_yml_mpi)
     blocks, tracers_blocks = cssc._compute_all_blocks()
-    nblocks = len(list(
-        cssc._split_tasks_by_rank(cssc.get_list_of_tracers_for_cov())
-    ))
+    nblocks = len(
+        list(cssc._split_tasks_by_rank(cssc.get_list_of_tracers_for_cov()))
+    )
     assert nblocks == len(blocks)
 
     for bi, trs in zip(blocks, tracers_blocks):
         cov = cssc.get_covariance_block_for_sacc(trs[0], trs[1])
-        assert np.max(np.abs((bi + 1e-100) /(cov + 1e-100) -1)) < 1e-5
+        assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
 @pytest.mark.mpi
@@ -92,14 +94,14 @@ def test_compute_all_blocks_nmt():
     # CovarianceFourierGaussianNmt has its own _compute_all_blocks
     cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
     blocks, tracers_blocks = cnmt._compute_all_blocks()
-    nblocks = len(list(
-        cnmt._split_tasks_by_rank(cnmt.get_list_of_tracers_for_cov())
-    ))
+    nblocks = len(
+        list(cnmt._split_tasks_by_rank(cnmt.get_list_of_tracers_for_cov()))
+    )
     assert nblocks == len(blocks)
 
     for bi, trs in zip(blocks, tracers_blocks):
         cov = cnmt.get_covariance_block_for_sacc(trs[0], trs[1])
-        assert np.max(np.abs((bi + 1e-100) /(cov + 1e-100) -1)) < 1e-5
+        assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
 @pytest.mark.mpi
@@ -132,6 +134,7 @@ def test_get_covariance():
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
 
 # Clean up after the tests
 comm.Barrier()
