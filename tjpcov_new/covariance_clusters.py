@@ -12,12 +12,6 @@ class CovarianceClusters(CovarianceBuilder):
     """
     Contains the extra logic needed to add cluster count covariance to the existing
     3x2pt covariance, N x C_ell (gg gk kk).
-
-    Args:
-        CovarianceBuilder (_type_): _description_
-
-    Returns:
-        _type_: _description_
     """
 
     # get c from CCL
@@ -38,12 +32,60 @@ class CovarianceClusters(CovarianceBuilder):
             )
             return
 
-        self.cosmo = self.get_cosmology()
-        mass_def = ccl.halos.MassDef200m()
-        self.mass_func = ccl.halos.MassFuncTinker08(
-            self.cosmo, mass_def=mass_def
+        self.set_fft_params()
+        self.load_from_sacc(sacc_file)
+        # Cosmology
+        self.survey_area = survey_area
+        self.ovdelta = ovdelta
+        self.h0 = 0.6736
+        # Do it ONCE
+        self.load_from_cosmology(self.get_cosmology())
+
+    def set_fft_params(self):
+        """Sets up the required attributes for the FFT used later"""
+        self.ro = 1 / self.kmax
+        self.rmax = 1 / self.ko
+        self.G = np.log(self.kmax / self.ko)
+        self.L = 2 * np.pi * self.N / self.G
+        self.k_vec = np.logspace(
+            np.log(self.ko), np.log(self.kmax), self.N, base=np.exp(1)
+        )
+        self.r_vec = np.logspace(
+            np.log(self.ro), np.log(self.rmax), self.N, base=np.exp(1)
         )
 
+    def load_from_cosmology(self, cosmo):
+        """Loads the relevent attributes from a cosmology object
+
+        Args:
+            cosmo (Astropy Cosmology Object)
+        """
+        self.cosmo = cosmo
+        mass_def = ccl.halos.MassDef200m()
+        self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
+        # TODO: optimize these ranges like Nelson did interpolation limits for double_bessel_integral
+        # zmin & zmax drawn from Z_true_vec
+        self.radial_lower_limit = self.radial_distance(self.z_lower_limit)
+        self.radial_upper_limit = self.radial_distance(self.z_upper_limit)
+        self.imin = np.argwhere(self.r_vec < 0.95 * self.radial_lower_limit)[
+            -1
+        ][0]
+        self.imax = np.argwhere(self.r_vec > 1.05 * self.radial_upper_limit)[
+            0
+        ][0]
+
+        self.pk_vec = ccl.linear_matter_power(cosmo, self.k_vec, 1)
+        self.fk_vec = (self.k_vec / self.ko) ** (
+            3.0 - self.bias_fft
+        ) * self.pk_vec
+        self.Phi_vec = np.conjugate(np.fft.rfft(self.fk_vec)) / self.L
+
+    def load_from_sacc(self, sacc_file):
+        """Loads all the required parameters from a sacc file.
+
+        Args:
+            sacc_file
+        """
         # Read from SACC file relevant quantities
         self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]
         self.num_richness_bins = sacc_file.metadata["nbins_cluster_richness"]
@@ -94,53 +136,19 @@ class CovarianceClusters(CovarianceBuilder):
             np.linspace(self.z_min, self.z_max, self.num_z_bins + 1), 2
         )
         self.z_bin_range = (self.z_max - self.z_min) / self.num_z_bins
-
-        #   minimum log mass in solar masses;
-        self.min_mass = np.log(min_mass)
-        #   maximum log mass in solar masses; above this HMF < 10^-10
-        self.max_mass = np.log(1e16)
-
-        # Cosmology
-        self.survey_area = survey_area
-        self.ovdelta = ovdelta
-        self.h0 = 0.6736
-
-        # FFT parameters:
-        self.ro = 1 / self.kmax
-        self.rmax = 1 / self.ko
-        self.G = np.log(self.kmax / self.ko)
-        self.L = 2 * np.pi * self.N / self.G
-        self.k_vec = np.logspace(
-            np.log(self.ko), np.log(self.kmax), self.N, base=np.exp(1)
-        )
-        self.r_vec = np.logspace(
-            np.log(self.ro), np.log(self.rmax), self.N, base=np.exp(1)
-        )
-
         # minimum z_true for the integrals. I am assuming z_true>0.02
         self.z_lower_limit = max(0.02, self.z_bins[0] - 4 * self.z_bin_range)
         # maximum z_true for the integrals, assuming 40% larger than max z, so we dont need to go till infinity
         self.z_upper_limit = self.z_bins[-1] + 6 * self.z_bin_range
 
-        # TODO: optimize these ranges like Nelson did interpolation limits for double_bessel_integral
-        # zmin & zmax drawn from Z_true_vec
-        self.radial_lower_limit = self.radial_distance(self.z_lower_limit)
-        self.radial_upper_limit = self.radial_distance(self.z_upper_limit)
-        self.imin = self.get_min_radial_idx()
-        self.imax = self.get_max_radial_idx()
-
-        # Do it ONCE
-        self.pk_vec = ccl.linear_matter_power(self.cosmo, self.k_vec, 1)
-        self.fk_vec = (self.k_vec / self.ko) ** (
-            3.0 - self.bias_fft
-        ) * self.pk_vec
-        self.Phi_vec = np.conjugate(np.fft.rfft(self.fk_vec)) / self.L
+        # minimum log mass in solar masses;
+        self.min_mass = np.log(min_mass)
+        # maximum log mass in solar masses; above this HMF < 10^-10
+        self.max_mass = np.log(1e16)
 
         self.z_true_vec = np.linspace(
             self.z_bins[0], self.z_bins[self.num_z_bins], self.num_z_bins
         )
-        # Eq 7.6
-        self.sigma_vec = self.eval_sigma_vec()
 
     def radial_distance(self, z):
         """
@@ -206,10 +214,8 @@ class CovarianceClusters(CovarianceBuilder):
         the bins lambda_i and lambda_i + 1
 
         Args:
-            ln_true_mass (_type_): True mass
+            ln_true_mass: True mass
             lbd_i (int): richness bin
-        Returns:
-            _type_: _description_
         """
         richness_bin = self.richness_bins[lbd_i]
         richness_bin_next = self.richness_bins[lbd_i + 1]
@@ -220,16 +226,13 @@ class CovarianceClusters(CovarianceBuilder):
 
     def integral_mass(self, z, lbd_i):
         """
-        z is the redshift; i is the lambda bin,with lambda from
-        Lambda_bins[i] to Lambda_bins[i+1]
+        Integral mass function
         note: ccl.function returns dn/dlog10m, I am changing integrand below
         to d(lnM)
 
         Args:
-            z (_type_): redshift
-            lbd_i (_type_): richness bin
-        Returns:
-            _type_: _description_
+            z (float): redshift
+            lbd_i (int): richness bin
         """
 
         f = (
@@ -252,11 +255,8 @@ class CovarianceClusters(CovarianceBuilder):
         """
         Integral mass for shot noise function
         Args:
-            z (_type_): _description_
-            lbd_i (_type_): _description_
-
-        Returns:
-            _type_: _description_
+            z (float): redshift
+            lbd_i (int): Richness bin
         """
         f = (
             lambda ln_m: (1 / np.log(10))
@@ -274,10 +274,7 @@ class CovarianceClusters(CovarianceBuilder):
         integral for l equal zero
 
         Args:
-            z (_type_): _description_
-
-        Returns:
-            _type_: _description_
+            z (float): redshift
         """
 
         return ccl.linear_matter_power(
@@ -293,13 +290,11 @@ class CovarianceClusters(CovarianceBuilder):
         CAUTION: hard-wired ovdelta and survey_area!
 
         Args:
-            z_i (_type_): _description_
-            z_j (_type_): _description_
-            lbd_i (_type_): _description_
-            lbd_j (_type_): _description_
+            z_i (int): redshift bin i
+            z_j (int): redshift bin j
+            lbd_i (int): richness bin i
+            lbd_j (int): richness bin j
 
-        Returns:
-            _type_: _description_
         """
 
         def integrand(z_true):
@@ -335,11 +330,9 @@ class CovarianceClusters(CovarianceBuilder):
         Evaluates the Shot Noise term
 
         Args:
-            z_i (_type_): _description_
-            lbd_i (_type_): _description_
+            z_i (int): redshift bin i
+            lbd_i (int): richness bin i
 
-        Returns:
-            _type_: _description_
         """
 
         def integrand(z):
@@ -356,16 +349,10 @@ class CovarianceClusters(CovarianceBuilder):
 
     # TODO vectorize
     def I_ell(self, m, R):
-        """Calculating the function M_0_0
+        """
+        Calculating the function M_0_0
         the formula below only valid for R <=1, l = 0,
         formula B2 ASZ and 31 from 2-fast paper
-
-        Args:
-            m (_type_): _description_
-            R (_type_): _description_
-
-        Returns:
-            _type_: _description_
         """
 
         t_m = 2 * np.pi * m / self.G
@@ -401,13 +388,11 @@ class CovarianceClusters(CovarianceBuilder):
         TODO: Check the romberg convergence!
 
         Args:
-            z1 (_type_): _description_
-            bin_z_j (_type_): _description_
-            bin_lbd_j (_type_): _description_
-            approx (bool, optional): _description_. Defaults to True.
+            z1 (float): redshift
+            bin_z_j (int): redshift bin i
+            bin_lbd_j (int): richness bin j
+            approx (bool, optional): Defaults to True.
 
-        Returns:
-            _type_: _description_
         """
         romb_k = 6
 
@@ -465,11 +450,8 @@ class CovarianceClusters(CovarianceBuilder):
         Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2
 
         Args:
-            z1 (_type_): _description_
-            z2 (_type_): _description_
-
-        Returns:
-            _type_: _description_
+            z1 (float): redshift lower bound
+            z2 (float): redshift upper bound
         """
 
         # definition of t, forcing it to be <= 1
@@ -514,10 +496,8 @@ class CovarianceClusters(CovarianceBuilder):
         # TODO test interpolkind
 
     def eval_sigma_vec(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
+        """
+        True variance
         """
         sigma_vec = np.zeros((self.num_z_bins, self.num_z_bins))
 
@@ -530,174 +510,6 @@ class CovarianceClusters(CovarianceBuilder):
                 sigma_vec[j, i] = sigma_vec[i, j]
 
         return sigma_vec
-
-    def get_min_radial_idx(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        return np.argwhere(self.r_vec < 0.95 * self.radial_lower_limit)[-1][0]
-
-    def get_max_radial_idx(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        return np.argwhere(self.r_vec > 1.05 * self.radial_upper_limit)[0][0]
-
-
-class CovarianceClusterCounts(CovarianceClusters):
-    """_summary_
-
-    Args:
-        CovarianceClusters (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-
-    # Figure out
-    cov_type = "fourier"
-    _reshape_order = "F"
-
-    def __init__(self, config):
-        super().__init__(config)
-
-        self.romberg_num = 2**6 + 1
-        self.Z1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
-        self.G1_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
-        self.dV_true_vec = np.zeros((self.num_z_bins, self.romberg_num))
-        self.M1_true_vec = np.zeros(
-            (self.num_richness_bins, self.num_z_bins, self.romberg_num)
-        )
-
-        # TODO this should be moved to evaluate 1 entry at a time, so we can use parallelization
-        # Computes the geometric true vectors
-        self.eval_true_vec()
-        # Pre computes the true vectors M1 for Cov_N_N
-        self.eval_M1_true_vec()
-
-    def get_covariance_block_for_sacc(
-        self, tracer_comb1, tracer_comb2, **kwargs
-    ):
-        """_summary_
-
-        Args:
-            tracer_comb1 (_type_): _description_
-            tracer_comb2 (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-
-    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        """_summary_
-
-        Args:
-            tracer_comb1 (_type_): _description_
-            tracer_comb2 (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-
-    def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
-        """Cluster counts covariance
-        Args:
-            bin_z_i (float or ?array): tomographic bins in z_i or z_j
-            bin_lbd_i (float or ?array): bins of richness (usually log spaced)
-        Returns:
-            float: Covariance at given bins
-        """
-        # Compute a single covariance entry 'clusters_redshift_richness' e.g.
-        # tracer_comb1 = ('clusters_0_0',)
-        # tracer_comb2 = ('clusters_0_0',)
-        tracer_split1 = tracer_comb1[0].split("_")
-        tracer_split2 = tracer_comb2[0].split("_")
-
-        z_i = int(tracer_split1[1])
-        richness_i = int(tracer_split1[2])
-
-        z_j = int(tracer_split2[1])
-        richness_j = int(tracer_split2[2])
-
-        dz = (self.Z1_true_vec[z_i, -1] - self.Z1_true_vec[z_i, 0]) / (
-            self.romberg_num - 1
-        )
-
-        partial_vec = [
-            self.partial2(self.Z1_true_vec[z_i, m], z_j, richness_j)
-            for m in range(self.romberg_num)
-        ]
-
-        romb_vec = (
-            partial_vec
-            * self.dV_true_vec[z_i]
-            * self.M1_true_vec[richness_i, z_i]
-            * self.G1_true_vec[z_i]
-        )
-
-        cov = (self.survey_area**2) * romb(romb_vec, dx=dz)
-
-        shot_noise = 0
-        if richness_i == richness_j and z_i == z_j:
-            shot_noise = self.shot_noise(z_i, richness_i)
-
-        cov_total = shot_noise + cov
-
-        # TODO: store metadata in some header/log file
-        return cov_total
-
-    def eval_true_vec(self):
-        """Computes the -geometric- true vectors Z1, G1, dV for Cov_N_N.
-        Args:
-            (int) romb_num: controls romb integral precision.
-                        Typically 10**6 + 1
-        Returns:
-            (array) Z1_true_vec
-            (array) G1_true_vec
-            (array) dV_true_vec
-        """
-
-        for i in range(self.num_z_bins):
-
-            z_low_limit = max(
-                self.z_lower_limit, self.z_bins[i] - 4 * self.z_bin_range
-            )
-            z_upper_limit = min(
-                self.z_upper_limit, self.z_bins[i + 1] + 6 * self.z_bin_range
-            )
-
-            self.Z1_true_vec[i] = np.linspace(
-                z_low_limit, z_upper_limit, self.romberg_num
-            )
-            self.G1_true_vec[i] = ccl.growth_factor(
-                self.cosmo, 1 / (1 + self.Z1_true_vec[i])
-            )
-            self.dV_true_vec[i] = [
-                self.dV(self.Z1_true_vec[i, m], i)
-                for m in range(self.romberg_num)
-            ]
-
-    def eval_M1_true_vec(self):
-        """Pre computes the true vectors M1 for Cov_N_N.
-        Args:
-            (int) romb_num: controls romb integral precision.
-                        Typically 10**6 + 1
-        """
-
-        print("evaluating M1_true_vec (this may take some time)...")
-
-        for lbd in range(self.num_richness_bins):
-            for z in range(self.num_z_bins):
-                for m in range(self.romberg_num):
-                    self.M1_true_vec[lbd, z, m] = self.integral_mass(
-                        self.Z1_true_vec[z, m], lbd
-                    )
 
 
 class MassRichnessRelation(object):
