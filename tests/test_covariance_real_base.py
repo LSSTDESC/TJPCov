@@ -93,7 +93,7 @@ def test_get_Wigner_transform():
     wt = cpr.get_Wigner_transform()
 
     assert isinstance(wt, wigner_transform)
-    assert np.all(wt.l == np.arange(2, cpr.lmax + 1))
+    assert np.all(wt.ell == np.arange(2, cpr.lmax + 1))
     assert np.all(wt.theta == cpr.get_binning_info()[0])
     assert wt.s1_s2s == [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]
 

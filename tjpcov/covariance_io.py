@@ -13,6 +13,7 @@ class CovarianceIO:
     anything and it is initialized inside the CovarianceBuilder and
     CovarianceCalculator classes.
     """
+
     def __init__(self, config):
         """
         Parameters

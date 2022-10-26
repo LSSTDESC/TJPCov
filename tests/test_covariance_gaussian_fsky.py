@@ -142,4 +142,4 @@ def test_smoke_get_covariance():
     cfsky.get_covariance()
     # Real test commented out because we don't have a method to build the full
     # covariance atm
-    # cfsky_real.get_covariance()
+    cfsky_real.get_covariance()

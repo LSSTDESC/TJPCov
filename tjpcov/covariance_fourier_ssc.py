@@ -12,6 +12,7 @@ class FourierSSCHaloModel(CovarianceFourier):
     Class to compute the CellxCell Super Sample Covariance with the Halo Model
     as implemented in CCL with the "linear bias" approximation.
     """
+
     cov_type = "SSC"
     _reshape_order = "F"
 

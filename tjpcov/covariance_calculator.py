@@ -10,6 +10,7 @@ class CovarianceCalculator:
     file which will contain information of what covariances are requested (by
     giving the Class names) and add all their contributions.
     """
+
     def __init__(self, config):
         """
         Parameters

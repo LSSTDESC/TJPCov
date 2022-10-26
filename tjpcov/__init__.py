@@ -21,6 +21,7 @@ def covariance_from_name(name):
     -------
         CovarianceBulder child class
     """
+
     def all_subclasses(cls):
         # Recursively find all subclasses (and their subclasses)
         # From https://stackoverflow.com/questions/3862310

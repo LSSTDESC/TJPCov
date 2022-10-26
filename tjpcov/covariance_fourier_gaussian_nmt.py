@@ -13,6 +13,7 @@ class CovarianceFourierGaussianNmt(CovarianceFourier):
     Class to compute the Gaussian CellxCell covariance with NaMaster using the
     Narrow Kernel Approximation. It can also use the Toeplitz approximation.
     """
+
     cov_type = "gauss"
     _reshape_order = "C"
 

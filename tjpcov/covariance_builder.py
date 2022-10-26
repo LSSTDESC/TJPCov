@@ -18,6 +18,7 @@ class CovarianceBuilder(ABC):
     class and the child classes would actually implement the actual
     computation of the blocks.
     """
+
     def __init__(self, config):
         """
         Parameters
@@ -537,6 +538,7 @@ class CovarianceFourier(CovarianceBuilder):
     methods common to all the Fourier covariance calculations. The child
     classes will actually implement the actual computation of the blocks.
     """
+
     space_type = "Fourier"
 
     def __init__(self, config):
@@ -844,6 +846,7 @@ class CovarianceReal(CovarianceBuilder):
     methods common to all the Real covariance calculations. The child
     classes will actually implement the actual computation of the blocks.
     """
+
     space_type = "Real"
 
     def get_theta_eff(self):
@@ -992,7 +995,7 @@ class CovarianceProjectedReal(CovarianceReal):
             theta, _, _ = self.get_binning_info(in_radians=True)
 
             WT_kwargs = {
-                "l": ell,
+                "ell": ell,
                 "theta": theta,
                 "s1_s2": [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)],
             }
