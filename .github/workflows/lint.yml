@@ -12,5 +12,5 @@ jobs:
 
       - name: flake8
         run: |
-          pip -U install flake8
+          pip install -U flake8
           flake8 tjpcov tests
