@@ -1,4 +1,4 @@
-name: TJPCov
+name: Tests
 on:
    push:
         branches: [ master ]
@@ -9,6 +9,11 @@ jobs:
      build:
           runs-on: ubuntu-latest
           steps:
+              - name: cancel previous runs
+                uses: styfle/cancel-workflow-action@0.6.0
+                with:
+                  access_token: ${{ github.token }}
+
              - uses: actions/checkout@v2
              - name: Set up Python 3.7
                uses: actions/setup-python@v2
