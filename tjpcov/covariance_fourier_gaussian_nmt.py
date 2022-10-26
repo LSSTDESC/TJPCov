@@ -9,10 +9,21 @@ from .covariance_builder import CovarianceFourier
 
 
 class CovarianceFourierGaussianNmt(CovarianceFourier):
+    """
+    Class to compute the Gaussian CellxCell covariance with NaMaster using the
+    Narrow Kernel Approximation. It can also use the Toeplitz approximation.
+    """
     cov_type = "gauss"
     _reshape_order = "C"
 
     def __init__(self, config):
+        """
+        Parameters
+        ----------
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
+        """
         super().__init__(config)
 
         # For NaMaster you need to pass the masks

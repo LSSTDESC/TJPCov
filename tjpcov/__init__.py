@@ -10,6 +10,17 @@ from .wigner_transform import bin_cov, wigner_transform
 
 
 def covariance_from_name(name):
+    """
+    Return the requested CovarianceBuilder child class
+
+    Parameters
+    ----------
+        name (str): Name of the class
+
+    Returns:
+    -------
+        CovarianceBulder child class
+    """
     def all_subclasses(cls):
         # Recursively find all subclasses (and their subclasses)
         # From https://stackoverflow.com/questions/3862310

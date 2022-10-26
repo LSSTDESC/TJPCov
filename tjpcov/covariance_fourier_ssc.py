@@ -8,10 +8,21 @@ from .covariance_builder import CovarianceFourier
 
 
 class FourierSSCHaloModel(CovarianceFourier):
+    """
+    Class to compute the CellxCell Super Sample Covariance with the Halo Model
+    as implemented in CCL with the "linear bias" approximation.
+    """
     cov_type = "SSC"
     _reshape_order = "F"
 
     def __init__(self, config):
+        """
+        Parameters
+        ----------
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
+        """
         super().__init__(config)
 
         self.ssc_conf = self.config.get("SSC", {})

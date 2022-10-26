@@ -6,6 +6,9 @@ from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 
 
 class CovarianceFourierGaussianFsky(CovarianceFourier):
+    """
+    Class to compute the Gaussian CellxCell covariance with the Knox formula.
+    """
     # TODO: Improve this class to use the sacc file information or
     # configuration given in the yaml file. Kept like this for now to check I
     # don't break the tests during the refactoring.
@@ -13,6 +16,13 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
     _reshape_order = "F"
 
     def __init__(self, config):
+        """
+        Parameters
+        ----------
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
+        """
         super().__init__(config)
 
         self.fsky = self.config["GaussianFsky"].get("fsky", None)
@@ -174,12 +184,23 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
 
 
 class CovarianceRealGaussianFsky(CovarianceProjectedReal):
+    """
+    Class to compute the Real space Gaussian covariance projecting the Fourier
+    space covariance estimated with the Knox formula.
+    """
     cov_type = "gauss"
     _reshape_order = "F"
     # Set the fourier attribute to None and set it later in the __init__
     fourier = None
 
     def __init__(self, config):
+        """
+        Parameters
+        ----------
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
+        """
         super().__init__(config)
         # Note that the sacc file that the Fourier class will read is in real
         # space and you cannot use the methods that depend on a Fourier space

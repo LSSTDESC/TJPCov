@@ -12,13 +12,19 @@ from .covariance_io import CovarianceIO
 
 
 class CovarianceBuilder(ABC):
+    """
+    Class in charge of building the full covariance needed for the sacc file
+    from individual covariance blocks. This is meant to be used as a parent
+    class and the child classes would actually implement the actual
+    computation of the blocks.
+    """
     def __init__(self, config):
         """
-        Covariance Calculator object for TJPCov.
-
         Parameters
         ----------
-        config (dict or str):
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
         """
         self.io = CovarianceIO(config)
         config = self.config = self.io.config
@@ -188,6 +194,12 @@ class CovarianceBuilder(ABC):
         return blocks, tracers_blocks
 
     def get_cosmology(self):
+        """
+        Return a CCL Cosmology instance. This is generated with the information
+        passed in the configuration file in the "cosmo" section of "tjpcov".
+        This can be a file path to a yaml, pickle object or "set" to read the
+        parameters from the "parameters" section.
+        """
         if self.cosmo is None:
             cosmo = self.config["tjpcov"].get("cosmo")
 
@@ -218,6 +230,21 @@ class CovarianceBuilder(ABC):
 
     @abstractmethod
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """
+        Return the covariance block for the two pair of tracers. This can have
+        all elements. This is what you would get from an external code, for
+        instance.
+
+        Parameters:
+        -----------
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            kwargs: extra possible arguments
+
+        Returns:
+        --------
+            cov (array):  Covariance block
+        """
         # This function returns the covariance block with all elements (e.g.
         # EE-EB-BE-BB in the case of shear-shear), which might not be all
         # present in the sacc file
@@ -229,11 +256,30 @@ class CovarianceBuilder(ABC):
     def get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
+        """
+        Return the covariance block for the two pair of tracers as needed for
+        the sacc file (e.g. if in the sacc file there are no B-modes, the
+        covariance would only have the EE-EE component)
+
+        Parameters:
+        -----------
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            kwargs: Arguments accepted by `get_covariance_block`
+
+        Returns:
+        --------
+            cov (array):  Covariance block
+        """
         # This function returns the covariance block with the elements in the
         # sacc file (e.g. only EE in the case of shear-shear)
         raise NotImplementedError("Not implemented")
 
     def get_covariance(self, **kwargs):
+        """
+        Return the full covariance for the tracer combinations in the sacc
+        file.
+        """
         if self.cov is None:
             blocks, tracers_cov = self._compute_all_blocks(**kwargs)
 
@@ -486,6 +532,11 @@ class CovarianceBuilder(ABC):
 
 
 class CovarianceFourier(CovarianceBuilder):
+    """
+    Parent class for Cell x Cell covariances in Fourier space. This has all the
+    methods common to all the Fourier covariance calculations. The child
+    classes will actually implement the actual computation of the blocks.
+    """
     space_type = "Fourier"
 
     def __init__(self, config):
@@ -788,6 +839,11 @@ class CovarianceFourier(CovarianceBuilder):
 
 
 class CovarianceReal(CovarianceBuilder):
+    """
+    Parent class for xi x xi covariances in Real space. This has all the
+    methods common to all the Real covariance calculations. The child
+    classes will actually implement the actual computation of the blocks.
+    """
     space_type = "Real"
 
     def get_theta_eff(self):
@@ -817,8 +873,10 @@ class CovarianceProjectedReal(CovarianceReal):
     # For now we will only consider the EE contribution, which should be
     # dominant
     """
-    Real covariance class for the cases we compute the covariance in Fourier
-    space and then we project to real space.
+    Parent class for xi x xi covariances in Real space. This has all the
+    methods common to all the Real covariance calculations that are computed by
+    projecting the Fourier space ones. The child classes will only have to call
+    a CovarianceFourier child to get the covariance in Fourier space.
     """
 
     def __init__(self, config):

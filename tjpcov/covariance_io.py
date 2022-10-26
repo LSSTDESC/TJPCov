@@ -8,16 +8,18 @@ import yaml
 
 
 class CovarianceIO:
+    """
+    Class to handle the input/output of the covariances. It does not compute
+    anything and it is initialized inside the CovarianceBuilder and
+    CovarianceCalculator classes.
+    """
     def __init__(self, config):
         """
-        CovarianceIO class for TJPCov.
-
-        This is the class that handles the input/output of the covariances.
-        It does not compute anything.
-
         Parameters
         ----------
-        config (dict or str):
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
         """
         self.config = self._read_config(config)
         self.sacc_file = None
@@ -27,6 +29,19 @@ class CovarianceIO:
         os.makedirs(self.outdir, exist_ok=True)
 
     def _read_config(self, config):
+        """
+        Return the configuration dictionary.
+
+        Parameters
+        ----------
+            config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
+
+        Return
+        ------
+            config (dict): Configuration dictionary
+        """
         if isinstance(config, dict):
             pass
         elif isinstance(config, str):
