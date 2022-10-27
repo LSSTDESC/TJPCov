@@ -11,7 +11,6 @@ from scipy.special import binom
 from scipy.special import eval_jacobi as jacobi
 from scipy.special import jn
 
-import warnings
 
 # FIXME:
 # 1. Do we need to pass logger?
@@ -23,7 +22,7 @@ class WignerTransform:
     Class to compute curved sky Hankel transforms using the wigner-d matrices.
     """
 
-    def __init__( self, theta, ell, s1_s2, ncpu=None):
+    def __init__(self, theta, ell, s1_s2, ncpu=None):
         """
         Parameters
         ----------
@@ -50,7 +49,7 @@ class WignerTransform:
 
         self.ell = ell
         self.grad_ell = np.gradient(ell)
-        self.norm = (2 * ell + 1.0) / ( 4.0 * np.pi)
+        self.norm = (2 * ell + 1.0) / (4.0 * np.pi)
         # ignoring some factors of -1, assuming sum and differences of s1,s2
         # are even for all correlations we need.
 
@@ -181,13 +180,7 @@ class WignerTransform:
     #     return self.ell, cl
 
     def projected_covariance(
-        self,
-        ell_cl,
-        cl_cov,
-        s1_s2,
-        s1_s2_cross=None,
-        taper=False,
-        **kwargs
+        self, ell_cl, cl_cov, s1_s2, s1_s2_cross=None, taper=False, **kwargs
     ):
         """
         Convert C_ell covariance to correlation function.
@@ -217,9 +210,17 @@ class WignerTransform:
             # Raise NotImplementedError because although it is implemented, it
             # has not been tested if the extrapolation done in cl_cov_grid
             # breaks things or not.
-            raise NotImplementedError("The covariance is assumed to be computed at the same ells as those used at intialization")
-            cl_cov2 = self.cl_cov_grid(cl_cov=cl_cov,ell_cl=ell_cl,s1_s2=s1_s2,
-                                       taper=taper,**kwargs)
+            raise NotImplementedError(
+                "The covariance is assumed to be computed at the same ells as "
+                "those used at intialization"
+            )
+            cl_cov2 = self.cl_cov_grid(
+                cl_cov=cl_cov,
+                ell_cl=ell_cl,
+                s1_s2=s1_s2,
+                taper=taper,
+                **kwargs
+            )
         else:
             cl_cov2 = cl_cov
 
@@ -408,7 +409,7 @@ def bin_cov(r, mat, r_bins):  # works for cov and skewness
         s1 = s2 + "," + ls[i + 1]
         s2 += ls[i + 1]
         # works ok for 2-d case
-        r_dr_m = np.einsum( s1 + "->" + s2, r_dr_m, r_dr)
+        r_dr_m = np.einsum(s1 + "->" + s2, r_dr_m, r_dr)
 
     mat_r_dr = mat * r_dr_m
     for indxs in itertools.product(

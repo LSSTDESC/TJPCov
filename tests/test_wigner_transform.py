@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import numpy as np
 import pytest
-import sacc
 
 import tjpcov.wigner_transform as wigner_transform
 
@@ -83,16 +82,16 @@ def test_cl_cov_grid():
     ell = np.arange(5, 96, 2)
     cl_cov = get_matrix(ell)
 
-
     cl_cov2 = wt.cl_cov_grid(ell, cl_cov)
     sel1 = wt.ell < ell[0]
-    assert np.max(np.abs(cl_cov2[sel1][:, sel1] / ell[0] -1) < 1e-10)
+    assert np.max(np.abs(cl_cov2[sel1][:, sel1] / ell[0] - 1) < 1e-10)
     sel2 = wt.ell > ell[-1]
-    assert np.max(np.abs(cl_cov2[sel2][:, sel2] / ell[-1] -1) < 1e-10)
-    sel = ~(sel1+sel2)
+    assert np.max(np.abs(cl_cov2[sel2][:, sel2] / ell[-1] - 1) < 1e-10)
+    sel = ~(sel1 + sel2)
     cl_cov = get_matrix(wt.ell)
-    assert np.max(np.abs(cl_cov2[sel][:, sel] / cl_cov[sel][:, sel] -1) <
-                  1e-10)
+    assert np.max(
+        np.abs(cl_cov2[sel][:, sel] / cl_cov[sel][:, sel] - 1) < 1e-10
+    )
 
 
 @pytest.mark.parametrize("s1_s2", [(0, 0), (0, 2), (2, 2), (2, -2)])
@@ -106,7 +105,11 @@ def test_projected_covariance(s1_s2, s1_s2_cross):
     th, matb = wt.projected_covariance(wt.ell, mat, s1_s2, s1_s2_cross)
     wd_a = wigner_transform.wigner_d(*s1_s2, wt.theta, wt.ell)
     wd_b = wigner_transform.wigner_d(*s1_s2_cross, wt.theta, wt.ell)
-    matb_2 = (wd_a * np.sqrt(wt.norm) * wt.grad_ell) @ mat @ (wd_b * np.sqrt(wt.norm)).T
+    matb_2 = (
+        (wd_a * np.sqrt(wt.norm) * wt.grad_ell)
+        @ mat
+        @ (wd_b * np.sqrt(wt.norm)).T
+    )
 
     assert np.all(th == wt.theta)
     assert np.max(np.abs(matb / matb_2) - 1) < 1e-5
@@ -152,21 +155,19 @@ def test_wigner_d_parallel(s1, s2):
     assert np.all(wd == wd2)
 
     wd = wigner_transform.wigner_d(s1, s2, theta, ell, l_use_bessel=None)
-    wd2 = wigner_transform.wigner_d_parallel(s1, s2, theta, ell,
-                                             l_use_bessel=None)
+    wd2 = wigner_transform.wigner_d_parallel(
+        s1, s2, theta, ell, l_use_bessel=None
+    )
     assert np.all(wd == wd2)
-
 
 
 def test_bin_cov():
     kwargs = get_WT_kwargs()
     r = kwargs["theta"]
     mat = get_matrix(r)
-    r_bins = np.logspace(np.log10(r.min()),
-                         np.log10(r.max()), 10)
+    r_bins = np.logspace(np.log10(r.min()), np.log10(r.max()), 10)
     bin_center, bin_mat = wigner_transform.bin_cov(r, mat, r_bins)
     bin_center2, bin_mat2 = bin_cov(r, mat, r_bins)
 
     assert np.all(bin_center == bin_center2)
     assert np.all(bin_mat == bin_mat2)
-
