@@ -155,7 +155,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     if isinstance(s1_s2_2, dict):
         s1_s2_2 = s1_s2_2["plus"]
     th, cov = WT.projected_covariance(
-        l_cl=ell,
+        ell_cl=ell,
         s1_s2=s1_s2_1,
         s1_s2_cross=s1_s2_2,
         cl_cov=fourier_block[2:][:, 2:],

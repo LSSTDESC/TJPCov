@@ -1048,7 +1048,7 @@ class CovarianceProjectedReal(CovarianceReal):
         ell = np.arange(2, self.lmax + 1)
         cov = cov[2:][:, 2:]
         th, cov = WT.projected_covariance(
-            l_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
+            ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
         )
         if binned:
             theta, _, theta_edges = self.get_binning_info(in_radians=False)

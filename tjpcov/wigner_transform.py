@@ -373,24 +373,24 @@ def wigner_d_parallel(s1, s2, theta, ell, ncpu=None, l_use_bessel=1.0e4):
 #  the eror and checked the output with the previous bin_cov. It should be safe
 #  to use the faster version, but if weird results appear, it might be this
 #  function has some remaining bug.
-def bin_cov(r, mat, r_bins):  # works for cov and skewness
+def bin_cov(r, cov, r_bins):  # works for cov and skewness
     """
     Function to apply the binning operator. This function works on both one
-    dimensional vectors and two dimensional covariance matrices.
+    dimensional vectors and two dimensional covariance covrices.
 
     Parameters
     ----------
     r:
         theta or ell values at which the un-binned vector is computed.
-    mat:
+    cov:
         Unbinned vector of C_ell or xi or the unbinned covariance
     r_bins:
         theta or ell bins to which the values should be binned.
     """
     bin_center = 0.5 * (r_bins[1:] + r_bins[:-1])
     n_bins = len(bin_center)
-    ndim = len(mat.shape)
-    mat_int = np.zeros([n_bins] * ndim, dtype="float64")
+    ndim = len(cov.shape)
+    cov_int = np.zeros([n_bins] * ndim, dtype="float64")
     norm_int = np.zeros([n_bins] * ndim, dtype="float64")
     bin_idx = np.digitize(r, r_bins) - 1
     r2 = np.sort(
@@ -411,12 +411,12 @@ def bin_cov(r, mat, r_bins):  # works for cov and skewness
         # works ok for 2-d case
         r_dr_m = np.einsum(s1 + "->" + s2, r_dr_m, r_dr)
 
-    mat_r_dr = mat * r_dr_m
+    cov_r_dr = cov * r_dr_m
     for indxs in itertools.product(
         np.arange(min(bin_idx), n_bins), repeat=ndim
     ):
         norm_ijk = 1
-        mat_t = []
+        cov_t = []
         for nd in np.arange(ndim):
             slc = [slice(None)] * (ndim)
             print(slc)
@@ -424,12 +424,12 @@ def bin_cov(r, mat, r_bins):  # works for cov and skewness
             slc[nd] = bin_idx == indxs[nd]
             print(slc)
             if nd == 0:
-                mat_t = mat_r_dr[slc[0]][:, slc[1]]
+                cov_t = cov_r_dr[slc[0]][:, slc[1]]
             else:
-                mat_t = mat_t[slc[0]][:, slc[1]]
+                cov_t = cov_t[slc[0]][:, slc[1]]
             norm_ijk *= np.sum(r_dr[slc[nd]])
         if norm_ijk == 0:
             continue
-        mat_int[indxs] = np.sum(mat_t) / norm_ijk
+        cov_int[indxs] = np.sum(cov_t) / norm_ijk
         norm_int[indxs] = norm_ijk
-    return bin_center, mat_int
+    return bin_center, cov_int
