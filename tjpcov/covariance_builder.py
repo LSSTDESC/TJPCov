@@ -6,7 +6,7 @@ import numpy as np
 import pyccl as ccl
 import sacc
 
-from .wigner_transform import bin_cov, wigner_transform
+from .wigner_transform import bin_cov, WignerTransform
 from . import tools
 from .covariance_io import CovarianceIO
 
@@ -1000,7 +1000,7 @@ class CovarianceProjectedReal(CovarianceReal):
                 "s1_s2": [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)],
             }
 
-            self.WT = wigner_transform(**WT_kwargs)
+            self.WT = WignerTransform(**WT_kwargs)
 
         return self.WT
 
@@ -1047,7 +1047,7 @@ class CovarianceProjectedReal(CovarianceReal):
         # Remove ell <= 1 for WT (following original implementation)
         ell = np.arange(2, self.lmax + 1)
         cov = cov[2:][:, 2:]
-        th, cov = WT.projected_covariance2(
+        th, cov = WT.projected_covariance(
             l_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
         )
         if binned:

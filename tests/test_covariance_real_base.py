@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import sacc
 
-from tjpcov import bin_cov, wigner_transform
+from tjpcov import bin_cov, WignerTransform
 from tjpcov.covariance_builder import (
     CovarianceProjectedReal,
     CovarianceReal,
@@ -92,7 +92,7 @@ def test_get_Wigner_transform():
     cpr = CovarianceProjectedRealTester(input_yml_real)
     wt = cpr.get_Wigner_transform()
 
-    assert isinstance(wt, wigner_transform)
+    assert isinstance(wt, WignerTransform)
     assert np.all(wt.ell == np.arange(2, cpr.lmax + 1))
     assert np.all(wt.theta == cpr.get_binning_info()[0])
     assert wt.s1_s2s == [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]
@@ -154,7 +154,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         s1_s2_1 = s1_s2_1["plus"]
     if isinstance(s1_s2_2, dict):
         s1_s2_2 = s1_s2_2["plus"]
-    th, cov = WT.projected_covariance2(
+    th, cov = WT.projected_covariance(
         l_cl=ell,
         s1_s2=s1_s2_1,
         s1_s2_cross=s1_s2_2,

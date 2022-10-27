@@ -6,7 +6,7 @@ from .covariance_gaussian_fsky import (
     CovarianceFourierGaussianFsky,
     CovarianceRealGaussianFsky,
 )
-from .wigner_transform import bin_cov, wigner_transform
+from .wigner_transform import bin_cov, WignerTransform
 
 
 def covariance_from_name(name):
