@@ -207,7 +207,7 @@ class WignerTransform:
             different from s1_s2. Used to identify the correct wigner-d matrix
             to use.
         """
-        if np.all(ell_cl != self.ell):
+        if (ell_cl.size != self.ell.size) or np.all(ell_cl != self.ell):
             # TODO: This option is not used in TJPCov. We can generate the
             # covariance with all the ells to avoid doing this that will be
             # less accurate. Consider enforcing passing a covariance that is
@@ -227,7 +227,7 @@ class WignerTransform:
             s1_s2_cross = s1_s2
 
         cov = np.einsum(
-            "rk,kk,sk->rs",
+            "rk,kl,sl->rs",
             self.wig_d[s1_s2] * np.sqrt(self.norm) * self.grad_ell,
             cl_cov2,
             self.wig_d[s1_s2_cross] * np.sqrt(self.norm),

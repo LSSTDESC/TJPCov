@@ -9,7 +9,7 @@ import tjpcov.wigner_transform as wigner_transform
 def get_WT_kwargs():
     lmax = 96
     ell = np.arange(2, lmax + 1)
-    theta = np.sort(np.pi / ell)
+    theta = np.sort(np.pi / ell)[::2]  # Force them to have different sizes
     WT_kwargs = {
         "ell": ell,
         "theta": theta,
@@ -95,9 +95,21 @@ def test_cl_cov_grid():
                   1e-10)
 
 
-def test_projected_covariance():
-    pass
+@pytest.mark.parametrize("s1_s2", [(0, 0), (0, 2), (2, 2), (2, -2)])
+@pytest.mark.parametrize("s1_s2_cross", [(0, 0), (0, 2), (2, 2), (2, -2)])
+def test_projected_covariance(s1_s2, s1_s2_cross):
+    wt = get_WT()
+    mat = get_matrix(wt.ell)
+    with pytest.raises(NotImplementedError):
+        wt.projected_covariance(wt.ell[10:], mat, s1_s2, s1_s2_cross)
 
+    th, matb = wt.projected_covariance(wt.ell, mat, s1_s2, s1_s2_cross)
+    wd_a = wigner_transform.wigner_d(*s1_s2, wt.theta, wt.ell)
+    wd_b = wigner_transform.wigner_d(*s1_s2_cross, wt.theta, wt.ell)
+    matb_2 = (wd_a * np.sqrt(wt.norm) * wt.grad_ell) @ mat @ (wd_b * np.sqrt(wt.norm)).T
+
+    assert np.all(th == wt.theta)
+    assert np.max(np.abs(matb / matb_2) - 1) < 1e-5
 
 def test_taper():
     with pytest.raises(NotImplementedError):
@@ -136,7 +148,7 @@ def test_wigner_d_parallel(s1, s2):
 def test_bin_cov():
     kwargs = get_WT_kwargs()
     r = kwargs["theta"]
-    mat = get_matrix(kwargs["ell"])
+    mat = get_matrix(r)
     r_bins = np.logspace(np.log10(r.min()),
                          np.log10(r.max()), 10)
     bin_center, bin_mat = wigner_transform.bin_cov(r, mat, r_bins)
