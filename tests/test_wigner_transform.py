@@ -111,6 +111,7 @@ def test_projected_covariance(s1_s2, s1_s2_cross):
     assert np.all(th == wt.theta)
     assert np.max(np.abs(matb / matb_2) - 1) < 1e-5
 
+
 def test_taper():
     with pytest.raises(NotImplementedError):
         wt = get_WT()
@@ -122,8 +123,20 @@ def test_diagonal_err():
     assert np.all(wt.diagonal_err(get_matrix(wt.ell)) == np.sqrt(wt.ell))
 
 
-def test_wigner_d():
-    pass
+# FIXME: I couldn't reproduce the values with an external code
+# (https://github.com/ntessore/wigner) but I might be using it wrong. Felipe
+# validated the implementation with Sukhdeep's code, so
+# it should be all right. We need to add the validation here
+# @pytest.mark.parametrize("s1,s2", [(0, 0), (0, 2), (2, 2), (2, -2)])
+# def test_wigner_d(s1, s2):
+#     kwargs = get_WT_kwargs()
+#     theta = kwargs["theta"]
+#     ell = kwargs["ell"]
+#     wd = wigner_transform.wigner_d(s1, s2, np.atleast_1d(theta[20]),
+#                                    np.atleast_1d(ell[20]))
+#     # import wigner
+#     # wd2 = wigner.wigner_dl(ell[20], ell[20], s1, s2, theta[20])
+#     # assert np.max(np.abs(wd / wd2 - 1)) < 1e-5
 
 
 @pytest.mark.parametrize("s1,s2", [(0, 0), (0, 2), (2, 2), (2, -2)])
