@@ -10,7 +10,7 @@ import numpy as np
 import sacc
 
 
-input_yml = "./tests/data/config_covariance_calculator.yml"
+input_yml = "./tests/data/conf_covariance_calculator.yml"
 outdir = "tests/tmp"
 
 

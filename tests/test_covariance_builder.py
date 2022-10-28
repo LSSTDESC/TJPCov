@@ -10,10 +10,10 @@ import pymaster as nmt
 from tjpcov.covariance_builder import CovarianceBuilder
 from scipy.linalg import block_diag
 
-root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-outdir = root + "tjpcov_tmp/"
-input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
-input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
+input_yml = "./tests/data/conf_covariance_builder_minimal.yaml"
+input_sacc = sacc.Sacc.load_fits(
+    "./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits"
+)
 
 # Create temporal folder
 os.makedirs("tests/tmp/", exist_ok=True)

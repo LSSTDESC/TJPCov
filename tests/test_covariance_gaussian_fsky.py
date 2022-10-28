@@ -22,8 +22,8 @@ with open("tests/tmp/cosmos_desy1_v2p1p0.pkl", "wb") as ff:
     pickle.dump(cosmo, ff)
 
 # SETUP
-input_yml = "tests/data/conf_tjpcov_minimal.yaml"
-input_yml_real = "tests/data/conf_tjpcov_minimal_real.yaml"
+input_yml = "tests/data/conf_covariance_gaussian_fsky_fourier.yaml"
+input_yml_real = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
 cfsky = CovarianceFourierGaussianFsky(input_yml)
 cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()

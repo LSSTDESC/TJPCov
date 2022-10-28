@@ -9,7 +9,7 @@ from tjpcov.covariance_builder import (
     CovarianceReal,
 )
 
-input_yml_real = "tests/data/conf_tjpcov_minimal_real.yaml"
+input_yml_real = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
 xi_fn = "examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
 sacc_file = sacc.Sacc.load_fits(xi_fn)
 

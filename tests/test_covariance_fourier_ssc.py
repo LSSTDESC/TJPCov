@@ -12,8 +12,8 @@ import yaml
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-input_yml_ssc = os.path.join(root, "tjpcov_conf_minimal_ssc.yaml")
-outdir = root + "tjpcov_tmp"
+input_yml_ssc = "./tests/data/conf_covariance_ssc.yaml"
+outdir = "./tests/tmp/"
 
 input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
 nside = 32
@@ -26,10 +26,6 @@ def clean_tmp():
     if os.path.isdir("./tests/tmp"):
         shutil.rmtree("./tests/tmp/")
     os.makedirs("./tests/tmp")
-
-    if os.path.isdir("./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/"):
-        shutil.rmtree("./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
-    os.makedirs("./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
 
 
 def get_config():

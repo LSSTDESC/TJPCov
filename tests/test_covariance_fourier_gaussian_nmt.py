@@ -18,9 +18,9 @@ from tjpcov.covariance_io import CovarianceIO
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 root_new = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = root + "tjpcov_tmp/"
-input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
-input_yml_no_nmtc = os.path.join(root, "tjpcov_conf_minimal_no_nmtconf.yaml")
-input_yml_txpipe = os.path.join(root_new, "tjpcov_conf_minimal_txpipe.yaml")
+input_yml = os.path.join(root, "conf_covariance_gaussian_fourier_nmt.yaml")
+input_yml_no_nmtc = os.path.join(root, "conf_covariance_gaussian_fourier_nmt_no_nmtconf.yaml")
+input_yml_txpipe = os.path.join(root_new, "conf_covariance_gaussian_fourier_nmt_txpipe.yaml")
 xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
 
 input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")

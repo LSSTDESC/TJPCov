@@ -17,19 +17,6 @@ tjpcov:
 
   outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
 
-  # Survey params:
-  # 5 lens bins
-  {% for i in range(2) %} 
-  Ngal_eBOSS__{{ i }}: {{26}} # arc_min^2
-  {% endfor %}
-  Ngal_DESgc__0: 26
-
-  Ngal_DESwl__0: 26
-  Ngal_DESwl__1: 26
-  # # constant bin sigma_e
-  sigma_e_DESwl__0: 0.26
-  sigma_e_DESwl__1: 0.26
-
   # linear bias for lenses constant for redshift bin (example notebook)
   bias_DESgc__0: 1.48
 

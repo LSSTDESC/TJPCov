@@ -10,7 +10,7 @@ from glob import glob
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = root + "tjpcov_tmp/"
-input_yml = os.path.join(root, "tjpcov_conf_minimal.yaml")
+input_yml = os.path.join(root, "conf_covariance_gaussian_fourier_nmt.yaml")
 input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
 
 

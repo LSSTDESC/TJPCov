@@ -16,13 +16,10 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+  outdir: ./tests/tmp
 
   # Survey params:
   # 5 lens bins
-  {% for i in range(2) %} 
-  Ngal_eBOSS__{{ i }}: {{26}} # arc_min^2
-  {% endfor %}
   Ngal_DESgc__0: 26
 
   Ngal_DESwl__0: 26
