@@ -3,9 +3,6 @@ tjpcov:
 
   cosmo: tests/data/cosmo_desy1.yaml
 
-  # allowed covariance type: gauss, ng (to be implemented)
-  cov_type: gauss
-
   # Survey params:
   # 5 lens bins
   {% for i in range(5) %} 

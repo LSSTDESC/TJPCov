@@ -1,23 +1,9 @@
 tjpcov:
-  # False: harmonic space; True: configuration space
-  do_xi: False
-
-  # config space sacc input
-  xi_file: None # examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits
-
-  # harmonic space sacc input
-  cl_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits
-
   # sacc input file 
-  # not used now 
   sacc_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits
 
-
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
-  cosmo: 'set' # tests/data/cosmos_desy1_v2p1p0.pkl
-
-  # allowed covariance type: gauss, ng (to be implemented)
-  cov_type: ssc
+  cosmo: 'set'
 
   # Setting mask OR fsky approximation
   mask_file:
@@ -31,8 +17,6 @@ tjpcov:
     DESwl__1: mask_DESwl1
 
   outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
-
-  fsky: 0.3
 
   # Survey params:
   # 5 lens bins

@@ -5,7 +5,7 @@ tjpcov:
   sacc_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov_as_txpipe.fits
 
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
-  cosmo: 'set' # tests/data/cosmos_desy1_v2p1p0.pkl
+  cosmo: 'set' 
 
   # Setting mask OR fsky approximation
   mask_file: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DES_mask_ns32.hdf5
@@ -55,7 +55,6 @@ NaMaster:
     recompute: True
 
 parameters:
-  # Not used for while (read by ccl.cosmo):
   Omega_c: 0.2640
   Omega_b: 0.0493
   h: 0.6736
