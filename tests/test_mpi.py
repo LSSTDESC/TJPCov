@@ -11,9 +11,7 @@ from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = "./tests/tmp/"
-input_yml_mpi = (
-    "./tests/benchmarks/32_DES_tjpcov_bm/conf_covariance_gaussian_fourier_nmt_txpipe_mpi.yaml"
-)
+input_yml_mpi = root + "conf_covariance_gaussian_fourier_nmt_txpipe_mpi.yaml"
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
