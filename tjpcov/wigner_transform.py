@@ -80,13 +80,17 @@ class WignerTransform:
 
         Parameters
         ----------
-        cl:
-            input C_ell
-        ell_cl:
+        ell_cl (array):
             ell at which the input C_ell is computed.
-        taper:
+        cl (array):
+            input C_ell
+        taper (bool):
             if True apply the tapering to the input C_ell. Tapering can help in
             reducing ringing.
+
+        Returns
+        -------
+        cl (array): C_ell evaluated at the initialization ells.
         """
         if taper:
             self.taper_f = self.taper(ell=ell_cl, **taper_kwargs)
@@ -100,7 +104,24 @@ class WignerTransform:
 
     def cl_cov_grid(self, ell_cl, cl_cov, taper=False, **taper_kwargs):
         """
-        Same as cl_grid, but for the 2D covariance. Uses 2D interpolation.
+        Interpolate input 2D covariances in case the ell values are different
+        from the grid on which wigner-d matrices were computed during
+        intialization.
+
+        Parameters
+        ----------
+        ell_cl (array):
+            ell at which the input covariance was computed.
+        cl (array):
+            input covariance
+        taper (bool):
+            if True apply the tapering to the input C_ell. Tapering can help in
+            reducing ringing.
+        taper_kwargs: Arguments to pass to the tapering method
+
+        Returns
+        -------
+        cov (array): covariance evaluated at the initialization ells.
 
         """
         # TODO: This method is not used in TJPCov. Consider enforcing passing a
@@ -199,6 +220,15 @@ class WignerTransform:
             Tuple of the spin factors of the second set of tracers, if
             different from s1_s2. Used to identify the correct wigner-d matrix
             to use.
+        taper (bool):
+            if True apply the tapering to the input C_ell. Tapering can help in
+            reducing ringing.
+        kwargs: Arguments to pass to the tapering method
+
+        Returns
+        -------
+        theta (array): angles given at initialization
+        cov (array): real space covariance at the given angles
         """
         if (ell_cl.size != self.ell.size) or np.all(ell_cl != self.ell):
             # TODO: This option is not used in TJPCov. We can generate the
@@ -289,6 +319,14 @@ class WignerTransform:
         """
         Returns the diagonal error from the covariance. Useful for errorbar
         plots.
+
+        Parameters
+        ----------
+        cov (array): Covariance
+
+        Returns
+        -------
+        sigma (array): Diagonal errors (i.e. `sqrt(diag(cov))`)
         """
         return np.sqrt(np.diagonal(cov))
 
@@ -296,6 +334,7 @@ class WignerTransform:
 def wigner_d(s1, s2, theta, ell, l_use_bessel=1.0e4):
     """
     Function to compute the wigner-d matrices
+
     Parameters
     ----------
     s1,s2:
@@ -309,6 +348,10 @@ def wigner_d(s1, s2, theta, ell, l_use_bessel=1.0e4):
         Due to numerical issues, we need to switch from wigner-d matrix to
         bessel functions at high ell (see the note below). This defines the
         scale at which the switch happens.
+
+    Returns
+    -------
+    wigner_d (array): Wigner-d matrix
     """
     l0 = np.copy(ell)
     if l_use_bessel is not None:
@@ -356,8 +399,23 @@ def wigner_d_parallel(s1, s2, theta, ell, ncpu=None, l_use_bessel=1.0e4):
 
     Parameters
     ----------
+    s1,s2:
+        Spin factors for the wigner-d matrix.
+    theta:
+        Angular separation for which to compute the wigner-d matrix. The matrix
+        depends on cos(theta).
+    ell:
+        The spherical harmonics mode ell for which to compute the matrix.
     ncpu:
         number of processes to use for computing the matrix.
+    l_use_bessel:
+        Due to numerical issues, we need to switch from wigner-d matrix to
+        bessel functions at high ell (see the note below). This defines the
+        scale at which the switch happens.
+
+    Returns
+    -------
+    wigner_d (array): Wigner-d matrix
     """
     if ncpu is None:
         ncpu = cpu_count()
@@ -383,9 +441,13 @@ def bin_cov(r, cov, r_bins):  # works for cov and skewness
     r:
         theta or ell values at which the un-binned vector is computed.
     cov:
-        Unbinned vector of C_ell or xi or the unbinned covariance
+        Unbinned covariance. It also works for a vector of C_ell or xi
     r_bins:
         theta or ell bins to which the values should be binned.
+
+    Returns
+    -------
+    (array): Binned covariance or vector of C_ell or xi
     """
     bin_center = 0.5 * (r_bins[1:] + r_bins[:-1])
     n_bins = len(bin_center)
@@ -419,10 +481,7 @@ def bin_cov(r, cov, r_bins):  # works for cov and skewness
         cov_t = []
         for nd in np.arange(ndim):
             slc = [slice(None)] * (ndim)
-            print(slc)
-            # x[nd]=bin_idx==indxs[nd]
             slc[nd] = bin_idx == indxs[nd]
-            print(slc)
             if nd == 0:
                 cov_t = cov_r_dr[slc[0]][:, slc[1]]
             else:
