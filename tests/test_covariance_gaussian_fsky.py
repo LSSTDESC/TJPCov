@@ -5,6 +5,7 @@ import pickle
 import numpy as np
 import pyccl as ccl
 import pytest
+import shutil
 
 from tjpcov import bin_cov
 from tjpcov.covariance_gaussian_fsky import (
@@ -15,10 +16,11 @@ from tjpcov.covariance_io import CovarianceIO
 
 # INPUT
 # CCL and sacc input:
-os.makedirs("tests/tmp/", exist_ok=True)
+outdir = "tests/tmp/"
+os.makedirs(outdir, exist_ok=True)
 cosmo_filename = "tests/data/cosmo_desy1.yaml"
 cosmo = ccl.Cosmology.read_yaml(cosmo_filename)
-with open("tests/tmp/cosmos_desy1_v2p1p0.pkl", "wb") as ff:
+with open(outdir + "cosmos_desy1_v2p1p0.pkl", "wb") as ff:
     pickle.dump(cosmo, ff)
 
 # SETUP
@@ -27,6 +29,18 @@ input_yml_real = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
 cfsky = CovarianceFourierGaussianFsky(input_yml)
 cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
+
+
+def clean_tmp():
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
 
 
 def get_config():

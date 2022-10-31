@@ -7,6 +7,7 @@ import numpy as np
 import pymaster as nmt
 import pytest
 import sacc
+import shutil
 import yaml
 
 from tjpcov.covariance_fourier_gaussian_nmt import (
@@ -32,6 +33,18 @@ nside = 32
 
 # Create temporal folder
 os.makedirs(outdir, exist_ok=True)
+
+
+def clean_tmp():
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
 
 
 # Useful functions

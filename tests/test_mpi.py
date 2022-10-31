@@ -2,6 +2,8 @@
 import os
 
 import numpy as np
+import pytest
+import shutil
 from mpi4py import MPI
 
 from tjpcov.covariance_fourier_gaussian_nmt import (
@@ -20,7 +22,21 @@ size = comm.Get_size()
 comm.Barrier()
 if rank == 0:
     # Create temporal folder
-    os.makedirs("tests/tmp/", exist_ok=True)
+    os.makedirs(outdir, exist_ok=True)
+
+
+def clean_tmp():
+    comm.Barrier()
+    if (rank == 0) and os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
+
 
 # The _split_tasks_by_rank and _compute_all_blocks methods have been tested
 # serially in tests_covariance_builder.py. Here, we will just make sure that
@@ -126,9 +142,3 @@ def test_get_covariance():
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-5
-
-
-# Clean up after the tests
-comm.Barrier()
-if rank == 0:
-    os.system("rm -rf ./tests/tmp/")

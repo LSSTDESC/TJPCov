@@ -8,10 +8,23 @@ import os
 import pytest
 import numpy as np
 import sacc
+import shutil
 
 
 input_yml = "./tests/data/conf_covariance_calculator.yml"
 outdir = "tests/tmp"
+
+
+def clean_tmp():
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
 
 
 def test_smoke():

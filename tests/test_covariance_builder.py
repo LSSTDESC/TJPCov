@@ -3,6 +3,7 @@ import os
 import pytest
 import numpy as np
 import sacc
+import shutil
 import pickle
 import pyccl as ccl
 import pymaster as nmt
@@ -14,9 +15,10 @@ input_yml = "./tests/data/conf_covariance_builder_minimal.yaml"
 input_sacc = sacc.Sacc.load_fits(
     "./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits"
 )
+outdir = "tests/tmp/"
 
 # Create temporal folder
-os.makedirs("tests/tmp/", exist_ok=True)
+os.makedirs(outdir, exist_ok=True)
 
 
 class CovarianceBuilderTester(CovarianceBuilder):
@@ -42,6 +44,18 @@ def get_nmt_bin(lmax=95):
         bpw_edges[-1] = lmax + 1
 
     return nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
+
+
+def clean_tmp():
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
 
 
 def test_smoke():
@@ -124,7 +138,7 @@ def test_get_cosmology():
     assert isinstance(cb.get_cosmology(), ccl.Cosmology)
 
     # Check it reads pickles too
-    fname = "tests/tmp/cosmos_desy1.pkl"
+    fname = os.path.join(outdir, "cosmos_desy1.pkl")
     with open(fname, "wb") as ff:
         pickle.dump(cosmo, ff)
 

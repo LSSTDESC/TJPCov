@@ -5,6 +5,7 @@ import pyccl as ccl
 import pymaster as nmt
 import pytest
 import sacc
+import shutil
 
 from tjpcov.covariance_builder import CovarianceFourier
 
@@ -13,8 +14,17 @@ outdir = root + "tjpcov_tmp/"
 input_yml = os.path.join(root, "conf_covariance_gaussian_fourier_nmt.yaml")
 input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
 
-# Create temporal folder
-os.makedirs("tests/tmp/", exist_ok=True)
+
+def clean_tmp():
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
 
 
 class CovarianceFourierTester(CovarianceFourier):
