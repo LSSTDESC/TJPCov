@@ -193,6 +193,12 @@ def test_get_covariance():
 
     assert np.all(cov2 == cov)
 
+    # Check that a ValueError is rised if the covariance is full of 0's
+    cb._tracer_types = ["cluster", "cluster"]
+    cb.cov = None  # To remove the stored value
+    with pytest.raises(ValueError):
+        cb.get_covariance()
+
 
 def test_get_covariance_block_for_sacc():
     class CovarianceBuilderTester(CovarianceBuilder):

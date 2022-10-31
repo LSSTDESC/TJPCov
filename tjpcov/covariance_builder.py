@@ -350,7 +350,20 @@ class CovarianceBuilder(ABC):
                 else:
                     return
 
-            self.cov = self._build_matrix_from_blocks(blocks, tracers_cov)
+            cov = self._build_matrix_from_blocks(blocks, tracers_cov)
+
+            if not np.any(cov):
+                # You'll get a covariance full of 0's if none of the data types
+                # in the sacc file are compatible with the class _tracer_types
+                raise ValueError(
+                    "The covariance is all 0's. This very likely "
+                    "means that the sacc file does not contain "
+                    "any tracer data type compatible with this "
+                    "covariance class tracers: "
+                    f"{self._tracer_types}."
+                )
+
+            self.cov = cov
 
         return self.cov
 
