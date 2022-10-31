@@ -31,12 +31,17 @@ def test_smoke():
     CovarianceCalculator(input_yml)
 
 
+# TODO: Test with "clxN" when clusters are implemented
 def test_get_covariance_classes():
     cc = CovarianceCalculator(input_yml)
     classes = cc.get_covariance_classes()
 
-    assert isinstance(classes["gauss"], CovarianceFourierGaussianNmt)
-    assert isinstance(classes["SSC"], FourierSSCHaloModel)
+    assert isinstance(classes["gauss"], dict)
+    assert isinstance(classes["SSC"], dict)
+    assert isinstance(
+        classes["gauss"][("cl", "cl")], CovarianceFourierGaussianNmt
+    )
+    assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
     # Test it raises an error if two gauss contributions are requested
     config = cc.config.copy()

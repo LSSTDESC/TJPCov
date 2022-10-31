@@ -28,8 +28,8 @@ class CovarianceCalculator:
 
     def get_covariance_classes(self):
         """
-        Return a dictionary with the covariance terms and instances of their
-        corresponding classes.
+        Return a dictionary with the covariance terms, tracer_types and
+        instances of their corresponding classes.
 
         Returns
         -------
@@ -47,13 +47,15 @@ class CovarianceCalculator:
             space_types = []
             for covi in cov_tbc:
                 covi = covariance_from_name(covi)
-                # Check the cov_type has not been already requested (e.g. two
-                # Gaussian contributions)
-                if covi.cov_type in cov_classes:
+                # Check the cov_type has not been already requested for the
+                # same tracer types (e.g. two Gaussian contributions for ClxCl)
+                if (covi.cov_type in cov_classes) and (
+                    covi._tracer_types in cov_classes[covi.cov_type]
+                ):
                     raise ValueError(
-                        f"Covariance type {covi.cov_type} "
-                        "already set. Make sure each type is "
-                        "requested only once."
+                        f"Covariance type {covi.cov_type} for "
+                        "{covi._tracer_types} is already set. Make sure each "
+                        "type is requested only once."
                     )
 
                 # Check that you are not mixing Fourier and real space
@@ -66,7 +68,14 @@ class CovarianceCalculator:
                     )
 
                 space_types.append(covi.space_type)
-                cov_classes[covi.cov_type] = covi(self.config)
+                if covi.cov_type not in cov_classes:
+                    cov_classes[covi.cov_type] = {
+                        covi._tracer_types: covi(self.config)
+                    }
+                else:
+                    cov_classes[covi.cov_type].update(
+                        {covi._tracer_types: covi(self.config)}
+                    )
 
             self.cov_classes = cov_classes
 
@@ -91,7 +100,9 @@ class CovarianceCalculator:
     def get_covariance_terms(self):
         """
         Return a dictionary with keys the covariace types and values their
-        covariance contributions.
+        covariance contributions. We add all the contributions for different
+        tracer types (e.g. ClxCl + ClxN + NxN). Since they are independent it
+        is easy to recover each of them independently.
 
         Returns
         -------
@@ -102,8 +113,12 @@ class CovarianceCalculator:
             cov_classes = self.get_covariance_classes()
 
             cov_terms = {}
-            for ctype, cmat in cov_classes.items():
-                cov_terms[ctype] = cmat.get_covariance()
+            for ctype, cov_dict in cov_classes.items():
+                cov = []
+                for cmat in cov_dict.values():
+                    cov.append(cmat.get_covariance())
+
+                cov_terms[ctype] = sum(cov)
 
             self.cov_terms = cov_terms
 
