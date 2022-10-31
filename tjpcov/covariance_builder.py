@@ -313,10 +313,14 @@ class CovarianceBuilder(ABC):
         s = self.io.get_sacc_file()
 
         # Check in the given order
-        correct_dtypes = (self._tracer_types[0] in dtypes1) and (self._tracer_types[1] in dtypes2)
+        correct_dtypes = (self._tracer_types[0] in dtypes1) and (
+            self._tracer_types[1] in dtypes2
+        )
         if not correct_dtypes:
             # Check in the opposite order
-            correct_dtypes = (self._tracer_types[1] in dtypes1) and (self._tracer_types[0] in dtypes2)
+            correct_dtypes = (self._tracer_types[1] in dtypes1) and (
+                self._tracer_types[0] in dtypes2
+            )
 
         # If still the dtypes are not of the class, return 0's
         if not correct_dtypes:
@@ -324,8 +328,9 @@ class CovarianceBuilder(ABC):
             ix2 = s.indices(tracers=tracer_comb2)
             return np.zeros((ix1.size, ix2.size))
 
-        return self._get_covariance_block_for_sacc(tracer_comb1, tracer_comb2,
-                                                   **kwargs)
+        return self._get_covariance_block_for_sacc(
+            tracer_comb1, tracer_comb2, **kwargs
+        )
 
     def get_covariance(self, **kwargs):
         """

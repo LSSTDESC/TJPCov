@@ -33,6 +33,7 @@ def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
 
 class CovarianceBuilderTester(CovarianceBuilder):
     _tracer_types = ["cl", "cl"]
+
     # Based on https://stackoverflow.com/a/28299369
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
@@ -102,6 +103,7 @@ def test_split_tasks_by_rank():
 def test_compute_all_blocks():
     class CovarianceBuilderTester(CovarianceBuilder):
         _tracer_types = ["cl", "cl"]
+
         # Based on https://stackoverflow.com/a/28299369
         def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
             super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
@@ -171,6 +173,7 @@ def test_get_covariance():
 
     class CovarianceBuilderTester(CovarianceBuilder):
         _tracer_types = ["cl", "cl"]
+
         # Based on https://stackoverflow.com/a/28299369
         def _build_matrix_from_blocks(self, blocks, tracers_cov):
             return build_matrix_from_blocks(blocks, tracers_cov)
@@ -194,6 +197,7 @@ def test_get_covariance():
 def test_get_covariance_block_for_sacc():
     class CovarianceBuilderTester(CovarianceBuilder):
         _tracer_types = ["cl", "cluster"]
+
         # Based on https://stackoverflow.com/a/28299369
         def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
             super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
@@ -225,6 +229,7 @@ def test_get_covariance_block_for_sacc():
     # _tracer_types, it computes the covariance
     class CovarianceBuilderTester(CovarianceBuilder):
         _tracer_types = ["cl", "cluster"]
+
         # Based on https://stackoverflow.com/a/28299369
         def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
             super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)

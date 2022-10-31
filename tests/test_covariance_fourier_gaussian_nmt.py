@@ -329,7 +329,9 @@ def test_compute_all_blocks():
             self, tracer_comb1, tracer_comb2, **kwargs
         ):
             s = self.io.sacc_file
-            return _get_covariance_block_for_sacc(s, tracer_comb1, tracer_comb2)
+            return _get_covariance_block_for_sacc(
+                s, tracer_comb1, tracer_comb2
+            )
 
     cnmt = CNMTTester(input_yml)
     blocks, tracers_blocks = cnmt._compute_all_blocks()
@@ -339,7 +341,9 @@ def test_compute_all_blocks():
     for bi, trs in zip(blocks, tracers_blocks):
         assert np.all(
             bi
-            == _get_covariance_block_for_sacc(cnmt.io.sacc_file, trs[0], trs[1])
+            == _get_covariance_block_for_sacc(
+                cnmt.io.sacc_file, trs[0], trs[1]
+            )
         )
 
 
