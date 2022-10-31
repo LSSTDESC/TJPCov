@@ -29,7 +29,7 @@ def clean_tmp():
     comm.Barrier()
     if (rank == 0) and os.path.isdir(outdir):
         shutil.rmtree(outdir)
-    os.makedirs(outdir)
+        os.makedirs(outdir)
 
 
 # Cleaning the tmp dir before running and after running the tests

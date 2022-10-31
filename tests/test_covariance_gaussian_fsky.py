@@ -34,7 +34,7 @@ ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
 def clean_tmp():
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
-    os.makedirs(outdir)
+        os.makedirs(outdir)
 
 
 # Cleaning the tmp dir before running and after running the tests

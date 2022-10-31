@@ -25,7 +25,7 @@ os.makedirs(outdir, exist_ok=True)
 def clean_tmp():
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
-    os.makedirs(outdir)
+        os.makedirs(outdir)
 
 
 def get_config():
