@@ -108,6 +108,14 @@ class CovarianceBuilder(ABC):
                 yield task
 
     @property
+    def _tracer_types(self):
+        """
+        Tuple with the tracer types (e.g. ("cl", "cl") or ("clusters",
+        "clusters"))
+        """
+        pass
+
+    @property
     def _reshape_order(self):
         """
         order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
@@ -254,7 +262,7 @@ class CovarianceBuilder(ABC):
         raise NotImplementedError("Not implemented")
 
     @abstractmethod
-    def get_covariance_block_for_sacc(
+    def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
         """
@@ -275,6 +283,49 @@ class CovarianceBuilder(ABC):
         # This function returns the covariance block with the elements in the
         # sacc file (e.g. only EE in the case of shear-shear)
         raise NotImplementedError("Not implemented")
+
+    def get_covariance_block_for_sacc(
+        self, tracer_comb1, tracer_comb2, **kwargs
+    ):
+        """
+        Return the covariance block for the two pair of tracers as needed for
+        the sacc file (e.g. if in the sacc file there are no B-modes, the
+        covariance would only have the EE-EE component)
+
+        Parameters:
+        -----------
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            kwargs: Arguments accepted by `get_covariance_block`
+
+        Returns:
+        --------
+            cov (array):  Covariance block
+        """
+        # If the tracers are of a data type not supported by the instantiated
+        # class, return 0's. Elsewise, call _get_covariance_block_for_sacc
+
+        # Let's use only one of the data types since all of them will have to
+        # be e.g. cl, xi for the same tracer combination
+        dtypes1 = self.get_tracer_comb_data_types(tracer_comb1)[0]
+        dtypes2 = self.get_tracer_comb_data_types(tracer_comb2)[0]
+
+        s = self.io.get_sacc_file()
+
+        # Check in the given order
+        correct_dtypes = (self._tracer_types[0] in dtypes1) and (self._tracer_types[1] in dtypes2)
+        if not correct_dtypes:
+            # Check in the opposite order
+            correct_dtypes = (self._tracer_types[1] in dtypes1) and (self._tracer_types[0] in dtypes2)
+
+        # If still the dtypes are not of the class, return 0's
+        if not correct_dtypes:
+            ix1 = s.indices(tracers=tracer_comb1)
+            ix2 = s.indices(tracers=tracer_comb2)
+            return np.zeros((ix1.size, ix2.size))
+
+        return self._get_covariance_block_for_sacc(tracer_comb1, tracer_comb2,
+                                                   **kwargs)
 
     def get_covariance(self, **kwargs):
         """
@@ -540,6 +591,7 @@ class CovarianceFourier(CovarianceBuilder):
     """
 
     space_type = "Fourier"
+    _tracer_types = ("cl", "cl")
 
     def __init__(self, config):
         super().__init__(config)
@@ -547,7 +599,7 @@ class CovarianceFourier(CovarianceBuilder):
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
 
-    def get_covariance_block_for_sacc(
+    def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
         """
@@ -848,6 +900,7 @@ class CovarianceReal(CovarianceBuilder):
     """
 
     space_type = "Real"
+    _tracer_types = ("xi", "xi")
 
     def get_theta_eff(self):
         """
@@ -1056,7 +1109,7 @@ class CovarianceProjectedReal(CovarianceReal):
 
         return cov
 
-    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
+    def _get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
         """
         Compute a the covariance matrix for a given pair of C_ell or xi
 

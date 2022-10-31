@@ -94,14 +94,14 @@ def test_build_matrix_from_blocks():
     trs_cov = cb.get_list_of_tracers_for_cov()
     blocks = []
     for trs1, trs2 in trs_cov:
-        cov12 = cb.get_covariance_block_for_sacc(trs1, trs2)
+        cov12 = cb._get_covariance_block_for_sacc(trs1, trs2)
         blocks.append(cov12)
 
     cov2 = cb._build_matrix_from_blocks(blocks, trs_cov) + 1e-100
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
 
-def test_get_covariance_block_for_sacc():
+def test__get_covariance_block_for_sacc():
     # Test with matrices ordered as in C
     class CFT_orderC(CovarianceFourierTester):
         _reshape_order = "C"
@@ -119,7 +119,7 @@ def test_get_covariance_block_for_sacc():
         ix1 = s.indices(tracers=trs1)
         ix2 = s.indices(tracers=trs2)
         cov1 = cov[ix1][:, ix2]
-        cov2 = cb.get_covariance_block_for_sacc(trs1, trs2) + 1e-100
+        cov2 = cb._get_covariance_block_for_sacc(trs1, trs2) + 1e-100
 
         assert cov1.shape == cov2.shape
         assert np.max(np.abs(cov1 / cov2 - 1)) < 1e-10
@@ -148,7 +148,7 @@ def test_get_covariance_block_for_sacc():
         ix1 = s.indices(tracers=trs1)
         ix2 = s.indices(tracers=trs2)
         cov1 = cov[ix1][:, ix2]
-        cov2 = cb.get_covariance_block_for_sacc(trs1, trs2) + 1e-100
+        cov2 = cb._get_covariance_block_for_sacc(trs1, trs2) + 1e-100
 
         assert cov1.shape == cov2.shape
         assert np.max(np.abs(cov1 / cov2 - 1)) < 1e-10

@@ -21,8 +21,8 @@ class CovarianceRealTester(CovarianceReal):
     def get_covariance_block(self, tracer_comb1, tracer_comb2):
         super().get_covariance_block(tracer_comb1, tracer_comb2)
 
-    def get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
-        super().get_covariance_block_for_sacc(tracer_comb1, tracer_comb2)
+    def _get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
+        super()._get_covariance_block_for_sacc(tracer_comb1, tracer_comb2)
 
 
 class CovarianceProjectedRealTester(CovarianceProjectedReal):
@@ -186,7 +186,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         ("src0", "src0"),
     ],
 )
-def test_get_covariance_block_for_sacc(tracer_comb1, tracer_comb2):
+def test__get_covariance_block_for_sacc(tracer_comb1, tracer_comb2):
     cpr = CovarianceProjectedRealTester(input_yml_real)
     lmax = cpr.lmax
     fourier_block = np.random.rand(lmax + 1, lmax + 1)
@@ -199,7 +199,7 @@ def test_get_covariance_block_for_sacc(tracer_comb1, tracer_comb2):
 
     cb = CovTester(input_yml_real)
     nbpw = cb.get_nbpw()
-    cov = cb.get_covariance_block_for_sacc(tracer_comb1, tracer_comb2)
+    cov = cb._get_covariance_block_for_sacc(tracer_comb1, tracer_comb2)
 
     s = cb.io.get_sacc_file()
     ix1 = s.indices(tracers=tracer_comb1)

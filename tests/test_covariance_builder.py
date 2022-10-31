@@ -21,15 +21,26 @@ outdir = "tests/tmp/"
 os.makedirs(outdir, exist_ok=True)
 
 
+def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
+    f1 = int(tracer_comb1[0].split("__")[1]) + 1
+    f2 = int(tracer_comb1[1].split("__")[1]) + 1
+    f3 = int(tracer_comb2[0].split("__")[1]) + 1
+    f4 = int(tracer_comb2[1].split("__")[1]) + 1
+
+    block = f1 * f2 * f3 * f4 * np.ones((10, 10))
+    return block
+
+
 class CovarianceBuilderTester(CovarianceBuilder):
+    _tracer_types = ["cl", "cl"]
     # Based on https://stackoverflow.com/a/28299369
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
-    def get_covariance_block_for_sacc(
+    def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        super().get_covariance_block_for_sacc(
+        super()._get_covariance_block_for_sacc(
             tracer_comb1, tracer_comb2, **kwargs
         )
 
@@ -71,7 +82,7 @@ def test_nuisance_config():
     assert cb.sigma_e == {"DESwl__0": 0.26, "DESwl__1": 0.26}
 
 
-# TODO: Should we test this also with mpi?
+# Tested also in tests/test_mpi.py
 def test_split_tasks_by_rank():
     cb = CovarianceBuilderTester(input_yml)
     tasks = list(range(100))
@@ -89,24 +100,13 @@ def test_split_tasks_by_rank():
 
 
 def test_compute_all_blocks():
-    def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
-        f1 = int(tracer_comb1[0].split("__")[1]) + 1
-        f2 = int(tracer_comb1[1].split("__")[1]) + 1
-        f3 = int(tracer_comb2[0].split("__")[1]) + 1
-        f4 = int(tracer_comb2[1].split("__")[1]) + 1
-
-        block = f1 * f2 * f3 * f4 * np.ones((10, 10))
-        return block
-
     class CovarianceBuilderTester(CovarianceBuilder):
+        _tracer_types = ["cl", "cl"]
         # Based on https://stackoverflow.com/a/28299369
-        def _build_matrix_from_blocks(self, blocks, tracers_cov):
-            super()._build_matrix_from_blocks(blocks, tracers_cov)
-
         def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
             super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
-        def get_covariance_block_for_sacc(
+        def _get_covariance_block_for_sacc(
             self, tracer_comb1, tracer_comb2, **kwargs
         ):
             return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
@@ -161,15 +161,6 @@ def test_get_covariance_block_not_implemented():
 
 
 def test_get_covariance():
-    def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
-        f1 = int(tracer_comb1[0].split("__")[1]) + 1
-        f2 = int(tracer_comb1[1].split("__")[1]) + 1
-        f3 = int(tracer_comb2[0].split("__")[1]) + 1
-        f4 = int(tracer_comb2[1].split("__")[1]) + 1
-
-        block = f1 * f2 * f3 * f4 * np.ones((10, 10))
-        return block
-
     def build_matrix_from_blocks(blocks, tracers_cov):
         tracers_cov_sorted = sorted(tracers_cov)
         ix = []
@@ -179,6 +170,7 @@ def test_get_covariance():
         return block_diag(*blocks)
 
     class CovarianceBuilderTester(CovarianceBuilder):
+        _tracer_types = ["cl", "cl"]
         # Based on https://stackoverflow.com/a/28299369
         def _build_matrix_from_blocks(self, blocks, tracers_cov):
             return build_matrix_from_blocks(blocks, tracers_cov)
@@ -186,7 +178,7 @@ def test_get_covariance():
         def get_covariance_block(self, **kwargs):
             super().get_covariance_block(**kwargs)
 
-        def get_covariance_block_for_sacc(
+        def _get_covariance_block_for_sacc(
             self, tracer_comb1, tracer_comb2, **kwargs
         ):
             return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
@@ -197,6 +189,61 @@ def test_get_covariance():
     cov2 = build_matrix_from_blocks(blocks[::-1], tracers_blocks[::-1])
 
     assert np.all(cov2 == cov)
+
+
+def test_get_covariance_block_for_sacc():
+    class CovarianceBuilderTester(CovarianceBuilder):
+        _tracer_types = ["cl", "cluster"]
+        # Based on https://stackoverflow.com/a/28299369
+        def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+            super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+        def _get_covariance_block_for_sacc(
+            self, tracer_comb1, tracer_comb2, **kwargs
+        ):
+            return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+    # Test it return 0's when the data types are not those of the class
+    cb = CovarianceBuilderTester(input_yml)
+    trs_cov = cb.get_list_of_tracers_for_cov()[0]
+    cov = cb.get_covariance_block_for_sacc(*trs_cov)
+    assert not np.any(cov)
+    s = cb.io.get_sacc_file()
+    ix1 = s.indices(tracers=trs_cov[0])
+    ix2 = s.indices(tracers=trs_cov[1])
+    cov2 = np.zeros((ix1.size, ix2.size))
+    assert np.all(cov2 == cov)
+
+    # Test it return _get_covariance_block_for_sacc  when the data types are
+    # those of the class
+    cb._tracer_types = ["cl", "cl"]
+    cov = cb.get_covariance_block_for_sacc(*trs_cov)
+    cov2 = get_covariance_block(*trs_cov)
+    assert np.all(cov == cov2)
+
+    # Check that if the order of the tracers are the opposite as in
+    # _tracer_types, it computes the covariance
+    class CovarianceBuilderTester(CovarianceBuilder):
+        _tracer_types = ["cl", "cluster"]
+        # Based on https://stackoverflow.com/a/28299369
+        def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+            super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+        def _get_covariance_block_for_sacc(
+            self, tracer_comb1, tracer_comb2, **kwargs
+        ):
+            return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+
+        def get_tracer_comb_data_types(self, tracer_comb):
+            if tracer_comb == trs_cov[0]:
+                return ["cluster"]
+            elif tracer_comb == trs_cov[1]:
+                return ["cl"]
+
+    cb = CovarianceBuilderTester(input_yml)
+    cov = cb.get_covariance_block_for_sacc(*trs_cov)
+    cov2 = get_covariance_block(*trs_cov)
+    assert np.all(cov == cov2)
 
 
 def test_get_list_of_tracers_for_cov():

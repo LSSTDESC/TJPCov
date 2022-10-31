@@ -319,17 +319,17 @@ def test_compute_all_blocks():
     # Test _compute_all_blocks function by modifying the
     # get_covariance_block method to output the block in the sacc file
 
-    def get_covariance_block_for_sacc(s, tracer_comb1, tracer_comb2):
+    def _get_covariance_block_for_sacc(s, tracer_comb1, tracer_comb2):
         ix1 = s.indices(tracers=tracer_comb1)
         ix2 = s.indices(tracers=tracer_comb2)
         return s.covariance.covmat[ix1][:, ix2]
 
     class CNMTTester(CovarianceFourierGaussianNmt):
-        def get_covariance_block_for_sacc(
+        def _get_covariance_block_for_sacc(
             self, tracer_comb1, tracer_comb2, **kwargs
         ):
             s = self.io.sacc_file
-            return get_covariance_block_for_sacc(s, tracer_comb1, tracer_comb2)
+            return _get_covariance_block_for_sacc(s, tracer_comb1, tracer_comb2)
 
     cnmt = CNMTTester(input_yml)
     blocks, tracers_blocks = cnmt._compute_all_blocks()
@@ -339,7 +339,7 @@ def test_compute_all_blocks():
     for bi, trs in zip(blocks, tracers_blocks):
         assert np.all(
             bi
-            == get_covariance_block_for_sacc(cnmt.io.sacc_file, trs[0], trs[1])
+            == _get_covariance_block_for_sacc(cnmt.io.sacc_file, trs[0], trs[1])
         )
 
 

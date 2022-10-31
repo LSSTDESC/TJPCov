@@ -95,7 +95,7 @@ def test_compute_all_blocks():
     assert nblocks == len(blocks)
 
     for bi, trs in zip(blocks, tracers_blocks):
-        cov = cssc.get_covariance_block_for_sacc(trs[0], trs[1])
+        cov = cssc._get_covariance_block_for_sacc(trs[0], trs[1])
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
@@ -109,7 +109,7 @@ def test_compute_all_blocks_nmt():
     assert nblocks == len(blocks)
 
     for bi, trs in zip(blocks, tracers_blocks):
-        cov = cnmt.get_covariance_block_for_sacc(trs[0], trs[1])
+        cov = cnmt._get_covariance_block_for_sacc(trs[0], trs[1])
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
