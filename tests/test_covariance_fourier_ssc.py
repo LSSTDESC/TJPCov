@@ -23,9 +23,9 @@ os.makedirs(outdir, exist_ok=True)
 
 
 def clean_tmp():
-    if os.path.isdir("./tests/tmp"):
-        shutil.rmtree("./tests/tmp/")
-    os.makedirs("./tests/tmp")
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
 
 
 def get_config():
@@ -69,6 +69,12 @@ def get_cl_footprint(tr1, tr2, tr3, tr4):
     return cl
 
 
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
+
+
 def test_smoke():
     FourierSSCHaloModel(input_yml_ssc)
 
@@ -85,6 +91,7 @@ def test_smoke():
 )
 def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # TJPCov covariance
+    print(tracer_comb1, tracer_comb2)
     cssc = FourierSSCHaloModel(input_yml_ssc)
     cosmo = cssc.get_cosmology()
     s = cssc.io.get_sacc_file()
