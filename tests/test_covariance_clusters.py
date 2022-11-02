@@ -189,24 +189,9 @@ def test_cov_nxn():
     cc_cov = get_mock_covariance()
     cc_cov.eval_true_vec()
     cc_cov.eval_M1_true_vec()
+
     cov_00 = cc_cov.get_covariance_cluster_counts(
         ("clusters_0_0",), ("clusters_0_0",)
     )
 
     np.testing.assert_almost_equal(ref_sum, cov_00)
-
-
-# print("1")
-# test_integral_mass_no_bias()
-# print("2")
-# test_dv()
-# print("3")
-# test_mass_richness()
-# print("4")
-# test_integral_mass()
-# print("5")
-# test_eval_true_vec()
-# print("6")
-# test_sigma_vec()
-
-test_cov_nxn()
