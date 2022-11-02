@@ -18,6 +18,8 @@ class CovarianceClusterCounts(CovarianceClusters):
         super().__init__(config)
         self.romberg_num = 2**6 + 1
         self.setup_vectors()
+        self.eval_true_vec()
+        self.eval_M1_true_vec()
 
     def setup_vectors(self):
         """
@@ -30,16 +32,6 @@ class CovarianceClusterCounts(CovarianceClusters):
         self.M1_true_vec = np.zeros(
             (self.num_richness_bins, self.num_z_bins, self.romberg_num)
         )
-
-    def precompute_true_vectors(self):
-        """
-        Precomputes the true vectors M1 for Cov_N_N, see comment above
-        """
-        # TODO this should be moved to evaluate 1 entry at a time
-        # Computes the geometric true vectors
-        self.eval_true_vec()
-        # Pre computes the true vectors M1 for Cov_N_N
-        self.eval_M1_true_vec()
 
     def get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs

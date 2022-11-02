@@ -14,16 +14,22 @@ input_yml = os.path.join(root, "tjpcov_conf_minimal_clusters_test.yaml")
 
 
 def get_mock_cosmo():
-    Omega_c = 0.26
-    Omega_b = 0.04
-    h0 = 0.67
-    A_s = 2.1e-9
-    n_s = 0.96
-    w0 = -1.0
-    wa = 0.0
+    Omg_c = 0.26
+    Omg_b = 0.04
+    h0 = 0.67  # so H0 = 100h0 will be in km/s/Mpc
+    A_s_value = 2.1e-9
+    n_s_value = 0.96
+    w_0 = -1.0
+    w_a = 0.0
 
     cosmo = ccl.Cosmology(
-        Omega_c=Omega_c, Omega_b=Omega_b, h=h0, A_s=A_s, n_s=n_s, w0=w0, wa=wa
+        Omega_c=Omg_c,
+        Omega_b=Omg_b,
+        h=h0,
+        A_s=A_s_value,
+        n_s=n_s_value,
+        w0=w_0,
+        wa=w_a,
     )
     return cosmo
 
@@ -78,7 +84,7 @@ def test_integral_mass_no_bias():
 
 
 def test_eval_M1_true_vec():
-
+    # OK
     ref_sum = 0.048185959642970705
     cc_cov = get_mock_covariance()
 
@@ -89,6 +95,7 @@ def test_eval_M1_true_vec():
 
 
 def test_double_bessel_integral():
+    # OK
     ref = 8.427201745032292e-05
     cc_cov = get_mock_covariance()
     test = cc_cov.double_bessel_integral(0.3, 0.3)
@@ -96,6 +103,7 @@ def test_double_bessel_integral():
 
 
 def test_shot_noise():
+    # OK
     ref = 63973.635143644424
     cc_cov = get_mock_covariance()
     test = cc_cov.shot_noise(0, 0)
@@ -103,6 +111,7 @@ def test_shot_noise():
 
 
 def test_eval_true_vec():
+    # OK
     ref_z1_sum = 936.0
     ref_g1_sum = 795.6517795142859
     ref_dv_sum = 2295974227982.374
@@ -119,7 +128,19 @@ def test_eval_true_vec():
     np.testing.assert_almost_equal(dv_sum / 1e10, ref_dv_sum / 1e10)
 
 
+def test_sigma_vec():
+    # OK
+    ref_sigma_vec_sum = 0.0021168654088669758
+    cc_cov = get_mock_covariance()
+    sigma_vec = cc_cov.eval_sigma_vec()
+
+    sigma_sum = np.sum(sigma_vec)
+
+    np.testing.assert_almost_equal(sigma_sum, ref_sigma_vec_sum)
+
+
 def test_integral_mass():
+    # OK
     cc_cov = get_mock_covariance()
     ref1 = 2.596895139062984e-05
     ref2 = 2.5910691906342223e-05
@@ -132,6 +153,7 @@ def test_integral_mass():
 
 
 def test_mass_richness():
+    # OK
     cc_cov = get_mock_covariance()
     reference_min = 0.0009528852621284171
 
@@ -143,7 +165,7 @@ def test_mass_richness():
 
 
 def test_dv():
-
+    # OK
     reference_values = [
         6613.739621696188,
         55940746.72160228,
@@ -159,3 +181,32 @@ def test_dv():
         np.testing.assert_almost_equal(
             cc_cov.dV(z_true, z_i), reference_values[i]
         )
+
+
+def test_cov_nxn():
+    ref_sum = 130462.91921818888
+
+    cc_cov = get_mock_covariance()
+    cc_cov.eval_true_vec()
+    cc_cov.eval_M1_true_vec()
+    cov_00 = cc_cov.get_covariance_cluster_counts(
+        ("clusters_0_0",), ("clusters_0_0",)
+    )
+
+    np.testing.assert_almost_equal(ref_sum, cov_00)
+
+
+# print("1")
+# test_integral_mass_no_bias()
+# print("2")
+# test_dv()
+# print("3")
+# test_mass_richness()
+# print("4")
+# test_integral_mass()
+# print("5")
+# test_eval_true_vec()
+# print("6")
+# test_sigma_vec()
+
+test_cov_nxn()
