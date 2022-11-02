@@ -394,7 +394,7 @@ class CovarianceClusters(CovarianceBuilder):
             approx (bool, optional): Defaults to True.
 
         """
-        romb_k = 6
+        romb_k = 5
 
         if z1 <= np.average(self.z_bins):
             vec_left = np.linspace(
