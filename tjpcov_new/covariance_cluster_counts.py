@@ -10,9 +10,9 @@ from scipy.integrate import quad, romb
 class CovarianceClusterCounts(CovarianceClusters):
     """Implementation of cluster covariance that calculates the autocorrelation of cluster counts (NxN)"""
 
-    # Figure out
     cov_type = "fourier"
     _reshape_order = "F"
+    _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
         super().__init__(config)
