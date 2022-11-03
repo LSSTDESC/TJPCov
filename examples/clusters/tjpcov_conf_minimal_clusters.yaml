@@ -1,7 +1,7 @@
 tjpcov:
   do_xi: False
   # sacc input file 
-  sacc_file: ./mock_clusters.sacc
+  sacc_file: ./mock_clusters_large.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
   outdir: ./
