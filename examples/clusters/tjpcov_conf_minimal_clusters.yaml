@@ -1,7 +1,8 @@
 tjpcov:
+  use_mpi: True
   do_xi: False
   # sacc input file 
-  sacc_file: ./mock_clusters_large.sacc
+  sacc_file: /global/u1/m/mkwiecie/desc/repos/TJPCov/examples/clusters/mock_clusters_large.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
   outdir: ./
