@@ -146,9 +146,9 @@ def test_get_covariance():
 
 
 def test_CovarianceCalculator():
-    cc = CovarianceCalculator('./tests/data/conf_covariance_calculator.yml')
+    cc = CovarianceCalculator("./tests/data/conf_covariance_calculator.yml")
     config = cc.config.copy()
-    config['tjpcov']['use_mpi'] = True
+    config["tjpcov"]["use_mpi"] = True
     cc_mpi = CovarianceCalculator(config)
 
     # Test get_covariance_classes
@@ -165,17 +165,20 @@ def test_CovarianceCalculator():
     cov_mpi = cc_mpi.get_covariance_terms()
     if rank == 0:
         for k in cov.keys():
-            assert np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1)) < 1e-5
+            assert (
+                np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1))
+                < 1e-5
+            )
     else:
         assert cov_mpi is None
 
     # Test create_sacc_cov
     cc_mpi.create_sacc_cov(save_terms=True)
     if rank == 0:
-        assert os.path.isfile(outdir + 'cls_cov.fits')
+        assert os.path.isfile(outdir + "cls_cov.fits")
         for k in cov.keys():
-            assert os.path.isfile(outdir + f'cls_cov_{k}.fits')
+            assert os.path.isfile(outdir + f"cls_cov_{k}.fits")
     else:
-        assert not os.path.isfile(outdir + 'cls_cov.fits')
+        assert not os.path.isfile(outdir + "cls_cov.fits")
         for k in cov.keys():
-            assert not os.path.isfile(outdir + f'cls_cov_{k}.fits')
+            assert not os.path.isfile(outdir + f"cls_cov_{k}.fits")
