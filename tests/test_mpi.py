@@ -10,6 +10,7 @@ from tjpcov.covariance_fourier_gaussian_nmt import (
     CovarianceFourierGaussianNmt,
 )
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
+from tjpcov.covariance_calculator import CovarianceCalculator
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = "./tests/tmp/"
@@ -142,3 +143,39 @@ def test_get_covariance():
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+
+def test_CovarianceCalculator():
+    cc = CovarianceCalculator('./tests/data/conf_covariance_calculator.yml')
+    config = cc.config.copy()
+    config['tjpcov']['use_mpi'] = True
+    cc_mpi = CovarianceCalculator(config)
+
+    # Test get_covariance_classes
+    classes = cc.get_covariance_classes()
+    classes_mpi = cc_mpi.get_covariance_classes()
+    if rank == 0:
+        assert isinstance(classes, dict)
+        # TODO: Test values and keys
+    else:
+        assert classes_mpi is None
+
+    # Test get_covariance_terms
+    cov = cc.get_covariance_terms()
+    cov_mpi = cc_mpi.get_covariance_terms()
+    if rank == 0:
+        for k in cov.keys():
+            assert np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1)) < 1e-5
+    else:
+        assert cov_mpi is None
+
+    # Test create_sacc_cov
+    cc_mpi.create_sacc_cov(save_terms=True)
+    if rank == 0:
+        assert os.path.isfile(outdir + 'cls_cov.fits')
+        for k in cov.keys():
+            assert os.path.isfile(outdir + f'cls_cov_{k}.fits')
+    else:
+        assert not os.path.isfile(outdir + 'cls_cov.fits')
+        for k in cov.keys():
+            assert not os.path.isfile(outdir + f'cls_cov_{k}.fits')

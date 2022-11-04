@@ -26,6 +26,22 @@ class CovarianceCalculator:
         self.cov_terms = None
         self.cov_classes = None
 
+        use_mpi = self.config["tjpcov"].get("use_mpi", False)
+
+        if use_mpi is True:
+            try:
+                import mpi4py.MPI
+            except ImportError:
+                raise ValueError("MPI option requires mpi4py to be installed")
+
+            self.comm = mpi4py.MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.size = self.comm.Get_size()
+        else:
+            self.comm = None
+            self.rank = 0
+            self.size = 1
+
     def get_covariance_classes(self):
         """
         Return a dictionary with the covariance terms, tracer_types and
@@ -93,7 +109,8 @@ class CovarianceCalculator:
         if self.cov_total is None:
             cov_terms = self.get_covariance_terms()
 
-            self.cov_total = sum(cov_terms.values())
+            if self.rank == 0:
+                self.cov_total = sum(cov_terms.values())
 
         return self.cov_total
 
@@ -118,9 +135,10 @@ class CovarianceCalculator:
                 for cmat in cov_dict.values():
                     cov.append(cmat.get_covariance())
 
-                cov_terms[ctype] = sum(cov)
+                if self.rank == 0:
+                    cov_terms[ctype] = sum(cov)
 
-            self.cov_terms = cov_terms
+                    self.cov_terms = cov_terms
 
         return self.cov_terms
 
@@ -138,6 +156,10 @@ class CovarianceCalculator:
             cls_cov_gauss.fits)
         """
         cov = self.get_covariance()
+
+        if self.rank != 0:
+            return
+
         self.io.create_sacc_cov(cov, output)
 
         if save_terms:
