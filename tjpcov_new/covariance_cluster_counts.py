@@ -57,11 +57,26 @@ class CovarianceClusterCounts(CovarianceClusters):
         tracer_split1 = tracer_comb1[0].split("_")
         tracer_split2 = tracer_comb2[0].split("_")
 
-        z_i = int(tracer_split1[1].lstrip("0"))
-        richness_i = int(tracer_split1[2].lstrip("0"))
+        z_i = tracer_split1[1].lstrip("0")
+        richness_i = tracer_split1[2].lstrip("0")
+        z_j = tracer_split2[1].lstrip("0")
+        richness_j = tracer_split2[2].lstrip("0")
 
-        z_j = int(tracer_split2[1].lstrip("0"))
-        richness_j = int(tracer_split2[2].lstrip("0"))
+        if z_i == "":
+            z_i = 0
+        if z_j == "":
+            z_j = 0
+        if richness_i == "":
+            richness_i = 0
+        if richness_j == "":
+            richness_j = 0
+
+        z_i, z_j, richness_i, richness_j = (
+            int(z_i),
+            int(z_j),
+            int(richness_i),
+            int(richness_j),
+        )
 
         dz = (self.Z1_true_vec[z_i, -1] - self.Z1_true_vec[z_i, 0]) / (
             self.romberg_num - 1
