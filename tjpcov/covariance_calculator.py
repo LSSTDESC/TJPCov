@@ -28,6 +28,7 @@ class CovarianceCalculator:
 
         use_mpi = self.config["tjpcov"].get("use_mpi", False)
 
+        # This is only used in this class to save the output file only once.
         if use_mpi is True:
             try:
                 import mpi4py.MPI
@@ -39,8 +40,8 @@ class CovarianceCalculator:
             self.size = self.comm.Get_size()
         else:
             self.comm = None
-            self.rank = 0
-            self.size = 1
+            self.rank = None
+            self.size = None
 
     def get_covariance_classes(self):
         """
@@ -109,8 +110,9 @@ class CovarianceCalculator:
         if self.cov_total is None:
             cov_terms = self.get_covariance_terms()
 
-            if self.rank == 0:
-                self.cov_total = sum(cov_terms.values())
+            # No need to do it only for rank == 0 since all Builder processes
+            # have self.cov well defined and this is quite unexpensive.
+            self.cov_total = sum(cov_terms.values())
 
         return self.cov_total
 
@@ -135,10 +137,11 @@ class CovarianceCalculator:
                 for cmat in cov_dict.values():
                     cov.append(cmat.get_covariance())
 
-                if self.rank == 0:
-                    cov_terms[ctype] = sum(cov)
+                # No need to do it only for rank == 0 since all Builder processes
+                # have self.cov well defined and this is quite unexpensive.
+                cov_terms[ctype] = sum(cov)
 
-                    self.cov_terms = cov_terms
+            self.cov_terms = cov_terms
 
         return self.cov_terms
 
@@ -157,7 +160,8 @@ class CovarianceCalculator:
         """
         cov = self.get_covariance()
 
-        if self.rank != 0:
+        # Only save the file with the root (rank = 0) process.
+        if (self.rank is not None) and (self.rank != 0):
             return
 
         self.io.create_sacc_cov(cov, output)
