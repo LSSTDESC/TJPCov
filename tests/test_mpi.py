@@ -142,7 +142,9 @@ def test_get_covariance():
 
 def test_CovarianceCalculator():
     cc = CovarianceCalculator("./tests/data/conf_covariance_calculator.yml")
-    cc_mpi = CovarianceCalculator("./tests/data/conf_covariance_calculator_mpi.yml")
+    cc_mpi = CovarianceCalculator(
+        "./tests/data/conf_covariance_calculator_mpi.yml"
+    )
 
     # Test get_covariance_terms
     cov = None
@@ -153,8 +155,9 @@ def test_CovarianceCalculator():
         cov = cc.get_covariance_terms()
     cov = comm.bcast(cov, root=0)
     for k in cov.keys():
-        assert ( np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1))
-                < 1e-5
+        assert (
+            np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1))
+            < 1e-5
         )
     comm.Barrier()
 
@@ -165,7 +168,7 @@ def test_CovarianceCalculator():
         # later
         cov = cc.get_covariance()
     cov = comm.bcast(cov, root=0)
-    assert (np.max(np.abs((cov + 1e-100) / (cov_mpi + 1e-100) - 1)) < 1e-5)
+    assert np.max(np.abs((cov + 1e-100) / (cov_mpi + 1e-100) - 1)) < 1e-5
     comm.Barrier()
 
     # Test create_sacc_cov

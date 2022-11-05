@@ -137,8 +137,9 @@ class CovarianceCalculator:
                 for cmat in cov_dict.values():
                     cov.append(cmat.get_covariance())
 
-                # No need to do it only for rank == 0 since all Builder processes
-                # have self.cov well defined and this is quite unexpensive.
+                # No need to do it only for rank == 0 since all Builder
+                # processes have self.cov well defined and this is quite
+                # unexpensive.
                 cov_terms[ctype] = sum(cov)
 
             self.cov_terms = cov_terms
