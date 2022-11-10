@@ -10,6 +10,7 @@ from tjpcov.covariance_fourier_gaussian_nmt import (
     CovarianceFourierGaussianNmt,
 )
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
+from tjpcov.covariance_calculator import CovarianceCalculator
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 outdir = "./tests/tmp/"
@@ -121,12 +122,7 @@ def test_get_covariance():
     cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
     s = cnmt.io.get_sacc_file()
 
-    cov = cnmt.get_covariance()
-
-    if cnmt.rank != 0:
-        return
-    cov = cov + 1e-100
-
+    cov = cnmt.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
     assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
@@ -142,3 +138,50 @@ def test_get_covariance():
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+
+
+def test_CovarianceCalculator():
+    cc = CovarianceCalculator("./tests/data/conf_covariance_calculator.yml")
+    cc_mpi = CovarianceCalculator(
+        "./tests/data/conf_covariance_calculator_mpi.yml"
+    )
+
+    # Test get_covariance_terms
+    cov = None
+    cov_mpi = cc_mpi.get_covariance_terms()
+    if rank == 0:
+        # Avoid computing serially the covariance terms multiple times.
+        # Broadcast it later
+        cov = cc.get_covariance_terms()
+    cov = comm.bcast(cov, root=0)
+    for k in cov.keys():
+        assert (
+            np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1))
+            < 1e-5
+        )
+    comm.Barrier()
+
+    # Test get_covariance
+    cov_mpi = cc_mpi.get_covariance()
+    if rank == 0:
+        # Avoid computing serially the covariance multiple times. Broadcast it
+        # later
+        cov = cc.get_covariance()
+    cov = comm.bcast(cov, root=0)
+    assert np.max(np.abs((cov + 1e-100) / (cov_mpi + 1e-100) - 1)) < 1e-5
+    comm.Barrier()
+
+    # Test create_sacc_cov
+    fname = f"cls_cov{rank}.fits"
+    cc_mpi.create_sacc_cov(output=fname, save_terms=True)
+    keys = ["gauss", "SSC"]
+    if rank == 0:
+        assert os.path.isfile(outdir + "cls_cov0.fits")
+        for k in keys:
+            assert os.path.isfile(outdir + f"cls_cov0_{k}.fits")
+    else:
+        fname = f"cls_cov{rank}_{k}.fits"
+        assert not os.path.isfile(outdir + fname)
+        for k in keys:
+            assert not os.path.isfile(outdir + fname)
+    comm.Barrier()

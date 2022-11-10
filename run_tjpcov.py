@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from tjpcov.main import CovarianceCalculator
+from tjpcov.covariance_calculator import CovarianceCalculator
 
 
 if __name__ == "__main__":

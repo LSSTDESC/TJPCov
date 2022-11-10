@@ -26,6 +26,23 @@ class CovarianceCalculator:
         self.cov_terms = None
         self.cov_classes = None
 
+        use_mpi = self.config["tjpcov"].get("use_mpi", False)
+
+        # This is only used in this class to save the output file only once.
+        if use_mpi is True:
+            try:
+                import mpi4py.MPI
+            except ImportError:
+                raise ValueError("MPI option requires mpi4py to be installed")
+
+            self.comm = mpi4py.MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.size = self.comm.Get_size()
+        else:
+            self.comm = None
+            self.rank = None
+            self.size = None
+
     def get_covariance_classes(self):
         """
         Return a dictionary with the covariance terms, tracer_types and
@@ -93,6 +110,8 @@ class CovarianceCalculator:
         if self.cov_total is None:
             cov_terms = self.get_covariance_terms()
 
+            # No need to do it only for rank == 0 since all Builder processes
+            # have self.cov well defined and this is quite unexpensive.
             self.cov_total = sum(cov_terms.values())
 
         return self.cov_total
@@ -118,6 +137,9 @@ class CovarianceCalculator:
                 for cmat in cov_dict.values():
                     cov.append(cmat.get_covariance())
 
+                # No need to do it only for rank == 0 since all Builder
+                # processes have self.cov well defined and this is quite
+                # unexpensive.
                 cov_terms[ctype] = sum(cov)
 
             self.cov_terms = cov_terms
@@ -138,6 +160,11 @@ class CovarianceCalculator:
             cls_cov_gauss.fits)
         """
         cov = self.get_covariance()
+
+        # Only save the file with the root (rank = 0) process.
+        if (self.rank is not None) and (self.rank != 0):
+            return
+
         self.io.create_sacc_cov(cov, output)
 
         if save_terms:

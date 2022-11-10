@@ -347,23 +347,27 @@ class CovarianceBuilder(ABC):
                 if self.rank == 0:
                     blocks = sum(blocks, [])
                     tracers_cov = sum(tracers_cov, [])
-                else:
-                    return
 
-            cov = self._build_matrix_from_blocks(blocks, tracers_cov)
+            if (self.comm is None) or (self.rank == 0):
+                cov = self._build_matrix_from_blocks(blocks, tracers_cov)
 
-            if not np.any(cov):
-                # You'll get a covariance full of 0's if none of the data types
-                # in the sacc file are compatible with the class _tracer_types
-                raise ValueError(
-                    "The covariance is all 0's. This very likely "
-                    "means that the sacc file does not contain "
-                    "any tracer data type compatible with this "
-                    "covariance class tracers: "
-                    f"{self._tracer_types}."
-                )
+                if not np.any(cov):
+                    # You'll get a covariance full of 0's if none of the data
+                    # types in the sacc file are compatible with the class
+                    # _tracer_types
+                    raise ValueError(
+                        "The covariance is all 0's. This very likely "
+                        "means that the sacc file does not contain "
+                        "any tracer data type compatible with this "
+                        "covariance class tracers: "
+                        f"{self._tracer_types}."
+                    )
+                self.cov = cov
 
-            self.cov = cov
+            # Broadcast the covariance to the other processes so all of them
+            # have self.cov not None and avoid recomputing blocks
+            if self.comm is not None:
+                self.cov = self.comm.bcast(self.cov, root=0)
 
         return self.cov
 
