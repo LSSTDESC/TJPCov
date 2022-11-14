@@ -6,9 +6,7 @@ import pytest
 import shutil
 from mpi4py import MPI
 
-from tjpcov.covariance_fourier_gaussian_nmt import (
-    FourierGaussianNmt,
-)
+from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 from tjpcov.covariance_calculator import CovarianceCalculator
 

@@ -80,7 +80,7 @@ def test_Fourier_get_covariance_block():
 
     fsky = cfsky.fsky
     dl = np.gradient(ell)
-    cov = np.diag(2 * cl**2 / ((2 * ell + 1) * fsky * dl))
+    cov = np.diag(2 * cl ** 2 / ((2 * ell + 1) * fsky * dl))
     lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
     cov2 = cfsky.get_covariance_block(
@@ -118,7 +118,7 @@ def test_Fourier_get_covariance_block():
     ell = np.arange(30 + 1)
     ccltr = ccl_tracers["src0"]
     cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise["src0"]
-    cov = np.diag(2 * cl**2)
+    cov = np.diag(2 * cl ** 2)
     assert cov2.shape == (ell.size, ell.size)
     np.testing.assert_allclose(cov2, cov)
 

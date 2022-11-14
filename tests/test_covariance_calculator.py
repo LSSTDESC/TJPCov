@@ -1,8 +1,6 @@
 #!/usr/bin/python
 from tjpcov.covariance_calculator import CovarianceCalculator
-from tjpcov.covariance_fourier_gaussian_nmt import (
-    FourierGaussianNmt,
-)
+from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 import os
 import pytest
@@ -38,9 +36,7 @@ def test_get_covariance_classes():
 
     assert isinstance(classes["gauss"], dict)
     assert isinstance(classes["SSC"], dict)
-    assert isinstance(
-        classes["gauss"][("cl", "cl")], FourierGaussianNmt
-    )
+    assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
     assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
     # Test it raises an error if two gauss contributions are requested
