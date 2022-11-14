@@ -357,7 +357,7 @@ def test_get_cl_for_cov():
     cl_fid = get_cl("galaxy_clustering", fiducial=True)
     cl_fid_Sh = get_cl("galaxy_shear", fiducial=True)
 
-    cl_cp = (w.couple_cell(cl_fid["cl"]) + cl["nl_cp"]) / np.mean(m ** 2)
+    cl_cp = (w.couple_cell(cl_fid["cl"]) + cl["nl_cp"]) / np.mean(m**2)
     cl_cp_code = cnmt.get_cl_for_cov(
         cl_fid["cl"], cl["nl_cp"], m, m, w, nl_is_cp=True
     )
