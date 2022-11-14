@@ -4,7 +4,7 @@ tjpcov:
   cosmo: tests/data/cosmo_desy1.yaml
 
   # allowed covariance type: gauss, ng (to be implemented)
-  cov_type: [CovarianceFourierGaussianNmt, FourierSSCHaloModel]
+  cov_type: [FourierGaussianNmt, FourierSSCHaloModel]
 
 
   IA: 0.5

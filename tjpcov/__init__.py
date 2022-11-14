@@ -1,10 +1,10 @@
 # flake8: noqa
 from .covariance_builder import CovarianceBuilder
-from .covariance_fourier_gaussian_nmt import CovarianceFourierGaussianNmt
+from .covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from .covariance_fourier_ssc import FourierSSCHaloModel
 from .covariance_gaussian_fsky import (
-    CovarianceFourierGaussianFsky,
-    CovarianceRealGaussianFsky,
+    FourierGaussianFsky,
+    RealGaussianFsky,
 )
 from .wigner_transform import bin_cov, WignerTransform
 

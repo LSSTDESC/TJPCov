@@ -9,8 +9,8 @@ import shutil
 
 from tjpcov import bin_cov
 from tjpcov.covariance_gaussian_fsky import (
-    CovarianceFourierGaussianFsky,
-    CovarianceRealGaussianFsky,
+    FourierGaussianFsky,
+    RealGaussianFsky,
 )
 from tjpcov.covariance_io import CovarianceIO
 
@@ -26,8 +26,8 @@ with open(outdir + "cosmos_desy1_v2p1p0.pkl", "wb") as ff:
 # SETUP
 input_yml = "tests/data/conf_covariance_gaussian_fsky_fourier.yaml"
 input_yml_real = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
-cfsky = CovarianceFourierGaussianFsky(input_yml)
-cfsky_real = CovarianceRealGaussianFsky(input_yml_real)
+cfsky = FourierGaussianFsky(input_yml)
+cfsky_real = RealGaussianFsky(input_yml_real)
 ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
 
 
@@ -48,18 +48,18 @@ def get_config():
 
 
 def test_smoke():
-    CovarianceFourierGaussianFsky(input_yml)
-    CovarianceRealGaussianFsky(input_yml_real)
+    FourierGaussianFsky(input_yml)
+    RealGaussianFsky(input_yml_real)
 
     # Check it raises an error if fsky is not given
     config = get_config()
     config["GaussianFsky"] = {}
     with pytest.raises(ValueError):
-        CovarianceFourierGaussianFsky(config)
+        FourierGaussianFsky(config)
 
 
 def test_Fourier_get_binning_info():
-    cfsky = CovarianceFourierGaussianFsky(input_yml)
+    cfsky = FourierGaussianFsky(input_yml)
     ell, ell_eff, ell_edges = cfsky.get_binning_info()
 
     assert np.all(ell_eff == cfsky.get_ell_eff())

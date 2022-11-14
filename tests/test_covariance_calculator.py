@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from tjpcov.covariance_calculator import CovarianceCalculator
 from tjpcov.covariance_fourier_gaussian_nmt import (
-    CovarianceFourierGaussianNmt,
+    FourierGaussianNmt,
 )
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 import os
@@ -39,13 +39,13 @@ def test_get_covariance_classes():
     assert isinstance(classes["gauss"], dict)
     assert isinstance(classes["SSC"], dict)
     assert isinstance(
-        classes["gauss"][("cl", "cl")], CovarianceFourierGaussianNmt
+        classes["gauss"][("cl", "cl")], FourierGaussianNmt
     )
     assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
     # Test it raises an error if two gauss contributions are requested
     config = cc.config.copy()
-    config["tjpcov"]["cov_type"] = ["CovarianceFourierGaussianFsky"] * 2
+    config["tjpcov"]["cov_type"] = ["FourierGaussianFsky"] * 2
     with pytest.raises(ValueError):
         cc = CovarianceCalculator(config)
         cc.get_covariance_classes()
@@ -53,8 +53,8 @@ def test_get_covariance_classes():
     # Test that it raises an error if you request Fourier and Real space covs
     config = cc.config.copy()
     config["tjpcov"]["cov_type"] = [
-        "CovarianceFourierGaussianFsky",
-        "CovarianceRealGaussianFsky",
+        "FourierGaussianFsky",
+        "RealGaussianFsky",
     ]
     with pytest.raises(ValueError):
         cc = CovarianceCalculator(config)
@@ -65,7 +65,7 @@ def test_get_covariance():
     cc = CovarianceCalculator(input_yml)
     cov = cc.get_covariance() + 1e-100
 
-    cov_gauss = CovarianceFourierGaussianNmt(input_yml).get_covariance()
+    cov_gauss = FourierGaussianNmt(input_yml).get_covariance()
     cov_ssc = FourierSSCHaloModel(input_yml).get_covariance()
     cov2 = (cov_gauss + cov_ssc) + 1e-100
 
@@ -76,7 +76,7 @@ def test_get_covariance_terms():
     cc = CovarianceCalculator(input_yml)
     cov_terms = cc.get_covariance_terms()
 
-    cov_gauss = CovarianceFourierGaussianNmt(input_yml).get_covariance()
+    cov_gauss = FourierGaussianNmt(input_yml).get_covariance()
     cov_ssc = FourierSSCHaloModel(input_yml).get_covariance()
 
     assert np.all(cov_terms["gauss"] == cov_gauss)

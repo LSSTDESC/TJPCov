@@ -5,7 +5,7 @@ from .wigner_transform import bin_cov
 from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 
 
-class CovarianceFourierGaussianFsky(CovarianceFourier):
+class FourierGaussianFsky(CovarianceFourier):
     """
     Class to compute the Gaussian CellxCell covariance with the Knox formula.
     """
@@ -184,7 +184,7 @@ class CovarianceFourierGaussianFsky(CovarianceFourier):
         return cov
 
 
-class CovarianceRealGaussianFsky(CovarianceProjectedReal):
+class RealGaussianFsky(CovarianceProjectedReal):
     """
     Class to compute the Real space Gaussian covariance projecting the Fourier
     space covariance estimated with the Knox formula.
@@ -207,7 +207,7 @@ class CovarianceRealGaussianFsky(CovarianceProjectedReal):
         # Note that the sacc file that the Fourier class will read is in real
         # space and you cannot use the methods that depend on a Fourier space
         # sacc file.
-        self.fourier = CovarianceFourierGaussianFsky(config)
+        self.fourier = FourierGaussianFsky(config)
         self.fsky = self.fourier.fsky
 
     def _get_fourier_block(self, tracer_comb1, tracer_comb2):

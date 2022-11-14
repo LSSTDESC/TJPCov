@@ -11,7 +11,7 @@ import shutil
 import yaml
 
 from tjpcov.covariance_fourier_gaussian_nmt import (
-    CovarianceFourierGaussianNmt,
+    FourierGaussianNmt,
 )
 from tjpcov.covariance_io import CovarianceIO
 
@@ -324,7 +324,7 @@ def test_compute_all_blocks():
         ix2 = s.indices(tracers=tracer_comb2)
         return s.covariance.covmat[ix1][:, ix2]
 
-    class CNMTTester(CovarianceFourierGaussianNmt):
+    class CNMTTester(FourierGaussianNmt):
         def _get_covariance_block_for_sacc(
             self, tracer_comb1, tracer_comb2, **kwargs
         ):
@@ -350,7 +350,7 @@ def test_compute_all_blocks():
 def test_get_cl_for_cov():
     # We just need to test for one case as the function will complain if the
     # Cell inputted has the wrong shape
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     m = get_mask_from_dtype("galaxy_clustering")
     w = get_workspace_from_dtype("galaxy_clustering")
     wSh = get_workspace_from_dtype("galaxy_shear")
@@ -426,7 +426,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     config = get_config(input_yml)
     bins = get_nmt_bin()
     config["tjpcov"]["binning_info"] = bins
-    cnmt = CovarianceFourierGaussianNmt(config)
+    cnmt = FourierGaussianNmt(config)
     cache = None
 
     # Check that it raises an Error when use_coupled_noise is True but not
@@ -445,7 +445,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
             )
 
     # Load the coupled noise that we need for the benchmark covariance
-    cnmt = CovarianceFourierGaussianNmt(config)
+    cnmt = FourierGaussianNmt(config)
     s = cnmt.io.get_sacc_file()
     tracer_noise = {}
     tracer_noise_cp = {}
@@ -576,7 +576,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 )
 def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     # In a separate function because the previous one is already too long
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()
     for tr in s.tracers.keys():
@@ -661,7 +661,7 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
 def test_get_covariance_workspace(kwargs):
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     m1 = get_mask_from_dtype("galaxy_clustering")
     m3 = get_mask_from_dtype("galaxy_shear")
 
@@ -768,7 +768,7 @@ def test_get_covariance_workspace(kwargs):
 @pytest.mark.parametrize("nmt_conf", [{}, {"n_iter": 0}])
 def test_get_fields_dict(nmt_conf):
     tr = get_tracers_dict_for_cov()
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
 
     f = get_fields_dict_for_cov(**nmt_conf)
     f2 = cnmt.get_fields_dict(tr, **nmt_conf)
@@ -798,14 +798,14 @@ def test_get_fields_dict(nmt_conf):
         assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
 
     # Check that cache works
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     cache = {"f1": f[1], "f2": f[2], "f3": f[3], "f4": f[4]}
     f2 = cnmt.get_fields_dict(tr, cache=cache, **nmt_conf)
     for i in range(1, 5):
         assert f[i] is f2[i]
 
     # Check that it does not read the masks again if provided
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     m = cnmt.get_masks_dict(tr)
     cnmt.mask_files = None
     f2 = cnmt.get_fields_dict(tr, masks=m, **nmt_conf)
@@ -822,7 +822,7 @@ def test_get_fields_dict(nmt_conf):
 
 
 def test_get_list_of_tracers_for_wsp():
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     trs_wsp = cnmt.get_list_of_tracers_for_wsp()
 
     trs_wsp2 = [
@@ -838,7 +838,7 @@ def test_get_list_of_tracers_for_wsp():
 
 
 def test_get_list_of_tracers_for_cov_wsp():
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     trs_cwsp = cnmt.get_list_of_tracers_for_cov_wsp()
 
     trs_cwsp2 = [
@@ -876,7 +876,7 @@ def test_get_list_of_tracers_for_cov_wsp():
 
 
 def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     trs_cwsp = cnmt.get_list_of_tracers_for_cov_without_trs_wsp_cwsp()
 
     trs_cwsp2 = [
@@ -912,7 +912,7 @@ def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
 
 
 def test_get_nell():
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     nell = 3 * nside
     bins = get_nmt_bin()
     w = get_workspace_from_dtype("galaxy_clustering")
@@ -973,7 +973,7 @@ def test_get_nell():
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
 def test_get_workspace(kwargs):
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
 
     # Compute NmtBins
     bins = get_nmt_bin()
@@ -1043,7 +1043,7 @@ def test_get_workspace(kwargs):
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
 def test_get_workspace_dict(kwargs):
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     tracers = get_tracers_dict_for_cov()
     bins = get_nmt_bin()
 
@@ -1140,7 +1140,7 @@ def test_full_covariance_benchmark():
     bins = get_nmt_bin()
     config["tjpcov"]["binning_info"] = bins
     # Load the coupled noise that we need for the benchmark covariance
-    cnmt = CovarianceFourierGaussianNmt(config)
+    cnmt = FourierGaussianNmt(config)
     s_nlcp = cnmt.io.get_sacc_file().copy()
     tracer_noise = {}
     tracer_noise_cp = {}
@@ -1202,13 +1202,13 @@ def test_full_covariance_benchmark():
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
     # Check that it fails if tracer_noise is used instead of tracer_noise_cp
-    cnmt = CovarianceFourierGaussianNmt(config)
+    cnmt = FourierGaussianNmt(config)
     cov2 = cnmt.get_covariance(use_coupled_noise=False) + 1e-100
     assert not np.all(cov == cov2)
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
     # Check that binning can be passed through cache
-    cnmt = CovarianceFourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(input_yml)
     cnmt.io.sacc_file = s_nlcp.copy()
     cov2 = cnmt.get_covariance(cache={"bins": bins}) + 1e-100
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
@@ -1220,7 +1220,7 @@ def test_full_covariance_benchmark():
 def test_txpipe_like_input():
     # We don't need to pass the bins because we have provided the workspaces
     # through the cache in the configuration file
-    cnmt = CovarianceFourierGaussianNmt(input_yml_txpipe)
+    cnmt = FourierGaussianNmt(input_yml_txpipe)
 
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()

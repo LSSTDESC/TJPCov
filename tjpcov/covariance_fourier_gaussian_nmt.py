@@ -8,7 +8,7 @@ import pymaster as nmt
 from .covariance_builder import CovarianceFourier
 
 
-class CovarianceFourierGaussianNmt(CovarianceFourier):
+class FourierGaussianNmt(CovarianceFourier):
     """
     Class to compute the Gaussian CellxCell covariance with NaMaster using the
     Narrow Kernel Approximation. It can also use the Toeplitz approximation.

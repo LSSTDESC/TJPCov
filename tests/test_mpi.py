@@ -7,7 +7,7 @@ import shutil
 from mpi4py import MPI
 
 from tjpcov.covariance_fourier_gaussian_nmt import (
-    CovarianceFourierGaussianNmt,
+    FourierGaussianNmt,
 )
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 from tjpcov.covariance_calculator import CovarianceCalculator
@@ -42,7 +42,7 @@ def run_clean_tmp():
 # The _split_tasks_by_rank and _compute_all_blocks methods have been tested
 # serially in tests_covariance_builder.py. Here, we will just make sure that
 # they also work in MPI and that we don't have problems when saving the block
-# covariances. That's why we will use CovarianceFourierGaussianNmt.
+# covariances. That's why we will use FourierGaussianNmt.
 
 
 def get_pair_folder_name(tracer_comb):
@@ -80,7 +80,7 @@ def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
 
 
 def test_split_tasks_by_rank():
-    cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
+    cnmt = FourierGaussianNmt(input_yml_mpi)
     tasks = list(range(100))
     tasks_splitted = list(cnmt._split_tasks_by_rank(tasks))
 
@@ -101,8 +101,8 @@ def test_compute_all_blocks():
 
 
 def test_compute_all_blocks_nmt():
-    # CovarianceFourierGaussianNmt has its own _compute_all_blocks
-    cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
+    # FourierGaussianNmt has its own _compute_all_blocks
+    cnmt = FourierGaussianNmt(input_yml_mpi)
     blocks, tracers_blocks = cnmt._compute_all_blocks()
     nblocks = len(
         list(cnmt._split_tasks_by_rank(cnmt.get_list_of_tracers_for_cov()))
@@ -119,7 +119,7 @@ def test_get_covariance():
 
     # The coupled noise metadata information is in the sacc file and the
     # workspaces in the config file
-    cnmt = CovarianceFourierGaussianNmt(input_yml_mpi)
+    cnmt = FourierGaussianNmt(input_yml_mpi)
     s = cnmt.io.get_sacc_file()
 
     cov = cnmt.get_covariance() + 1e-100
