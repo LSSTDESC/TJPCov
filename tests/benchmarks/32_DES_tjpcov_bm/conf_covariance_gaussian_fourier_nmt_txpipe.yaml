@@ -1,0 +1,65 @@
+tjpcov:
+  # input sacc file
+  sacc_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov_as_txpipe.fits
+
+  # 'set' from parameters OR pass CCL cosmology object OR yaml file
+  cosmo: 'set'
+
+  # Setting mask OR fsky approximation
+  mask_file: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DES_mask_ns32.hdf5
+
+  mask_names:
+    DESgc__0: mask_DESgc0
+    DESwl__0: mask_DESwl0
+    DESwl__1: mask_DESwl1
+
+  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  bias_DESgc__0: 1.48
+
+  # IA: 0.5
+
+  nside: 32
+
+NaMaster:
+  module: pymaster
+  f:
+    n_iter: 0
+    lmax_sht: -1
+  w:
+    lmax_mask: -1
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+  cw:
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+
+parameters:
+  Omega_c: 0.2640
+  Omega_b: 0.0493
+  h: 0.6736
+  n_s: 0.9649
+  sigma8: 0.8111
+  w0: -1
+  wa: 0
+  transfer_function: 'boltzmann_camb'
+  baryons_power_spectrum: 'nobaryons'
+
+cache:
+  'workspaces':
+    '00':
+      !!python/tuple [mask_DESgc0, mask_DESgc0]: ./tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits
+    '02':
+      !!python/tuple [mask_DESgc0, mask_DESwl0]: ./tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits
+      !!python/tuple [mask_DESgc0, mask_DESwl1]: ./tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESwl/w__mask_DESgc__mask_DESwl1.fits
+    '22':
+      !!python/tuple [mask_DESwl0, mask_DESwl0]: ./tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits
+      !!python/tuple [mask_DESwl0, mask_DESwl1]: ./tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits
+      !!python/tuple [mask_DESwl1, mask_DESwl1]: ./tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits

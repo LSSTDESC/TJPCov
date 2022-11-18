@@ -1,0 +1,70 @@
+tjpcov:
+  use_mpi: True
+  sacc_file: tests/benchmarks/32_DES_tjpcov_bm/cls_cov_as_txpipe.fits
+
+  cosmo: tests/data/cosmo_desy1.yaml
+
+  # allowed covariance type: gauss, ng (to be implemented)
+  cov_type: [FourierGaussianNmt, FourierSSCHaloModel]
+
+
+  IA: 0.5
+
+  outdir: tests/tmp/
+
+  mask_file:
+    DESgc__0: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_DESgc__0.fits.gz
+    DESwl__0: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DESwlMETACAL_mask_zbin0_ns32.fits.gz
+    DESwl__1: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DESwlMETACAL_mask_zbin1_ns32.fits.gz
+
+  mask_names:
+    DESgc__0: mask_DESgc0
+    DESwl__0: mask_DESwl0
+    DESwl__1: mask_DESwl1
+
+  # Survey params:
+  # 5 lens bins
+  Ngal_DESgc__0: 26
+
+  Ngal_DESwl__0: 26
+  Ngal_DESwl__1: 26
+  # # constant bin sigma_e
+  sigma_e_DESwl__0: 0.26
+  sigma_e_DESwl__1: 0.26
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  bias_DESgc__0: 1.48
+
+GaussianFsky:
+  fsky: 0.5
+
+NaMaster:
+  module: pymaster
+  f:
+    n_iter: 0
+    lmax_sht: -1
+  w:
+    lmax_mask: -1
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+  cw:
+    l_toeplitz: -1
+    l_exact: -1
+    dl_band: -1
+    n_iter: 3
+    recompute: True
+
+cache:
+  'workspaces':
+    '00':
+      !!python/tuple [mask_DESgc0, mask_DESgc0]: ./tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits
+    '02':
+      !!python/tuple [mask_DESgc0, mask_DESwl0]: ./tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits
+      !!python/tuple [mask_DESgc0, mask_DESwl1]: ./tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESwl/w__mask_DESgc__mask_DESwl1.fits
+    '22':
+      !!python/tuple [mask_DESwl0, mask_DESwl0]: ./tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits
+      !!python/tuple [mask_DESwl0, mask_DESwl1]: ./tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits
+      !!python/tuple [mask_DESwl1, mask_DESwl1]: ./tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits

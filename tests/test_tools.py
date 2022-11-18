@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-import h5py
 import healpy as hp
 import numpy as np
-from tjpcov import tools
 import pytest
+
+from tjpcov import tools
 
 mask_hdf5_fname = "./tests/data/mask.hdf5"
 mask_fname = "./tests/data/mask.fits.gz"
@@ -13,7 +13,7 @@ nside = 32
 
 
 def test_read_map_from_hdf5():
-    mask = tools.read_map_from_hdf5(mask_hdf5_fname, 'mask', nside)
+    mask = tools.read_map_from_hdf5(mask_hdf5_fname, "mask", nside)
     assert np.all(mask_hp == mask)
 
 
@@ -22,12 +22,12 @@ def test_read_map():
     assert np.all(mask_hp == mask)
 
     # hdf5 extension
-    mask = tools.read_map(mask_hdf5_fname, name='mask', nside=nside)
+    mask = tools.read_map(mask_hdf5_fname, name="mask", nside=nside)
     assert np.all(mask_hp == mask)
 
     # Test errors for hdf5 call
     with pytest.raises(ValueError):
-        mask = tools.read_map(mask_hdf5_fname, name='mask')
+        mask = tools.read_map(mask_hdf5_fname, name="mask")
 
     with pytest.raises(ValueError):
         mask = tools.read_map(mask_hdf5_fname, nside=nside)

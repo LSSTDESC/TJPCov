@@ -1,0 +1,34 @@
+tjpcov:
+  sacc_file: examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits
+
+  # 'set' from parameters OR pass CCL cosmology object OR yaml file
+  cosmo: tests/data/cosmo_desy1.yaml
+
+  # Survey params:
+  # 5 lens bins
+  {% for i in range(5) %} 
+  Ngal_lens{{ i }}: {{26}} # arc_min^2
+  {% endfor %}
+
+  # 4 source bins
+  {% for i in range(4) %} 
+  Ngal_src{{ i }}: {{26}} # arc_min^2
+  {% endfor %}
+
+  # constant bin sigma_e
+  {% for i in range(4) %} 
+  sigma_e_src{{ i }}: {{ 0.26 }}
+  {% endfor %}
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  {% for i, val in [(0, 1.5), (1, 1.5), (2, 1.5), (3, 1.5), (4, 1.5)] %}
+  bias_lens{{ i }}: {{ val }}
+  {% endfor %}
+
+  IA: 0.5
+
+GaussianFsky:
+  fsky: 0.3
+
+ProjectedReal:
+  lmax: 90

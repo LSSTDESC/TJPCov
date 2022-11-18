@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/LSSTDESC/TJPCov/badge.svg?branch=master)](https://coveralls.io/github/LSSTDESC/TJPCov?branch=master)
+
 # TJPCov
 
 TJPCov is a general covariance calculator interface to be used within LSST DESC.
@@ -44,6 +46,17 @@ conda env create --file environment.yml
 To activate your new environment use:
 
 ```
-source activate tjpcov
+conda activate tjpcov
+```
+
+## Dependencies and versioning
+The latest version TJPCov needs pymaster >= 1.4 . Install it using (after `conda activate tjpcov`): 
+
+```
+python -m pip install git+https://github.com/LSSTDESC/NaMaster.git
+```
+The code requires ccl>=2.5.0
+```
+python -m pip install ccl==2.5.0
 ```
 

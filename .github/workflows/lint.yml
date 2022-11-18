@@ -1,0 +1,16 @@
+# Based on https://black.readthedocs.io/en/stable/integrations/github_actions.html
+name: Lint
+
+on: [pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: psf/black@stable
+
+      - name: flake8
+        run: |
+          pip install -U flake8
+          flake8 tjpcov tests

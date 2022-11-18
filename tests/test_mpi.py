@@ -1,190 +1,185 @@
 #!/usr/bin/python
 import os
+
 import numpy as np
-import pymaster as nmt
+import pytest
+import shutil
 from mpi4py import MPI
-import tjpcov.main as cv
-from tjpcov import nmt_tools
+
+from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
+from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
+from tjpcov.covariance_calculator import CovarianceCalculator
+
+root = "./tests/benchmarks/32_DES_tjpcov_bm/"
+outdir = "./tests/tmp/"
+input_yml_mpi = root + "conf_covariance_gaussian_fourier_nmt_txpipe_mpi.yaml"
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-input_yml_mpi = os.path.join(root, "tjpcov_conf_minimal_mpi.yaml")
-input_yml_nompi = os.path.join(root, "tjpcov_conf_minimal.yaml")
+comm.Barrier()
+if rank == 0:
+    # Create temporal folder
+    os.makedirs(outdir, exist_ok=True)
 
 
-def get_nmt_bin():
-    bpw_edges = [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
-    return  nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
+def clean_tmp():
+    comm.Barrier()
+    if (rank == 0) and os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+        os.makedirs(outdir)
+
+
+# Cleaning the tmp dir before running and after running the tests
+@pytest.fixture(autouse=True)
+def run_clean_tmp():
+    clean_tmp()
+
+
+# The _split_tasks_by_rank and _compute_all_blocks methods have been tested
+# serially in tests_covariance_builder.py. Here, we will just make sure that
+# they also work in MPI and that we don't have problems when saving the block
+# covariances. That's why we will use FourierGaussianNmt.
 
 
 def get_pair_folder_name(tracer_comb):
     bn = []
     for tr in tracer_comb:
-        bn.append(tr.split('__')[0])
-    return '_'.join(bn)
+        bn.append(tr.split("__")[0])
+    return "_".join(bn)
 
 
-def get_tracer_noise(tr, cp=True):
-    bn = get_pair_folder_name((tr, tr))
-    fname = os.path.join(root, bn, f"cl_{tr}_{tr}.npz")
-    clfile = np.load(fname)
-    if cp:
-        return clfile['nl_cp'][0, -1]
+def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
+    bn = get_pair_folder_name((tr1, tr2))
+    fname = os.path.join(root, "fiducial", bn, f"cl_{tr1}_{tr2}.npz")
+    cl = np.load(fname)["cl"]
+    if binned:
+        s = s.copy()
+        s.remove_selection(data_type="cl_0b")
+        s.remove_selection(data_type="cl_eb")
+        s.remove_selection(data_type="cl_be")
+        s.remove_selection(data_type="cl_bb")
+        ix = s.indices(tracers=(tr1, tr2))
+        bpw = s.get_bandpower_windows(ix)
+
+        cl0_bin = bpw.weight.T.dot(cl[0])
+
+        cl_bin = np.zeros((cl.shape[0], cl0_bin.size))
+        cl_bin[0] = cl0_bin
+        cl = cl_bin
     else:
-        return clfile['nl'][0, 0]
+        cl
 
-
-def get_tracer_noise_cp_dict(cl_data):
-    tracer_noise_cp = {}
-    for tr in cl_data.tracers:
-        tracer_noise_cp[tr] = get_tracer_noise(tr)
-
-    return tracer_noise_cp
-
-
-def get_tracers_cov(cl_data):
-    cl_tracers = cl_data.get_tracer_combinations()
-
-    # Make a list of all pair of tracer combinations
-    tracers_cov = []
-    for i, tracer_comb1 in enumerate(cl_tracers):
-        for tracer_comb2 in cl_tracers[i:]:
-            tracers_cov.append((tracer_comb1, tracer_comb2))
-
-    return tracers_cov
+    # Remove redundant terms
+    if remove_be and (tr1 == tr2) and (cl.shape[0] == 4):
+        cl = np.delete(cl, 2, 0)
+    return cl
 
 
 def test_split_tasks_by_rank():
-    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
+    cnmt = FourierGaussianNmt(input_yml_mpi)
+    tasks = list(range(100))
+    tasks_splitted = list(cnmt._split_tasks_by_rank(tasks))
 
-    l = list(range(100))
+    assert tasks[cnmt.rank :: cnmt.size] == tasks_splitted
 
-    # Bassicaly what split_tasks_by_rank does
-    tasks = []
-    for i, task in enumerate(l):
-        if i % size == rank:
-            tasks.append(task)
 
-    print('rank in tjpcov', tjpcov_class.rank)
-    assert list(tjpcov_class.split_tasks_by_rank(l)) == tasks
+def test_compute_all_blocks():
+    cssc = FourierSSCHaloModel(input_yml_mpi)
+    blocks, tracers_blocks = cssc._compute_all_blocks()
+    nblocks = len(
+        list(cssc._split_tasks_by_rank(cssc.get_list_of_tracers_for_cov()))
+    )
+    assert nblocks == len(blocks)
+
+    for bi, trs in zip(blocks, tracers_blocks):
+        cov = cssc._get_covariance_block_for_sacc(trs[0], trs[1])
+        assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
 def test_compute_all_blocks_nmt():
-    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
-    s = tjpcov_class.cl_data
-    mask_names = tjpcov_class.mask_names
-    bins = get_nmt_bin()
+    # FourierGaussianNmt has its own _compute_all_blocks
+    cnmt = FourierGaussianNmt(input_yml_mpi)
+    blocks, tracers_blocks = cnmt._compute_all_blocks()
+    nblocks = len(
+        list(cnmt._split_tasks_by_rank(cnmt.get_list_of_tracers_for_cov()))
+    )
+    assert nblocks == len(blocks)
 
-    tracer_noise_cp = get_tracer_noise_cp_dict(s)
-
-    blocks, tracers_blocks = tjpcov_class.compute_all_blocks_nmt(None,
-                                                                 tracer_noise_cp,
-                                                                 cache={'bins':
-                                                                        bins})
-
-    trs1 = nmt_tools.get_list_of_tracers_for_wsp(s, mask_names)
-    trs2 = nmt_tools.get_list_of_tracers_for_cov_wsp(s, mask_names,
-                                                     remove_trs_wsp=True)
-    trs3 = nmt_tools.get_list_of_tracers_for_cov(s, remove_trs_wsp_cwsp=True,
-                                                 mask_names=mask_names)
-    trs_blocks = list(tjpcov_class.split_tasks_by_rank(trs1))
-    trs_blocks += list(tjpcov_class.split_tasks_by_rank(trs2))
-    trs_blocks += list(tjpcov_class.split_tasks_by_rank(trs3))
-    assert(tracers_blocks == trs_blocks)
+    for bi, trs in zip(blocks, tracers_blocks):
+        cov = cnmt._get_covariance_block_for_sacc(trs[0], trs[1])
+        assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
-    ell, _ = s.get_ell_cl('cl_00', 'DESgc__0', 'DESgc__0')
-    nbpw = ell.size
+def test_get_covariance():
+    # This checks that there is no problem during the gathering of blocks
 
-    for itrs, trs in enumerate(tracers_blocks):
-        tracer_comb1, tracer_comb2 = trs
-        print(trs)
+    # The coupled noise metadata information is in the sacc file and the
+    # workspaces in the config file
+    cnmt = FourierGaussianNmt(input_yml_mpi)
+    s = cnmt.io.get_sacc_file()
 
-        cov = blocks[itrs] + 1e-100
+    cov = cnmt.get_covariance() + 1e-100
+    cov_bm = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
 
-        fname = os.path.join(root,
-                             'cov/cov_{}_{}_{}_{}.npz'.format(*tracer_comb1,
-                                                              *tracer_comb2))
-        cov_bm = np.load(fname)['cov'] + 1e-100
+    # Check chi2
+    clf = np.array([])
+    for trs in s.get_tracer_combinations():
+        cl_trs = get_fiducial_cl(s, *trs, remove_be=True)
+        clf = np.concatenate((clf, cl_trs.flatten()))
+    cl = s.mean
 
-        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+    delta = clf - cl
+    chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
+    chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
 
-    comm.Barrier()
+
+def test_CovarianceCalculator():
+    cc = CovarianceCalculator("./tests/data/conf_covariance_calculator.yml")
+    cc_mpi = CovarianceCalculator(
+        "./tests/data/conf_covariance_calculator_mpi.yml"
+    )
+
+    # Test get_covariance_terms
+    cov = None
+    cov_mpi = cc_mpi.get_covariance_terms()
     if rank == 0:
-        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
-
-
-def test_get_all_cov_nmt_mpi():
-    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
-    s = tjpcov_class.cl_data
-    bins = get_nmt_bin()
-
-    # tracer_noise_cp = {}
-    # for tr in s.tracers:
-    #     tracer_noise_cp[tr] = get_tracer_noise(tr)
-    tracer_noise_cp = get_tracer_noise_cp_dict(s)
-
-    cov = tjpcov_class.get_all_cov_nmt(tracer_noise_coupled=tracer_noise_cp,
-                                       cache={'bins': bins})
-
+        # Avoid computing serially the covariance terms multiple times.
+        # Broadcast it later
+        cov = cc.get_covariance_terms()
+    cov = comm.bcast(cov, root=0)
+    for k in cov.keys():
+        assert (
+            np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1))
+            < 1e-5
+        )
     comm.Barrier()
+
+    # Test get_covariance
+    cov_mpi = cc_mpi.get_covariance()
     if rank == 0:
-        cov += 1e-100
-        cov_bm = s.covariance.covmat + 1e-100
-        assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
-        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
-
-
-def test_compute_all_blocks_SSC():
-    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
-    s = tjpcov_class.cl_data
-
-
-    blocks, tracers_blocks = tjpcov_class.compute_all_blocks_SSC()
-    trs = nmt_tools.get_list_of_tracers_for_cov(s)
-    trs_blocks = list(tjpcov_class.split_tasks_by_rank(trs))
-    assert(tracers_blocks == trs_blocks)
-
-    for itrs, trs in enumerate(tracers_blocks):
-        tracer_comb1, tracer_comb2 = trs
-        print(trs)
-
-        cov = blocks[itrs] + 1e-100
-
-        fname = os.path.join(tjpcov_class.outdir,
-                             'ssc_{}_{}_{}_{}.npz'.format(*tracer_comb1,
-                                                          *tracer_comb2))
-        cov_bm = np.load(fname)['cov'] + 1e-100
-
-        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
-
+        # Avoid computing serially the covariance multiple times. Broadcast it
+        # later
+        cov = cc.get_covariance()
+    cov = comm.bcast(cov, root=0)
+    assert np.max(np.abs((cov + 1e-100) / (cov_mpi + 1e-100) - 1)) < 1e-5
     comm.Barrier()
+
+    # Test create_sacc_cov
+    fname = f"cls_cov{rank}.fits"
+    cc_mpi.create_sacc_cov(output=fname, save_terms=True)
+    keys = ["gauss", "SSC"]
     if rank == 0:
-        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
-
-
-def test_get_all_cov_SSC_mpi():
-    tjpcov_class = cv.CovarianceCalculator(input_yml_mpi)
-    cov = tjpcov_class.get_all_cov_SSC()
-
+        assert os.path.isfile(outdir + "cls_cov0.fits")
+        for k in keys:
+            assert os.path.isfile(outdir + f"cls_cov0_{k}.fits")
+    else:
+        fname = f"cls_cov{rank}_{k}.fits"
+        assert not os.path.isfile(outdir + fname)
+        for k in keys:
+            assert not os.path.isfile(outdir + fname)
     comm.Barrier()
-    if rank == 0:
-        cov += 1e-100
-        # The serial computation will load the saved covariance blocks so it
-        # will not be expensive. We will be testing that the covariancia is
-        # built correctly
-        tjpcov_class = cv.CovarianceCalculator(input_yml_nompi)
-        cov_bm = tjpcov_class.get_all_cov_SSC() + 1e-100
-        assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-        assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
-        os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
-
-
-# Clean up after the tests
-comm.Barrier()
-if rank == 0:
-    os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
