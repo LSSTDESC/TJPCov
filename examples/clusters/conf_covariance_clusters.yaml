@@ -1,8 +1,8 @@
 tjpcov:
-  use_mpi: False
+  use_mpi: True
   do_xi: False
   # sacc input file 
-  sacc_file: ./examples/clusters/mock_clusters.sacc
+  sacc_file: ../tests/data/clusters/mock_clusters.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
   outdir: ./
@@ -19,6 +19,7 @@ clusters_params:
   overdensity_delta: 200
 
 parameters:
+  # Not used for while (read by ccl.cosmo):
   Omega_c: 0.2640
   Omega_b: 0.0493
   h: 0.6736
