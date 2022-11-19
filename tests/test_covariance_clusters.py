@@ -202,20 +202,3 @@ def test_cov_nxn():
     cov_00 = cc_cov.get_covariance_cluster_counts(("clusters_0_0",), ("clusters_0_0",))
 
     np.testing.assert_almost_equal(ref_sum, cov_00)
-
-
-def test_all():
-    test_cov_nxn()
-    test_double_bessel_integral()
-    test_calc_dv()
-    test_calc_G1()
-    test_calc_dV()
-    test_calc_Z1()
-    test_calc_M1()
-    test_integral_mass()
-    test_integral_mass_no_bias()
-    test_mass_richness()
-    test_shot_noise()
-
-
-test_all()
