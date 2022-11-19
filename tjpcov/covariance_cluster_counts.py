@@ -1,13 +1,10 @@
-from re import L
 from .covariance_clusters import CovarianceClusters
 import numpy as np
 import pyccl as ccl
-
-# Replace with CCL functions
-from scipy.integrate import quad, romb
+from scipy.integrate import romb
 
 
-class CovarianceClusterCounts(CovarianceClusters):
+class ClusterCounts(CovarianceClusters):
     """Implementation of cluster covariance that calculates the autocorrelation of cluster counts (NxN)"""
 
     cov_type = "fourier"
@@ -37,41 +34,26 @@ class CovarianceClusterCounts(CovarianceClusters):
             tracer_comb1 (_type_): e.g. ('clusters_0_0',)
             tracer_comb2 (_type_): e.g. ('clusters_0_1',)
         """
+
         tracer_split1 = tracer_comb1[0].split("_")
         tracer_split2 = tracer_comb2[0].split("_")
 
-        z_i = tracer_split1[1].lstrip("0")
-        richness_i = tracer_split1[2].lstrip("0")
-        z_j = tracer_split2[1].lstrip("0")
-        richness_j = tracer_split2[2].lstrip("0")
+        # Hack for now - until we decide on sorting for tracers in SACC, strip 0's and
+        # take the remaining number, if you strip everything, default to 0
+        z_i = int(tracer_split1[1].lstrip("0") or 0)
+        richness_i = int(tracer_split1[2].lstrip("0") or 0)
+        z_j = int(tracer_split2[1].lstrip("0") or 0)
+        richness_j = int(tracer_split2[2].lstrip("0") or 0)
 
-        if z_i == "":
-            z_i = 0
-        if z_j == "":
-            z_j = 0
-        if richness_i == "":
-            richness_i = 0
-        if richness_j == "":
-            richness_j = 0
-
-        z_i, z_j, richness_i, richness_j = (
-            int(z_i),
-            int(z_j),
-            int(richness_i),
-            int(richness_j),
-        )
-
+        # Compute geometric values based on redshift bin
         Z1_true = self.calc_Z1(z_i)
-
-        dz = (Z1_true[-1] - Z1_true[0]) / (self.romberg_num - 1)
-
-        partial_vec = np.array([self.partial2(Z1_true[m], z_j, richness_j) for m in range(self.romberg_num)])
-
-        # Compute geometric values
         G1_true = self.calc_G1(Z1_true)
         dV_true = self.calc_dV(Z1_true, z_i)
         M1_true = self.calc_M1(Z1_true, richness_i)
 
+        dz = (Z1_true[-1] - Z1_true[0]) / (self.romberg_num - 1)
+
+        partial_vec = np.array([self.partial2(Z1_true[m], z_j, richness_j) for m in range(self.romberg_num)])
         romb_vec = partial_vec * dV_true * M1_true * G1_true
 
         cov = (self.survey_area**2) * romb(romb_vec, dx=dz)

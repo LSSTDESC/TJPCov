@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pyccl as ccl
 import sacc
-from tjpcov.covariance_cluster_counts import CovarianceClusterCounts
+from tjpcov.covariance_cluster_counts import ClusterCounts
 import pyccl.halos.hmfunc as hmf
 
 cosmo_filename = "tests/data/cosmo_desy1.yaml"
@@ -62,7 +62,7 @@ def get_mock_sacc():
 
 def get_mock_covariance():
 
-    cc_cov = CovarianceClusterCounts(input_yml)
+    cc_cov = ClusterCounts(input_yml)
     cc_cov.load_from_sacc(get_mock_sacc())
     cc_cov.load_from_cosmology(get_mock_cosmo())
     cc_cov.mass_func = hmf.MassFuncTinker10(get_mock_cosmo())
@@ -161,16 +161,6 @@ def test_calc_Z1():
     np.testing.assert_almost_equal(np.sum(test_Z1_1), ref_sum_1)
 
 
-def test_sigma_vec():
-    ref_sigma_vec_sum = 0.0021168654088669758
-    cc_cov = get_mock_covariance()
-    sigma_vec = cc_cov.eval_sigma_vec()
-
-    sigma_sum = np.sum(sigma_vec)
-
-    np.testing.assert_almost_equal(sigma_sum, ref_sigma_vec_sum)
-
-
 def test_integral_mass():
     cc_cov = get_mock_covariance()
     ref1 = 2.596895139062984e-05
@@ -229,7 +219,6 @@ def test_all():
     test_integral_mass_no_bias()
     test_mass_richness()
     test_shot_noise()
-    test_sigma_vec()
 
 
 test_all()
