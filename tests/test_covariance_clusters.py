@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pyccl as ccl
 import sacc
-from tjpcov_new.covariance_cluster_counts import CovarianceClusterCounts
+from tjpcov.covariance_cluster_counts import CovarianceClusterCounts
 import pyccl.halos.hmfunc as hmf
 
 cosmo_filename = "tests/data/cosmo_desy1.yaml"
@@ -157,10 +157,7 @@ def test_mass_richness():
     cc_cov = get_mock_covariance()
     reference_min = 0.0009528852621284171
 
-    test_min = [
-        cc_cov.mass_richness(cc_cov.min_mass, i)
-        for i in range(cc_cov.num_richness_bins)
-    ]
+    test_min = [cc_cov.mass_richness(cc_cov.min_mass, i) for i in range(cc_cov.num_richness_bins)]
     np.testing.assert_almost_equal(np.sum(test_min), reference_min)
 
 
@@ -178,9 +175,7 @@ def test_dv():
     z_true = 0.8
 
     for i, z_i in enumerate([0, 4, 8, 14, 17]):
-        np.testing.assert_almost_equal(
-            cc_cov.dV(z_true, z_i), reference_values[i]
-        )
+        np.testing.assert_almost_equal(cc_cov.dV(z_true, z_i), reference_values[i])
 
 
 def test_cov_nxn():
@@ -190,8 +185,6 @@ def test_cov_nxn():
     cc_cov.eval_true_vec()
     cc_cov.eval_M1_true_vec()
 
-    cov_00 = cc_cov.get_covariance_cluster_counts(
-        ("clusters_0_0",), ("clusters_0_0",)
-    )
+    cov_00 = cc_cov.get_covariance_cluster_counts(("clusters_0_0",), ("clusters_0_0",))
 
     np.testing.assert_almost_equal(ref_sum, cov_00)
