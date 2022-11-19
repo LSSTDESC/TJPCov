@@ -15,7 +15,9 @@ class ClusterCounts(CovarianceClusters):
         super().__init__(config)
         self.romberg_num = 2**6 + 1
 
-    def _get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2, **kwargs):
+    def _get_covariance_block_for_sacc(
+        self, tracer_comb1, tracer_comb2, **kwargs
+    ):
         """
         This function returns the covariance block with the elements in the sacc file
         """
@@ -53,7 +55,12 @@ class ClusterCounts(CovarianceClusters):
 
         dz = (Z1_true[-1] - Z1_true[0]) / (self.romberg_num - 1)
 
-        partial_vec = np.array([self.partial2(Z1_true[m], z_j, richness_j) for m in range(self.romberg_num)])
+        partial_vec = np.array(
+            [
+                self.partial2(Z1_true[m], z_j, richness_j)
+                for m in range(self.romberg_num)
+            ]
+        )
         romb_vec = partial_vec * dV_true * M1_true * G1_true
 
         cov = (self.survey_area**2) * romb(romb_vec, dx=dz)
@@ -68,8 +75,12 @@ class ClusterCounts(CovarianceClusters):
         return cov_total
 
     def calc_Z1(self, z_i):
-        z_low_limit = max(self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_range)
-        z_upper_limit = min(self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_range)
+        z_low_limit = max(
+            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_range
+        )
+        z_upper_limit = min(
+            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_range
+        )
 
         return np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
 
@@ -77,7 +88,9 @@ class ClusterCounts(CovarianceClusters):
         return np.array(ccl.growth_factor(self.cosmo, 1 / (1 + Z1_true_vec)))
 
     def calc_dV(self, Z1_true_vec, z_i):
-        return np.array([self.dV(Z1_true_vec[m], z_i) for m in range(self.romberg_num)])
+        return np.array(
+            [self.dV(Z1_true_vec[m], z_i) for m in range(self.romberg_num)]
+        )
 
     def calc_M1(self, Z1_true_vec, richness_i):
         M1_true = np.zeros(self.romberg_num)
