@@ -10,8 +10,8 @@ from scipy.interpolate import interp1d
 
 class CovarianceClusters(CovarianceBuilder):
     """
-    Contains the extra logic needed to add cluster count covariance to the existing
-    3x2pt covariance, N x C_ell (gg gk kk).
+    Contains the extra logic needed to add cluster count covariance to the exi
+    sting 3x2pt covariance, N x C_ell (gg gk kk).
     """
 
     def __init__(self, config, survey_area=4 * np.pi):
@@ -421,7 +421,7 @@ class CovarianceClusters(CovarianceBuilder):
                         * self.double_bessel_integral(z1, vec_final[m])
                     )
                 except Exception as ex:
-                    a = 1
+                    print(ex)
 
             factor_approx = self.integral_mass(z1, bin_lbd_j)
 
