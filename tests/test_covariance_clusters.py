@@ -67,7 +67,6 @@ def get_mock_covariance():
     cc_cov.load_from_cosmology(get_mock_cosmo())
     cc_cov.mass_func = hmf.MassFuncTinker10(get_mock_cosmo())
     cc_cov.h0 = 0.67
-    cc_cov.setup_vectors()
     return cc_cov
 
 
@@ -83,19 +82,7 @@ def test_integral_mass_no_bias():
     np.testing.assert_almost_equal(ref2, test2)
 
 
-def test_eval_M1_true_vec():
-    # OK
-    ref_sum = 0.048185959642970705
-    cc_cov = get_mock_covariance()
-
-    cc_cov.eval_true_vec()
-    cc_cov.eval_M1_true_vec()
-
-    np.testing.assert_almost_equal(np.sum(cc_cov.M1_true_vec), ref_sum)
-
-
 def test_double_bessel_integral():
-    # OK
     ref = 8.427201745032292e-05
     cc_cov = get_mock_covariance()
     test = cc_cov.double_bessel_integral(0.3, 0.3)
@@ -103,33 +90,78 @@ def test_double_bessel_integral():
 
 
 def test_shot_noise():
-    # OK
     ref = 63973.635143644424
     cc_cov = get_mock_covariance()
     test = cc_cov.shot_noise(0, 0)
     np.testing.assert_almost_equal(test, ref)
 
 
-def test_eval_true_vec():
-    # OK
-    ref_z1_sum = 936.0
-    ref_g1_sum = 795.6517795142859
-    ref_dv_sum = 2295974227982.374
+def test_calc_G1():
+
+    ref_sum_0 = 53.77019327633519
+    ref_sum_1 = 52.42500031312957
 
     cc_cov = get_mock_covariance()
-    cc_cov.eval_true_vec()
 
-    z1_sum = np.sum(cc_cov.Z1_true_vec)
-    g1_sum = np.sum(cc_cov.G1_true_vec)
-    dv_sum = np.sum(cc_cov.dV_true_vec)
+    Z1_true_0 = cc_cov.calc_Z1(0)
+    test_G1_0 = cc_cov.calc_G1(Z1_true_0)
 
-    np.testing.assert_almost_equal(z1_sum, ref_z1_sum)
-    np.testing.assert_almost_equal(g1_sum, ref_g1_sum)
-    np.testing.assert_almost_equal(dv_sum / 1e10, ref_dv_sum / 1e10)
+    Z1_true_1 = cc_cov.calc_Z1(1)
+    test_G1_1 = cc_cov.calc_G1(Z1_true_1)
+
+    np.testing.assert_almost_equal(np.sum(test_G1_0), ref_sum_0)
+    np.testing.assert_almost_equal(np.sum(test_G1_1), ref_sum_1)
+
+
+def test_calc_dV():
+
+    ref_sum_0 = 41736789276.57224
+    ref_sum_1 = 52065518985.98286
+
+    cc_cov = get_mock_covariance()
+
+    Z1_true = cc_cov.calc_Z1(0)
+    test_dV_0 = cc_cov.calc_dV(Z1_true, 0)
+
+    Z1_true = cc_cov.calc_Z1(1)
+    test_dV_1 = cc_cov.calc_dV(Z1_true, 1)
+
+    np.testing.assert_almost_equal(np.sum(test_dV_0), ref_sum_0)
+    np.testing.assert_almost_equal(np.sum(test_dV_1) / 1e12, ref_sum_1 / 1e12)
+
+
+def test_calc_M1():
+
+    ref_0_0 = 0.0016602249035099581
+    ref_1_1 = 0.0008823472776646072
+
+    cc_cov = get_mock_covariance()
+
+    Z1_true = cc_cov.calc_Z1(0)
+    test_0_0 = cc_cov.calc_M1(Z1_true, 0)
+
+    Z1_true = cc_cov.calc_Z1(1)
+    test_1_1 = cc_cov.calc_M1(Z1_true, 1)
+
+    np.testing.assert_almost_equal(np.sum(test_0_0), ref_0_0)
+    np.testing.assert_almost_equal(np.sum(test_1_1), ref_1_1)
+
+
+def test_calc_Z1():
+
+    ref_sum_0 = 24.374999999999996
+    ref_sum_1 = 27.624999999999996
+
+    cc_cov = get_mock_covariance()
+
+    test_Z1_0 = cc_cov.calc_Z1(0)
+    test_Z1_1 = cc_cov.calc_Z1(1)
+
+    np.testing.assert_almost_equal(np.sum(test_Z1_0), ref_sum_0)
+    np.testing.assert_almost_equal(np.sum(test_Z1_1), ref_sum_1)
 
 
 def test_sigma_vec():
-    # OK
     ref_sigma_vec_sum = 0.0021168654088669758
     cc_cov = get_mock_covariance()
     sigma_vec = cc_cov.eval_sigma_vec()
@@ -140,7 +172,6 @@ def test_sigma_vec():
 
 
 def test_integral_mass():
-    # OK
     cc_cov = get_mock_covariance()
     ref1 = 2.596895139062984e-05
     ref2 = 2.5910691906342223e-05
@@ -153,7 +184,6 @@ def test_integral_mass():
 
 
 def test_mass_richness():
-    # OK
     cc_cov = get_mock_covariance()
     reference_min = 0.0009528852621284171
 
@@ -161,8 +191,7 @@ def test_mass_richness():
     np.testing.assert_almost_equal(np.sum(test_min), reference_min)
 
 
-def test_dv():
-    # OK
+def test_calc_dv():
     reference_values = [
         6613.739621696188,
         55940746.72160228,
@@ -182,9 +211,25 @@ def test_cov_nxn():
     ref_sum = 130462.91921818888
 
     cc_cov = get_mock_covariance()
-    cc_cov.eval_true_vec()
-    cc_cov.eval_M1_true_vec()
 
     cov_00 = cc_cov.get_covariance_cluster_counts(("clusters_0_0",), ("clusters_0_0",))
 
     np.testing.assert_almost_equal(ref_sum, cov_00)
+
+
+def test_all():
+    test_cov_nxn()
+    test_double_bessel_integral()
+    test_calc_dv()
+    test_calc_G1()
+    test_calc_dV()
+    test_calc_Z1()
+    test_calc_M1()
+    test_integral_mass()
+    test_integral_mass_no_bias()
+    test_mass_richness()
+    test_shot_noise()
+    test_sigma_vec()
+
+
+test_all()
