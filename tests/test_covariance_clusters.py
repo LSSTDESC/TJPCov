@@ -6,11 +6,8 @@ import sacc
 from tjpcov.covariance_cluster_counts import ClusterCounts
 import pyccl.halos.hmfunc as hmf
 
-cosmo_filename = "tests/data/cosmo_desy1.yaml"
-cosmo = ccl.Cosmology.read_yaml(cosmo_filename)
-
-root = "./tests/data/"
-input_yml = os.path.join(root, "tjpcov_conf_minimal_clusters_test.yaml")
+cosmo = ccl.Cosmology.read_yaml("tests/data/cosmo_desy1.yaml")
+input_yml = "./tests/data/conf_covariance_clusters.yaml"
 
 
 def get_mock_cosmo():
