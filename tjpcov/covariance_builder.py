@@ -1154,7 +1154,5 @@ class CovarianceProjectedReal(CovarianceReal):
                 if auto:
                     cov[:, j, :, i] = cov[:, i, :, j].T
 
-        cov = cov.reshape(
-            (nbpw * len(data_types1), nbpw * len(data_types2))
-        )
+        cov = cov.reshape((nbpw * len(data_types1), nbpw * len(data_types2)))
         return cov

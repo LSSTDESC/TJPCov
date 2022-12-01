@@ -175,9 +175,7 @@ class FourierGaussianFsky(CovarianceFourier):
             ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
             cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
             cov_full[:, 0, :, 0] = cov
-            cov_full = cov_full.reshape(
-                (nbpw * ncell1, nbpw * ncell2)
-            )
+            cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
             cov = cov_full
 
         return cov

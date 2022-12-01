@@ -112,7 +112,7 @@ def test__get_covariance_block_for_sacc():
         cov2 = cb.get_covariance_block(trs1, trs2) + 1e-100
         cov2 = cov2.reshape(16, ncell1, 16, ncell2)[:, 0, :, 0]
 
-        assert np.max(np.abs(cov1/cov2 - 1)) < 1e-10
+        assert np.max(np.abs(cov1 / cov2 - 1)) < 1e-10
 
 
 def test_get_datatypes_from_ncell():

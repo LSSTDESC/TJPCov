@@ -203,9 +203,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     assert cov_ssc_zb.shape == (ell.size * ncell1, ell.size * ncell2)
     # Check the blocks
-    cov_ssc_zb = cov_ssc_zb.reshape(
-        (ell.size, ncell1, ell.size, ncell2)
-    )
+    cov_ssc_zb = cov_ssc_zb.reshape((ell.size, ncell1, ell.size, ncell2))
     # Check the reshape has the correct ordering
     assert np.all(cov_ssc_zb[:, 0, :, 0] == cov_ssc)
     cov_ssc_zb[:, 0, :, 0] -= cov_ssc
