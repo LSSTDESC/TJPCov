@@ -62,35 +62,14 @@ def get_nmt_bin(lmax=95):
 
 
 def test_build_matrix_from_blocks():
-    # Test that it works with matrices ordered as in Fortran
-
-    class CFT_orderF(CovarianceFourierTester):
-        _reshape_order = "F"
-
-    cb = CFT_orderF(input_yml)
-    s = cb.io.get_sacc_file()
-    cov = s.covariance.covmat + 1e-100
-
-    trs_cov = cb.get_list_of_tracers_for_cov()
-    blocks = []
-    for trs1, trs2 in trs_cov:
-        ix1 = s.indices(tracers=trs1)
-        ix2 = s.indices(tracers=trs2)
-        cov12 = cov[ix1][:, ix2]
-        blocks.append(cov12)
-    cov2 = cb._build_matrix_from_blocks(blocks, trs_cov)
-
-    assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
-
-    # To test the reshaping needed for NaMaster we have to use 'C' (as in C)
-    class CFT_orderC(CovarianceFourierTester):
-        _reshape_order = "C"
-
+    class CFT(CovarianceFourierTester):
         def get_covariance_block(self, trs1, trs2):
             fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
             return np.load(os.path.join(root + "cov", fname))["cov"]
 
-    cb = CFT_orderC(input_yml)
+    cb = CFT(input_yml)
+    s = cb.io.get_sacc_file()
+    cov = s.covariance.covmat + 1e-100
     trs_cov = cb.get_list_of_tracers_for_cov()
     blocks = []
     for trs1, trs2 in trs_cov:
@@ -103,17 +82,16 @@ def test_build_matrix_from_blocks():
 
 def test__get_covariance_block_for_sacc():
     # Test with matrices ordered as in C
-    class CFT_orderC(CovarianceFourierTester):
-        _reshape_order = "C"
-
+    class CFT(CovarianceFourierTester):
         def get_covariance_block(self, trs1, trs2):
             fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
             return np.load(os.path.join(root + "cov", fname))["cov"]
 
-    cb = CFT_orderC(input_yml)
+    cb = CFT(input_yml)
     s = cb.io.get_sacc_file()
     cov = s.covariance.covmat + 1e-100
 
+    # Now test all of them
     trs_cov = cb.get_list_of_tracers_for_cov()
     for trs1, trs2 in trs_cov:
         ix1 = s.indices(tracers=trs1)
@@ -124,34 +102,17 @@ def test__get_covariance_block_for_sacc():
         assert cov1.shape == cov2.shape
         assert np.max(np.abs(cov1 / cov2 - 1)) < 1e-10
 
-    # Test with matrices oredered as in Fortran
-    class CFT_orderF(CovarianceFourierTester):
-        _reshape_order = "F"
+        # Make sure we get what it's in the files looking at the first block
+        # i.e 00, 0e or ee
 
-        def get_covariance_block(self, trs1, trs2):
-            fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
-            cov = np.load(os.path.join(root + "cov", fname))["cov"]
-            shape = cov.shape
-            ncell1 = self.get_tracer_comb_ncell(trs1)
-            ncell2 = self.get_tracer_comb_ncell(trs2)
-            cov = cov.reshape((16, ncell1, 16, ncell2), order="C")
-            cov = cov.reshape(shape, order="F")
+        ncell1 = cb.get_tracer_comb_ncell(trs1)
+        ncell2 = cb.get_tracer_comb_ncell(trs2)
 
-            return cov
+        cov1 = cov[ix1[:16]][:, ix2[:16]]
+        cov2 = cb.get_covariance_block(trs1, trs2) + 1e-100
+        cov2 = cov2.reshape(16, ncell1, 16, ncell2)[:, 0, :, 0]
 
-    cb = CFT_orderF(input_yml)
-    s = cb.io.get_sacc_file()
-    cov = s.covariance.covmat + 1e-100
-
-    trs_cov = cb.get_list_of_tracers_for_cov()
-    for trs1, trs2 in trs_cov:
-        ix1 = s.indices(tracers=trs1)
-        ix2 = s.indices(tracers=trs2)
-        cov1 = cov[ix1][:, ix2]
-        cov2 = cb._get_covariance_block_for_sacc(trs1, trs2) + 1e-100
-
-        assert cov1.shape == cov2.shape
-        assert np.max(np.abs(cov1 / cov2 - 1)) < 1e-10
+        assert np.max(np.abs(cov1/cov2 - 1)) < 1e-10
 
 
 def test_get_datatypes_from_ncell():
