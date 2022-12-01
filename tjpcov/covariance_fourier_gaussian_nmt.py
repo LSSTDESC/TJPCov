@@ -15,7 +15,6 @@ class FourierGaussianNmt(CovarianceFourier):
     """
 
     cov_type = "gauss"
-    _reshape_order = "C"
 
     def __init__(self, config):
         """
@@ -196,6 +195,7 @@ class FourierGaussianNmt(CovarianceFourier):
 
         fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname):
+            print(f"Loading saved covariance {fname}")
             cov = np.load(fname)["cov"]
             return cov
 

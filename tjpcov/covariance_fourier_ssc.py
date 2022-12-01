@@ -14,7 +14,6 @@ class FourierSSCHaloModel(CovarianceFourier):
     """
 
     cov_type = "SSC"
-    _reshape_order = "F"
 
     def __init__(self, config):
         """
@@ -173,7 +172,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_ssc
         cov_full = cov_full.reshape(
-            (nbpw * ncell1, nbpw * ncell2), order=self._reshape_order
+            (nbpw * ncell1, nbpw * ncell2)
         )
 
         np.savez_compressed(fname, cov=cov_full, cov_nob=cov_ssc)

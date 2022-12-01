@@ -14,7 +14,6 @@ class FourierGaussianFsky(CovarianceFourier):
     # configuration given in the yaml file. Kept like this for now to check I
     # don't break the tests during the refactoring.
     cov_type = "gauss"
-    _reshape_order = "F"
 
     def __init__(self, config):
         """
@@ -177,7 +176,7 @@ class FourierGaussianFsky(CovarianceFourier):
             cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
             cov_full[:, 0, :, 0] = cov
             cov_full = cov_full.reshape(
-                (nbpw * ncell1, nbpw * ncell2), order=self._reshape_order
+                (nbpw * ncell1, nbpw * ncell2)
             )
             cov = cov_full
 
@@ -191,7 +190,6 @@ class RealGaussianFsky(CovarianceProjectedReal):
     """
 
     cov_type = "gauss"
-    _reshape_order = "F"
     # Set the fourier attribute to None and set it later in the __init__
     fourier = None
 
