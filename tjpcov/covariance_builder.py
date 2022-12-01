@@ -232,7 +232,8 @@ class CovarianceBuilder(ABC):
         """
         Return the covariance block for the two pair of tracers. This can have
         all elements. This is what you would get from an external code, for
-        instance.
+        instance. For Fourier space covariances, we assume the same order as in
+        NaMaster.
 
         Parameters:
         -----------
