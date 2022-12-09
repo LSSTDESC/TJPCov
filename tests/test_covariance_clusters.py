@@ -31,7 +31,7 @@ def get_mock_cosmo():
 
 
 def get_mock_sacc():
-    # Using values from 
+    # Using values from
     # https://github.com/nrussofer/Cosmological-Covariance-matrices
     # /blob/master/Full%20covariance%20N_N%20part%20vfinal.ipynb
     # As reference.
@@ -40,7 +40,7 @@ def get_mock_sacc():
     s.metadata["nbins_cluster_richness"] = 3
     s.metadata["min_mass"] = 1e13
 
-    # This isnt how tracers actually look, but sort of 
+    # This isnt how tracers actually look, but sort of
     # hacks the class to work without building
     # an entire sacc file for this test.
     s.add_tracer(
