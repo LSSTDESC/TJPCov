@@ -486,9 +486,12 @@ class CovarianceClusters(CovarianceBuilder):
         except Exception as err:
             print(
                 err,
-                f"""\nValue you tried to interpolate: {max(r1,r2)} Mpc, 
+                f"""\n
+                Value you tried to interpolate: {max(r1,r2)} Mpc,
                 Input r {r1}, {r2}
-            Valid range range: [{self.r_vec[self.imin]}, {self.r_vec[self.imax]}] Mpc""",
+                Valid range range:
+                [{self.r_vec[self.imin]}, {self.r_vec[self.imax]}]
+                Mpc""",
             )
 
 
