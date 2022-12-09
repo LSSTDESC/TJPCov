@@ -10,8 +10,9 @@ from scipy.interpolate import interp1d
 
 class CovarianceClusters(CovarianceBuilder):
     """
-    Contains the extra logic needed to add cluster count covariance to the exi
-    sting 3x2pt covariance, N x C_ell (gg gk kk).
+    Contains the extra logic needed to add cluster count 
+    covariance to the existing 3x2pt covariance, N x C_ell 
+    (gg gk kk).
     """
 
     def __init__(self, config, survey_area=4 * np.pi):
@@ -20,7 +21,8 @@ class CovarianceClusters(CovarianceBuilder):
         sacc_file = self.io.get_sacc_file()
         if "clusters" not in str(sacc_file.tracers.keys()):
             print(
-                "Clusters are not within the SACC file tracers. Not performing cluster covariances."
+                "Clusters are not within the SACC file tracers." +
+                "Not performing cluster covariances."
             )
             return
 
@@ -64,7 +66,8 @@ class CovarianceClusters(CovarianceBuilder):
         self.cosmo = cosmo
         mass_def = ccl.halos.MassDef200m()
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
-        # TODO: optimize these ranges like Nelson did interpolation limits for double_bessel_integral
+        # TODO: optimize these ranges like Nelson did interpolation limits 
+        # for double_bessel_integral
         # zmin & zmax drawn from Z_true_vec
         self.radial_lower_limit = self.radial_distance(self.z_lower_limit)
         self.radial_upper_limit = self.radial_distance(self.z_upper_limit)
@@ -146,7 +149,8 @@ class CovarianceClusters(CovarianceBuilder):
 
     def radial_distance(self, z):
         """
-        Given a redshift, returns the comoving radial distance for a given cosmology.
+        Given a redshift, returns the comoving radial distance for a given 
+        cosmology.
 
         Args:
             z (float or array_like): Redshift
@@ -204,8 +208,8 @@ class CovarianceClusters(CovarianceBuilder):
 
     def mass_richness(self, ln_true_mass, lbd_i):
         """
-        Calculates the probability that the true mass ln(M_true) is observed within
-        the bins lambda_i and lambda_i + 1
+        Calculates the probability that the true mass ln(M_true) is 
+        observed within the bins lambda_i and lambda_i + 1
 
         Args:
             ln_true_mass: True mass
@@ -221,8 +225,8 @@ class CovarianceClusters(CovarianceBuilder):
     def integral_mass(self, z, lbd_i):
         """
         Integral mass function
-        note: ccl.function returns dn/dlog10m, I am changing integrand below
-        to d(lnM)
+        note: ccl.function returns dn/dlog10m, I am changing integrand 
+        below to d(lnM)
 
         Args:
             z (float): redshift
@@ -259,7 +263,8 @@ class CovarianceClusters(CovarianceBuilder):
             )
             * self.mass_richness(ln_m, lbd_i)
         )
-        # Remember ccl.function returns dn/dlog10m, I am changing integrand to d(lnM)
+        # Remember ccl.function returns dn/dlog10m, I am changing 
+        # integrand to d(lnM)
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def Limber(self, z):
@@ -279,8 +284,9 @@ class CovarianceClusters(CovarianceBuilder):
 
     def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
         """
-        Calculating the covariance of diagonal terms using Limber (the delta
-        transforms the double redshift integral into a single redshift integral)
+        Calculating the covariance of diagonal terms using Limber 
+        (the delta transforms the double redshift integral into a 
+        single redshift integral)
         CAUTION: hard-wired ovdelta and survey_area!
 
         Args:
@@ -439,7 +445,8 @@ class CovarianceClusters(CovarianceBuilder):
 
     def double_bessel_integral(self, z1, z2):
         """
-        Calculates the double bessel integral from I-ell algorithm, as function of z1 and z2
+        Calculates the double bessel integral from I-ell algorithm, 
+        as function of z1 and z2
 
         Args:
             z1 (float): redshift lower bound
@@ -494,7 +501,8 @@ class MassRichnessRelation(object):
     def MurataCostanzi(ln_true_mass, richness_bin, richness_bin_next, h0):
         """
         Define lognormal mass-richness relation
-        (leveraging paper from Murata et. alli - ArxIv 1707.01907 and Costanzi et al ArxIv 1810.09456v1)
+        (leveraging paper from Murata et. alli - ArxIv 1707.01907 
+        and Costanzi et al ArxIv 1810.09456v1)
 
         Args:
             ln_true_mass: ln(true mass)
@@ -502,8 +510,9 @@ class MassRichnessRelation(object):
             richness_bin_next: i+1th richness bin
             h0:
         Returns:
-            The probability that the true mass ln(ln_true_mass) is observed within
-            the bins richness_bin and richness_bin_next
+            The probability that the true mass ln(ln_true_mass) 
+            is observed within the bins richness_bin and 
+            richness_bin_next
         """
 
         alpha = 3.207  # Murata
