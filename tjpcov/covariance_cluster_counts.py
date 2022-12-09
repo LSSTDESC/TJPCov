@@ -5,7 +5,7 @@ from scipy.integrate import romb
 
 
 class ClusterCounts(CovarianceClusters):
-    """Implementation of cluster covariance that calculates 
+    """Implementation of cluster covariance that calculates
     the autocorrelation of cluster counts (NxN)"""
 
     cov_type = "fourier"
@@ -20,14 +20,14 @@ class ClusterCounts(CovarianceClusters):
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
         """
-        This function returns the covariance block with the 
+        This function returns the covariance block with the
         elements in the sacc file
         """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         """
-        This function returns the covariance block with the 
+        This function returns the covariance block with the
         elements in the sacc file
         """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
@@ -43,8 +43,8 @@ class ClusterCounts(CovarianceClusters):
         tracer_split1 = tracer_comb1[0].split("_")
         tracer_split2 = tracer_comb2[0].split("_")
 
-        # Hack for now - until we decide on sorting for 
-        # tracers in SACC, strip 0's and take the remaining 
+        # Hack for now - until we decide on sorting for
+        # tracers in SACC, strip 0's and take the remaining
         # number, if you strip everything, default to 0
         z_i = int(tracer_split1[1].lstrip("0") or 0)
         richness_i = int(tracer_split1[2].lstrip("0") or 0)
