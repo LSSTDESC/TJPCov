@@ -639,8 +639,12 @@ class CovarianceFourier(CovarianceBuilder):
         ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
         dtypes2 = self.get_datatypes_from_ncell(ncell2)
 
-        # The reshape works for the NaMaster ordering with order 'C'
-        # If the blocks are ordered as in the sacc file, you need order 'F'
+        # The reshape below assumes that the covariances from
+        # `get_covariance_block` follow the NaMaster ordering. This is because
+        # NaMaster is the main code at the moment. If in the future we have new
+        # ways of comuting the covariance that follow a different ordering, eg.
+        # Cell[:, None] * Cell[None, :], as in sacc, we could modify this and
+        # make this a NaMaster specific method.
         cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
         cov = cov.reshape(
             (nbpw, ncell1, nbpw, ncell2),
