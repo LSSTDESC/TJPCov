@@ -100,8 +100,8 @@ def test_Fourier_get_covariance_block():
     )
 
     nbpw = lb.size
-    assert np.all(cov2b[:nbpw][:, :nbpw] == cov2)
-    cov2b = cov2b.reshape((nbpw, 4, nbpw, 4), order="F")
+    cov2b = cov2b.reshape((nbpw, 4, nbpw, 4))
+    assert np.all(cov2b[:, 0, :, 0] == cov2)
     cov2b[:, 0, :, 0] -= cov2
     assert not np.any(cov2b)
 

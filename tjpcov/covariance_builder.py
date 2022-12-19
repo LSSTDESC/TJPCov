@@ -115,16 +115,6 @@ class CovarianceBuilder(ABC):
         """
         pass
 
-    @property
-    def _reshape_order(self):
-        """
-        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
-        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
-        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
-        blocks are as in the sacc file, 'F' should be used.
-        """
-        pass
-
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
         """
         Build full matrix from blocks.
@@ -242,7 +232,8 @@ class CovarianceBuilder(ABC):
         """
         Return the covariance block for the two pair of tracers. This can have
         all elements. This is what you would get from an external code, for
-        instance.
+        instance. For Fourier space covariances, we assume the same order as in
+        NaMaster.
 
         Parameters:
         -----------
@@ -648,36 +639,38 @@ class CovarianceFourier(CovarianceBuilder):
         ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
         dtypes2 = self.get_datatypes_from_ncell(ncell2)
 
-        # The reshape works for the NaMaster ordering with order 'C'
-        # If the blocks are ordered as in the sacc file, you need order 'F'
+        # The reshape below assumes that the covariances from
+        # `get_covariance_block` follow the NaMaster ordering. This is because
+        # NaMaster is the main code at the moment. If in the future we have new
+        # ways of comuting the covariance that follow a different ordering, eg.
+        # Cell[:, None] * Cell[None, :], as in sacc, we could modify this and
+        # make this a NaMaster specific method.
         cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
         cov = cov.reshape(
-            (nbpw, ncell1, nbpw, ncell2), order=self._reshape_order
+            (nbpw, ncell1, nbpw, ncell2),
         )
 
         # Keep only elements in the sacc file
         s = self.get_sacc_with_concise_dtypes()
-        ix1_todelete = []
-        ix2_todelete = []
+
+        # To avoid having to modify the indices for the block. This is a waste
+        # of time though
+        cov_full = -1 * np.ones((s.mean.size, s.mean.size))
+
         for i, dt1 in enumerate(dtypes1):
             ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
             if len(ix1) == 0:
-                ix1_todelete.append(i)
+                continue
             for j, dt2 in enumerate(dtypes2):
                 ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
                 if len(ix2) == 0:
-                    ix2_todelete.append(j)
-
-        cov = np.delete(cov, ix1_todelete, axis=1)
-        cov = np.delete(cov, ix2_todelete, axis=3)
+                    continue
+                cov_full[np.ix_(ix1, ix2)] = cov[:, i, :, j]
 
         ix1 = s.indices(tracers=tracer_comb1)
         ix2 = s.indices(tracers=tracer_comb2)
-        # Use order='F' to have a block covariance in the same order as in the
-        # sacc file
-        cov = cov.reshape((ix1.size, ix2.size), order="F")
 
-        return cov
+        return cov_full[ix1][:, ix2]
 
     def get_datatypes_from_ncell(self, ncell):
         """
@@ -1165,8 +1158,5 @@ class CovarianceProjectedReal(CovarianceReal):
                 if auto:
                     cov[:, j, :, i] = cov[:, i, :, j].T
 
-        cov = cov.reshape(
-            (nbpw * len(data_types1), nbpw * len(data_types2)),
-            order=self._reshape_order,
-        )
+        cov = cov.reshape((nbpw * len(data_types1), nbpw * len(data_types2)))
         return cov
