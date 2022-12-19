@@ -1,3 +1,59 @@
 [tool.black]
 line-length = 79
 include = './*\.pyi?$|tests\/.*\.pyi?$|tjpcov\/.*\.pyi?$'
+
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tjpcov"
+authors = [
+  {name="LSST DESC"}
+]
+description = "Covariances for LSST DESC"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+    "scipy",
+    "numpy",
+    "Jinja2",
+    "pyyaml",
+    "pytest",
+    "pyccl>=2.5.0",
+    "sacc>=0.7",
+    "camb"
+]
+dynamic = ["version"]
+
+# From https://github.com/pypa/setuptools_scm
+# Equivalent to use_scm_version = True in setup.py
+[tool.setuptools_scm]
+
+[project.optional-dependencies]
+nmt = [
+    "healpy",
+    "pymaster>=1.4.0",
+    "h5py",
+]
+mpi = [
+    "mpi4py"
+]
+full = [
+    "healpy",
+    "pymaster>=1.4.0",
+    "h5py",
+    "mpi4py"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/LSSTDESC/TJPCov"
+"Bug Tracker" = "https://github.com/LSSTDESC/TJPCov/issues"

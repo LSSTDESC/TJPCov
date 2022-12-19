@@ -45,13 +45,11 @@ jobs:
           # Install wheel to avoid recompiling packages already
           # in the cache.
           pip install -U wheel
-          # Use a for loop to avoid NaMaster to be compiled
-          # before installing its dependencies
+          # Install the basic code first to avoid NaMaster being compiled
+          # before its dependencies.
           # (https://github.com/LSSTDESC/NaMaster/issues/138)
-          set -e
-          for i in `cat requirements.txt`; do
-             pip install -U $i;
-          done
+          pip install .
+          pip install .\[nmt\]
 
           # For coeralls
           pip install -U pytest-cov coveralls
