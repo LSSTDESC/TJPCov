@@ -49,9 +49,10 @@ jobs:
           # before installing its dependencies
           # (https://github.com/LSSTDESC/NaMaster/issues/138)
           set -e
-          for i in `cat requirements.txt`; do
-             pip install -U $i;
-          done
+          # for i in `cat requirements.txt`; do
+          #    pip install -U $i;
+          # done
+          pip install .\[nmt\]
 
           # For coeralls
           pip install -U pytest-cov coveralls
