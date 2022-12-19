@@ -13,7 +13,7 @@ authors = [
 ]
 description = "Covariances for LSST DESC"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.7"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",

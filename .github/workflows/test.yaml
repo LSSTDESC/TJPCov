@@ -15,10 +15,10 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python 3.7
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.7'
 
       # TODO: Fix cache
       # Commented out because cache makes the actions to fail
@@ -52,6 +52,9 @@ jobs:
           # for i in `cat requirements.txt`; do
           #    pip install -U $i;
           # done
+          # Install the basic code first to avoid NaMaster being compiled
+          # before its dependencies.
+          pip install .
           pip install .\[nmt\]
 
           # For coeralls
