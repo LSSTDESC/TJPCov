@@ -27,7 +27,6 @@ class CovarianceRealTester(CovarianceReal):
 
 class CovarianceProjectedRealTester(CovarianceProjectedReal):
     fourier = None
-    _reshape_order = "F"
 
     def _get_fourier_block(self, tracer_comb1, tracer_comb2):
         super().get_covariance_block(tracer_comb1, tracer_comb2)
