@@ -19,6 +19,10 @@ build:
     - libgsl-dev
     - libfftw3-dev
     - libcfitsio-dev
+    - swig
+  jobs:
+    post_create_environment:
+      - pip install numpy
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -34,6 +38,6 @@ python:
   # Install our python package before building the docs
   install:
     # Installing numpy first to avoid CCL error
-    - requirements: doc/requirements.txt
+    # - requirements: doc/requirements.txt
     - method: pip
       path: .
