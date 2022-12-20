@@ -12,6 +12,9 @@ build:
     python: "3.7"
   apt_packages:
     - cmake
+    - autotools-dev
+    - automake
+    - gfortran
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
