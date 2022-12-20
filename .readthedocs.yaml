@@ -21,6 +21,7 @@ build:
     - libcfitsio-dev
     - swig
   jobs:
+    # Installing numpy before anything else to avoid CCL error
     post_create_environment:
       - pip install numpy
 
@@ -37,7 +38,5 @@ sphinx:
 python:
   # Install our python package before building the docs
   install:
-    # Installing numpy first to avoid CCL error
-    # - requirements: doc/requirements.txt
     - method: pip
       path: .
