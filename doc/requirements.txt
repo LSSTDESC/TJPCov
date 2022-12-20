@@ -1,0 +1,3 @@
+# Installing numpy first to avoid CCL error. The other dependencies are taken
+# care with pip and pyproject.toml
+numpy

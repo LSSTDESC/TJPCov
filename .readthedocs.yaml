@@ -26,6 +26,6 @@ python:
   install:
     # Installing numpy first to avoid CCL error
     - method: pip
-      path: numpy
+      path: doc/requirements.txt
     - method: pip
       path: .
