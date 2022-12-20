@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies	
         run: |
           # Install non-python NaMaster dependencies
-          sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
+          sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev cmake
           # Update pip 
           pip install -U pip
           # Install wheel to avoid recompiling packages already
