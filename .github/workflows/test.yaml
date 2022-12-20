@@ -39,12 +39,14 @@ jobs:
       - name: Install dependencies	
         run: |
           # Install non-python NaMaster dependencies
-          sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev cmake
+          sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
           # Update pip 
           pip install -U pip
           # Install wheel to avoid recompiling packages already
           # in the cache.
           pip install -U wheel
+          # Installing numpy first to avoid CCL error
+          pip install numpy
           # Install the basic code first to avoid NaMaster being compiled
           # before its dependencies.
           # (https://github.com/LSSTDESC/NaMaster/issues/138)

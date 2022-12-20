@@ -10,8 +10,6 @@ build:
   os: ubuntu-20.04
   tools:
     python: "3.7"
-  apt_packages:
-    - cmake
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -26,5 +24,8 @@ sphinx:
 python:
   # Install our python package before building the docs
   install:
+    # Installing numpy first to avoid CCL error
+    - method: pip
+      path: numpy
     - method: pip
       path: .
