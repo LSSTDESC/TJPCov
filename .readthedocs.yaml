@@ -15,6 +15,7 @@ build:
     - autotools-dev
     - automake
     - gfortran
+    - bison
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
