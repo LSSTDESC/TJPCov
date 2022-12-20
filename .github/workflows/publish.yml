@@ -23,9 +23,15 @@ jobs:
       run: |
         python -m build
 
-    # For now publish to test pypi until sure everything is ok
-    - name: Publish to Test PyPI
+    # Publish to test pypi to make sure sure everything is ok
+    # - name: Publish to Test PyPI
+    #   uses: pypa/gh-action-pypi-publish@release/v1
+    #   with:
+    #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+    #     repository_url: https://test.pypi.org/legacy/
+
+    # Publish to the real pypi
+    - name: Publish to Real PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+        password: ${{ secrets.PYPI_API_TOKEN }}

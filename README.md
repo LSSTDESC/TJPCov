@@ -9,33 +9,23 @@ TJPCov is a general covariance calculator interface to be used within LSST DESC.
 TJPCov is now pip installable for convenience, but for development
 clone the git repository.
 
+There are four different flavors of tjpcov at the moment:
+ - `python -m pip install .` will install tjpcov and the minimal dependencies.
+ - `python -m pip install .\[nmt\]` will install tjpcov, the minimal
+     dependencies and the dependencies needed to use NaMaster.
+ - `python -m pip install .\[mpi4py\]` will install, the minimal
+     dependencies and the mpi4py library to use MPI parallelization.
+ - `python -m pip install .\[full\]` will install tjpcov and all dependencies
+
+Note that due to a bug in the NaMaster installation, one needs to make sure
+numpy is installed before trying to install NaMaster. If you are doing a fresh
+install, run `python -m pip install .` first, and then `python -m pip install .\[nmt\]`
+
 ## Planning & development
 
 Ask @felipeaoli or @carlosggarcia for access to the repository and join the #desc-mcp-cov channel on the LSST DESC slack to contribute.
 
 See also [terms of reference](https://github.com/LSSTDESC/TJPCov/blob/master/doc/Terms_of_Reference.md).
-
-## Adding new versions to pip
-
-When you want to push a new version to pip (the server is called PyPI) then:
-
-1. increase the version number in setup.py
-2. create an account at pypi.org if you don't have one already
-3. run these commands:
-
-```
-# just the first time:
-pip3 install twine
-
-# remove the old distribution
-rm -r dist
-
-# make the distribution files
-python3 setup.py sdist bdist_wheel
-
-# upload
-python3 -m twine upload  dist/*
-```
 
 ## Environment for development
 If you are working in conda (miniconda or anaconda) you can create a conda environment named **tjpcov** with 
@@ -53,10 +43,10 @@ conda activate tjpcov
 The latest version TJPCov needs pymaster >= 1.4 . Install it using (after `conda activate tjpcov`): 
 
 ```
-python -m pip install git+https://github.com/LSSTDESC/NaMaster.git
+python -m pip install pymaster>=1.4
 ```
 The code requires ccl>=2.5.0
 ```
-python -m pip install ccl==2.5.0
+python -m pip install ccl>=2.5.0
 ```
 
