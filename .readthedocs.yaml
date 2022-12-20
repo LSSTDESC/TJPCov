@@ -16,6 +16,9 @@ build:
     - automake
     - gfortran
     - bison
+    - libgsl-dev
+    - libfftw3-dev
+    - libcfitsio-dev
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
