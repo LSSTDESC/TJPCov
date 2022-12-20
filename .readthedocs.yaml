@@ -25,7 +25,6 @@ python:
   # Install our python package before building the docs
   install:
     # Installing numpy first to avoid CCL error
-    - method: pip
-      path: doc/requirements.txt
+    - requirements: doc/requirements.txt
     - method: pip
       path: .
