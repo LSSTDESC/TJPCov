@@ -36,17 +36,17 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "autoapi.extension"
+    "autoapi.extension",
 ]
 
-autoapi_type = 'python'
-autoapi_dirs = ['../../tjpcov']
+autoapi_type = "python"
+autoapi_dirs = ["../../tjpcov"]
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'pymaster': ('https://namaster.readthedocs.io/en/latest', None),
-    'ccl': ('https://ccl.readthedocs.io/en/latest', None),
-    'sacc': ('https://sacc.readthedocs.io/en/latest', None)
+    "python": ("https://docs.python.org/3/", None),
+    "pymaster": ("https://namaster.readthedocs.io/en/latest", None),
+    "ccl": ("https://ccl.readthedocs.io/en/latest", None),
+    "sacc": ("https://sacc.readthedocs.io/en/latest", None),
 }
 
 # autosummary_generate = True
