@@ -14,7 +14,7 @@ def read_map_from_hdf5(fname, name, nside):
         nside (int): Map's HEALPix nside.
 
     Returns:
-        map (array): HEALPix map
+        array: HEALPix map
     """
     with h5py.File(fname, "r") as f:
         pixel = f[f"maps/{name}/pixel"]
@@ -37,7 +37,7 @@ def read_map(fname, name=None, nside=None):
         nside (int): Map's HEALPix nside.
 
     Returns:
-        map (array): HEALPix map
+        array: HEALPix map
     """
     if h5py.is_hdf5(fname):
         if (nside is None) or (name is None):

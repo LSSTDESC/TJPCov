@@ -34,9 +34,10 @@ class FourierGaussianFsky(CovarianceFourier):
             binning (str): Binning type.
 
         Returns:
-            ell (array): All the ells covered
-            ell_eff (array): The effective ells
-            ell_edges (array): The bandpower edges
+            tuple:
+                - ell (array): All the ells covered
+                - ell_eff (array): The effective ells
+                - ell_edges (array): The bandpower edges
         """
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
@@ -70,8 +71,8 @@ class FourierGaussianFsky(CovarianceFourier):
         """Compute a single covariance matrix for a given pair of C_ell.
 
         Args:
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
             include_b_modes (bool, optional): If True, return the full SSC with
                 zeros in for B-modes (if any). If False, return the non-zero
                 block. This option cannot be modified through the configuration
@@ -83,7 +84,7 @@ class FourierGaussianFsky(CovarianceFourier):
             covariance
 
         Returns:
-            cov (array): The covariance
+            array: The covariance block
         """
         cosmo = self.get_cosmology()
         if for_real:
@@ -204,11 +205,11 @@ class RealGaussianFsky(CovarianceProjectedReal):
         """Return the Fourier covariance block for two pair of tracers.
 
         Args:
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
 
         Returns:
-            cov (array): Covariance matrix
+            array: The Fourier space covariance matrix block
         """
         # For now we just use the EE block which should be dominant over the
         # EB, BE and BB pieces when projecting to real space

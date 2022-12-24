@@ -39,7 +39,7 @@ class WignerTransform:
                 (2,2): (shear,shear), xi+
                 (2,-2): (shear,shear), xi-
             ncpu: Number of python processes to use when computing wigner-d
-            matrices.
+                matrices.
         """
         self.name = "Wigner"
 
@@ -84,7 +84,7 @@ class WignerTransform:
                 help in reducing ringing.
 
         Returns:
-            cl (array): C_ell evaluated at the initialization ells.
+            array: C_ell evaluated at the initialization ells.
         """
         if taper:
             self.taper_f = self.taper(ell=ell_cl, **taper_kwargs)
@@ -107,10 +107,10 @@ class WignerTransform:
             cl (array): input covariance
             taper (bool): if True apply the tapering to the input C_ell.
                 Tapering can help in reducing ringing.
-            taper_kwargs: Arguments to pass to the tapering method
+            **taper_kwargs: Arguments to pass to the tapering method
 
         Returns:
-            cov (array): covariance evaluated at the initialization ells.
+            array: covariance evaluated at the initialization ells.
 
         """
         # TODO: This method is not used in TJPCov. Consider enforcing passing a
@@ -207,8 +207,9 @@ class WignerTransform:
             **kwargs: Arguments to pass to the tapering method
 
         Returns:
-            theta (array): angles given at initialization
-            cov (array): real space covariance at the given angles
+            tuple:
+                - theta (array): angles given at initialization
+                - cov (array): real space covariance at the given angles
         """
         if (ell_cl.size != self.ell.size) or np.all(ell_cl != self.ell):
             # TODO: This option is not used in TJPCov. We can generate the
@@ -306,8 +307,8 @@ class WignerTransform:
         Args:
             cov (array): Covariance
 
-        Returns
-            sigma (array): Diagonal errors (i.e. sqrt(diag(cov)))
+        Returns:
+            array: Diagonal errors (i.e. sqrt(diag(cov)))
         """
         return np.sqrt(np.diagonal(cov))
 
@@ -325,7 +326,7 @@ def wigner_d(s1, s2, theta, ell, l_use_bessel=1.0e4):
             defines the scale at which the switch happens.
 
     Returns
-        wigner_d (array): Wigner-d matrix
+        array: Wigner-d matrix
     """
     l0 = np.copy(ell)
     if l_use_bessel is not None:
@@ -382,7 +383,7 @@ def wigner_d_parallel(s1, s2, theta, ell, ncpu=None, l_use_bessel=1.0e4):
             defines the scale at which the switch happens.
 
     Returns:
-        wigner_d (array): Wigner-d matrix
+        array: Wigner-d matrix
     """
     if ncpu is None:
         ncpu = cpu_count()
@@ -410,7 +411,7 @@ def bin_cov(r, cov, r_bins):  # works for cov and skewness
         r_bins: theta or ell bins to which the values should be binned.
 
     Returns:
-        (array): Binned covariance or vector of C_ell or xi
+        array: Binned covariance or vector of C_ell or xi
     """
     bin_center = 0.5 * (r_bins[1:] + r_bins[:-1])
     n_bins = len(bin_center)

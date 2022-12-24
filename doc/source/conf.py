@@ -41,6 +41,9 @@ extensions = [
 
 autoapi_type = "python"
 autoapi_dirs = ["../../tjpcov"]
+# We are using both the class and the __init__ docstring to document their
+# initialization
+autoapi_python_class_content = "both"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
@@ -57,8 +60,8 @@ intersphinx_mapping = {
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = [".rst", ".md"]
-# source_suffix = '.rst'
+# source_suffix = [".rst", ".md"]
+source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = "index"

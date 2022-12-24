@@ -10,27 +10,11 @@ build:
   os: ubuntu-20.04
   tools:
     python: "3.7"
-  # apt_packages:
-  #   - cmake
-  #   - autotools-dev
-  #   - automake
-  #   - gfortran
-  #   - bison
-  #   - libgsl-dev
-  #   - libfftw3-dev
-  #   - libcfitsio-dev
-  #   - swig
-  # jobs:
-  #   # Installing numpy before anything else to avoid CCL error
-  #   post_create_environment:
-  #     - pip install numpy
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: doc/source/conf.py
-   # Commenting out fail_on_warning because there is a "Title underline too
-   # short" that I do not know how to fix. 
-   # fail_on_warning: true
+   fail_on_warning: true
 
 # If using Sphinx, optionally build your docs in additional formats such as PDF
 # formats:

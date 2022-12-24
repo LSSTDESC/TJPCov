@@ -47,9 +47,9 @@ class CovarianceCalculator:
     def get_covariance_classes(self):
         """Return a dictionary with the covariance classes initialized.
 
-        Returns
-            classes (dict): Dictionary with keys the covariance types ('gauss',
-            SSC', .. ) and values instances of the corresponding classes.
+        Returns:
+            dict: Dictionary with keys the covariance types ('gauss', SSC', ..
+            ) and values instances of the corresponding classes.
         """
         if self.cov_classes is None:
             # cov_type will be a list or string with the class names that you
@@ -99,9 +99,9 @@ class CovarianceCalculator:
     def get_covariance(self):
         """Return the covariance with all the contributions added up.
 
-        Returns
-            cov (array): Final covariance with all the requested contributions
-            added up.
+        Returns:
+            array: Final covariance with all the requested contributions added
+            up.
         """
         if self.cov_total is None:
             cov_terms = self.get_covariance_terms()
@@ -120,9 +120,9 @@ class CovarianceCalculator:
         (e.g. ClxCl + ClxN + NxN). Since they are independent it is easy to
         recover each of them independently.
 
-        Returns
+        Returns:
             dict: dictionary with keys the covariace types and values their
-                covariance contributions.
+            covariance contributions.
         """
         if self.cov_terms is None:
             cov_classes = self.get_covariance_classes()

@@ -19,8 +19,8 @@ class CovarianceIO:
 
         Args:
             config (dict or str): If dict, it returns the configuration
-            dictionary directly. If string, it asumes a YAML file and parses
-            it.
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
         """
         self.config = self._read_config(config)
         self.sacc_file = None
@@ -38,8 +38,7 @@ class CovarianceIO:
                 parses it.
 
         Return:
-        ------
-            config (dict): Configuration dictionary
+            dict: Configuration dictionary
         """
         if isinstance(config, dict):
             pass
@@ -60,7 +59,7 @@ class CovarianceIO:
             filename (str): The config file to parse. Should be YAML formatted.
 
         Return:
-            config (dict): The raw config file as a dictionary.
+            dict: The raw config file as a dictionary.
         """
         with open(filename, "r") as fp:
             config_str = jinja2.Template(fp.read()).render()
@@ -72,14 +71,15 @@ class CovarianceIO:
         """Write created cov to a new sacc object.
 
         Args:
-            output (str): filename output.
-            overwrite (bool): True if you want to overwrite an existing file.
-                If False, it will not overwrite the file but will append the
-                UTC time to the output to avoid losing the computed covariance.
+            output (str, optional): filename output. Defaults to "cls_cov.fits"
+            overwrite (bool, optional): True if you want to overwrite an
+                existing file. If False, it will not overwrite the file but
+                will append the UTC time to the output to avoid losing the
+                computed covariance. Defaults to False.
 
         Returns:
-            Sacc: the final sacc file with the covariance matrix included.
-
+            :obj:`sacc.sacc.Sacc`: The final sacc file with the covariance
+            matrix included.
         """
         output = os.path.join(self.get_outdir(), output)
 

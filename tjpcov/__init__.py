@@ -16,7 +16,7 @@ def covariance_from_name(name):
         name (str): Name of the class
 
     Returns:
-        A  tjpcov.covariance_builder.CovarianceBuilder child class
+        :class:`~tjpcov.covariance_builder.CovarianceBuilder` child class
     """
 
     def all_subclasses(cls):

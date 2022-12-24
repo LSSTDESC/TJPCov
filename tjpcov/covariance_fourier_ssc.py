@@ -10,7 +10,8 @@ from .covariance_builder import CovarianceFourier
 class FourierSSCHaloModel(CovarianceFourier):
     """Class to compute the CellxCell Halo Model Super Sample Covariance.
 
-    The SSC is computed in CCL with the "linear bias" approximation.
+    The SSC is computed in CCL with the "linear bias" approximation using
+    :func:`pyccl.halos.halo_model.halomod_Tk3D_SSC_linear_bias`.
     """
 
     cov_type = "SSC"
@@ -43,9 +44,9 @@ class FourierSSCHaloModel(CovarianceFourier):
         Blocks of the B-modes are assumed 0 so far.
 
         Args:
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            integration_method (string, optional): integration method to be
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            integration_method (str, optional): integration method to be
                 used for the Limber integrals. Possibilities: 'qag_quad' (GSL's
                 qag method backed up by quad when it fails) and 'spline'
                 (the integrand is splined and then integrated analytically). If
@@ -59,7 +60,7 @@ class FourierSSCHaloModel(CovarianceFourier):
                 covariance. Defaults to True.
 
         Returns:
-            cov (array):  Super sample covariance matrix for a pair of C_ell.
+            array:  Super sample covariance matrix for a pair of C_ell.
         """
         fname = "ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
         fname = os.path.join(self.io.outdir, fname)
