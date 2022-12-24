@@ -20,8 +20,8 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         Args:
             config (dict or str): If dict, it returns the configuration
-                dictionary directly. If string, it asumes a YAML file and parses
-                it.
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
         """
         super().__init__(config)
 

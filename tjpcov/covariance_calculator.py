@@ -17,8 +17,8 @@ class CovarianceCalculator:
 
         Args:
             config (dict or str): If dict, it returns the configuration
-                dictionary directly. If string, it asumes a YAML file and parses
-                it.
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
         """
         self.io = CovarianceIO(config)
         self.config = self.io.config
