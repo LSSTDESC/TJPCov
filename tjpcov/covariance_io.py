@@ -8,16 +8,16 @@ import yaml
 
 
 class CovarianceIO:
-    """
-    Class to handle the input/output of the covariances. It does not compute
-    anything and it is initialized inside the CovarianceBuilder and
-    CovarianceCalculator classes.
+    """Class to handle the input/output of the covariances.
+
+    This class does not compute anything and it is initialized inside the
+    CovarianceBuilder and CovarianceCalculator classes.
     """
 
     def __init__(self, config):
-        """
-        Parameters
-        ----------
+        """Initialize the class with a config file or dictionary.
+
+        Args:
             config (dict or str): If dict, it returns the configuration
             dictionary directly. If string, it asumes a YAML file and parses
             it.
@@ -30,16 +30,14 @@ class CovarianceIO:
         os.makedirs(self.outdir, exist_ok=True)
 
     def _read_config(self, config):
-        """
-        Return the configuration dictionary.
+        """Return the configuration dictionary.
 
-        Parameters
-        ----------
+        Args:
             config (dict or str): If dict, it returns the configuration
-            dictionary directly. If string, it asumes a YAML file and parses
-            it.
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
 
-        Return
+        Return:
         ------
             config (dict): Configuration dictionary
         """
@@ -56,20 +54,14 @@ class CovarianceIO:
 
     @staticmethod
     def _parse(filename):
+        """Parse a configuration file.
+
+        Args:
+            filename (str): The config file to parse. Should be YAML formatted.
+
+        Return:
+            config (dict): The raw config file as a dictionary.
         """
-        Parse a configuration file.
-
-        Parameters
-        ----------
-        filename : str
-            The config file to parse. Should be YAML formatted.
-
-        Returns
-        -------
-        config: dict
-            The raw config file as a dictionary.
-        """
-
         with open(filename, "r") as fp:
             config_str = jinja2.Template(fp.read()).render()
         config = yaml.load(config_str, Loader=yaml.Loader)
@@ -77,19 +69,16 @@ class CovarianceIO:
         return config
 
     def create_sacc_cov(self, cov, output="cls_cov.fits", overwrite=False):
-        """
-        Write created cov to a new sacc object
+        """Write created cov to a new sacc object.
 
-        Parameters:
-        ----------
-        output (str): filename output.
-        overwrite (bool): True if you want to overwrite an existing file. If
-        False, it will not overwrite the file but will append the UTC time to
-        the output to avoid losing the computed covariance.
+        Args:
+            output (str): filename output.
+            overwrite (bool): True if you want to overwrite an existing file.
+                If False, it will not overwrite the file but will append the
+                UTC time to the output to avoid losing the computed covariance.
 
         Returns:
-        -------
-        None
+            Sacc: the final sacc file with the covariance matrix included.
 
         """
         output = os.path.join(self.get_outdir(), output)
@@ -114,9 +103,11 @@ class CovarianceIO:
         return s
 
     def get_outdir(self):
+        """Return the path to save the sacc file."""
         return self.outdir
 
     def get_sacc_file(self):
+        """Return the input sacc file."""
         if self.sacc_file is None:
             sacc_file = self.config["tjpcov"].get("sacc_file")
             if isinstance(sacc_file, sacc.Sacc):

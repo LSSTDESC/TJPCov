@@ -8,20 +8,20 @@ from .covariance_builder import CovarianceFourier
 
 
 class FourierSSCHaloModel(CovarianceFourier):
-    """
-    Class to compute the CellxCell Super Sample Covariance with the Halo Model
-    as implemented in CCL with the "linear bias" approximation.
+    """Class to compute the CellxCell Halo Model Super Sample Covariance.
+
+    The SSC is computed in CCL with the "linear bias" approximation.
     """
 
     cov_type = "SSC"
 
     def __init__(self, config):
-        """
-        Parameters
-        ----------
+        """Initialize the class with a config file or dictionary.
+
+        Args:
             config (dict or str): If dict, it returns the configuration
-            dictionary directly. If string, it asumes a YAML file and parses
-            it.
+                dictionary directly. If string, it asumes a YAML file and parses
+                it.
         """
         super().__init__(config)
 
@@ -29,41 +29,37 @@ class FourierSSCHaloModel(CovarianceFourier):
 
     def get_covariance_block(
         self,
-        tracer_comb1=None,
-        tracer_comb2=None,
+        tracer_comb1,
+        tracer_comb2,
         integration_method=None,
         include_b_modes=True,
     ):
-        """
-        Compute a single SSC covariance matrix for a given pair of C_ell. If
-        outdir is set, it will save the covariance to a file called
-        `ssc_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
-        returned if found.
+        """Compute a single SSC covariance matrix for a given pair of C_ell.
+
+        If outdir is set, it will save the covariance to a file called
+        ssc_tr1_tr2_tr3_tr4.npz. This file will be read and its output returned
+        if found.
 
         Blocks of the B-modes are assumed 0 so far.
 
-        Parameters:
-        -----------
+        Args:
             tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
             tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            ccl_tracers (dict): Dictionary with necessary ccl_tracers with keys
-            the tracer names
-            integration_method (string): integration method to be used
-            for the Limber integrals. Possibilities: 'qag_quad' (GSL's `qag`
-            method backed up by `quad` when it fails) and 'spline' (the
-            integrand is splined and then integrated analytically). If given,
-            it will take priority over the specified in the configuration file
-            through config['SSC']['integration_method']. Elsewise, it will use
-            'qag_quad'.
-            include_b_modes (bool): If True, return the full SSC with zeros in
-            for B-modes (if any). If False, return the non-zero block. This
-            option cannot be modified through the configuration file to avoid
-            breaking the compatibility with the NaMaster covariance.
+            integration_method (string, optional): integration method to be
+                used for the Limber integrals. Possibilities: 'qag_quad' (GSL's
+                qag method backed up by quad when it fails) and 'spline'
+                (the integrand is splined and then integrated analytically). If
+                given, it will take priority over the specified in the
+                configuration file through config['SSC']['integration_method'].
+                Elsewise, it will use 'qag_quad'.
+            include_b_modes (bool, optional): If True, return the full SSC with
+                zeros in for B-modes (if any). If False, return the non-zero
+                block. This option cannot be modified through the configuration
+                file to avoid breaking the compatibility with the NaMaster
+                covariance. Defaults to True.
 
         Returns:
-        --------
             cov (array):  Super sample covariance matrix for a pair of C_ell.
-
         """
         fname = "ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
         fname = os.path.join(self.io.outdir, fname)
