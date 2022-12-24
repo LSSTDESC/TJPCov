@@ -28,7 +28,20 @@ install, run `python -m pip install .` first, and then `python -m pip install .\
 
 Ask @felipeaoli or @carlosggarcia for access to the repository and join the #desc-mcp-cov channel on the LSST DESC slack to contribute.
 
-See also [terms of reference](https://github.com/LSSTDESC/TJPCov/blob/master/doc/Terms_of_Reference.md).
+We have adopted the following style convention (which are enforced in each PR):
+ - [Google-style docstrings](https://google.github.io/styleguide/pyguide.html)
+ - [Black code style](https://github.com/psf/black) (with 79 characters line-width)
+ - PEP8 except for E203 (for better compatibility with black)
+
+There are `black` and `flake8` configuration files so that formatting the code
+and checking its PEP8 compliance is a matter of running the following commands
+in the root folder.
+```
+black .
+flake8 .
+```
+
+For a general idea of TJPCov's scientific scope, see also the [terms of reference](https://github.com/LSSTDESC/TJPCov/blob/master/doc/Terms_of_Reference.md).
 
 ## Environment for development
 If you are working in conda (miniconda or anaconda) you can create a conda environment named **tjpcov** with 
