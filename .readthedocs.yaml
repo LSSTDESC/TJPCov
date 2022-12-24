@@ -40,4 +40,4 @@ python:
   # installing the full package to avoid having to compile CCL & CAMB.
   install:
     - method: pip
-      path: doc/requirements.txt
+      requirements: doc/requirements.txt
