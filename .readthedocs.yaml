@@ -10,20 +10,20 @@ build:
   os: ubuntu-20.04
   tools:
     python: "3.7"
-  apt_packages:
-    - cmake
-    - autotools-dev
-    - automake
-    - gfortran
-    - bison
-    - libgsl-dev
-    - libfftw3-dev
-    - libcfitsio-dev
-    - swig
-  jobs:
-    # Installing numpy before anything else to avoid CCL error
-    post_create_environment:
-      - pip install numpy
+  # apt_packages:
+  #   - cmake
+  #   - autotools-dev
+  #   - automake
+  #   - gfortran
+  #   - bison
+  #   - libgsl-dev
+  #   - libfftw3-dev
+  #   - libcfitsio-dev
+  #   - swig
+  # jobs:
+  #   # Installing numpy before anything else to avoid CCL error
+  #   post_create_environment:
+  #     - pip install numpy
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -36,7 +36,8 @@ sphinx:
 
 # Optionally declare the Python requirements required to build your docs
 python:
-  # Install our python package before building the docs
+  # Install only the dependencies needed to build the documentation without
+  # installing the full package to avoid having to compile CCL & CAMB.
   install:
     - method: pip
-      path: .
+      path: doc/requirements.txt
