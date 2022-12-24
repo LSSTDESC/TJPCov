@@ -35,7 +35,7 @@ We have adopted the following style convention (which are enforced in each PR):
 
 There are `black` and `flake8` configuration files so that formatting the code
 and checking its PEP8 compliance is a matter of running the following commands
-in the root folder.
+in the root folder:
 ```
 black .
 flake8 .
