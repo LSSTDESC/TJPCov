@@ -9,8 +9,10 @@ TJPCov is a general covariance calculator interface to be used within LSST DESC.
 TJPCov is now pip installable for convenience, but for development
 clone the git repository.
 
-There are four different flavors of tjpcov at the moment:
+There are five different flavors of tjpcov at the moment:
  - `python -m pip install .` will install tjpcov and the minimal dependencies.
+ - `python -m pip install .\[doc\]` will install tjpcov, the minimal
+     dependencies and the dependencies needed to build the documentation.
  - `python -m pip install .\[nmt\]` will install tjpcov, the minimal
      dependencies and the dependencies needed to use NaMaster.
  - `python -m pip install .\[mpi4py\]` will install, the minimal

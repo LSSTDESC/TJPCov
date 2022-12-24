@@ -6,10 +6,13 @@
 Welcome to TJPCov's documentation!
 ==================================
 
+TJPCov is a general covariance calculator interface to be used within LSST DESC.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   installation
    autoapi/index
 
 
