@@ -1,4 +1,5 @@
 [![Coverage Status](https://coveralls.io/repos/github/LSSTDESC/TJPCov/badge.svg?branch=master)](https://coveralls.io/github/LSSTDESC/TJPCov?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/tjpcov/badge/?version=latest)](https://tjpcov.readthedocs.io/en/latest/?badge=latest)
 
 # TJPCov
 
