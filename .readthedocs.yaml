@@ -39,5 +39,4 @@ python:
   # Install only the dependencies needed to build the documentation without
   # installing the full package to avoid having to compile CCL & CAMB.
   install:
-    - method: pip
-      requirements: doc/requirements.txt
+    - requirements: doc/requirements.txt
