@@ -16,15 +16,6 @@ class CovarianceClusters(CovarianceBuilder):
     """
 
     def __init__(self, config, survey_area=4 * np.pi):
-        """_summary_
-
-        Parameters
-        ----------
-        config
-            _description_
-        survey_area, optional
-            _description_, by default 4*np.pi
-        """
         super().__init__(config)
 
         sacc_file = self.io.get_sacc_file()
@@ -43,7 +34,6 @@ class CovarianceClusters(CovarianceBuilder):
         self.load_from_cosmology(self.get_cosmology())
 
     def load_from_config(self):
-        """_summary_"""
         self.c = float(self.config["clusters_params"].get("c"))
         self.bias_fft = float(self.config["fft_params"].get("bias_fft"))
         self.ko = float(self.config["fft_params"].get("ko"))
@@ -70,10 +60,8 @@ class CovarianceClusters(CovarianceBuilder):
     def load_from_cosmology(self, cosmo):
         """Allows a user to override the cosmology from the SACC file.
 
-        Parameters
-        ----------
-        cosmo
-            cosmo (CCL Cosmology Object)
+        Args:
+            cosmo (Astropy Cosmology Object)
         """
         self.cosmo = cosmo
         mass_def = ccl.halos.MassDef200m()
@@ -81,13 +69,8 @@ class CovarianceClusters(CovarianceBuilder):
         # TODO: optimize these ranges like Nelson did interpolation limits
         # for double_bessel_integral
         # zmin & zmax drawn from Z_true_vec
-        # ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z))
-        self.radial_lower_limit = ccl.comoving_radial_distance(
-            self.cosmo, 1 / (1 + self.z_lower_limit)
-        )
-        self.radial_upper_limit = ccl.comoving_radial_distance(
-            self.cosmo, 1 / (1 + self.z_upper_limit)
-        )
+        self.radial_lower_limit = self.radial_distance(self.z_lower_limit)
+        self.radial_upper_limit = self.radial_distance(self.z_upper_limit)
         self.imin = np.argwhere(self.r_vec < 0.95 * self.radial_lower_limit)[
             -1
         ][0]
@@ -104,10 +87,8 @@ class CovarianceClusters(CovarianceBuilder):
     def load_from_sacc(self, sacc_file):
         """Loads all the required parameters from a sacc file.
 
-        Parameters
-        ----------
-        sacc_file
-            _description_
+        Args:
+            sacc_file
         """
         # Read from SACC file relevant quantities
         self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]
@@ -166,22 +147,30 @@ class CovarianceClusters(CovarianceBuilder):
         self.min_mass = np.log(min_mass)
         self.max_mass = np.log(1e16)
 
+    def radial_distance(self, z):
+        """
+        Given a redshift, returns the comoving radial distance for a given
+        cosmology.
+
+        Args:
+            z (float or array_like): Redshift
+
+        Returns:
+            float or array_like: Comoving radial distance; Mpc.
+        """
+        return ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z))
+
     def photoz(self, z_true, z_i, sigma_0=0.05):
-        """Evaluation of Photometric redshift (Photo-z),given true redshift
+        """
+        Evaluation of Photometric redshift (Photo-z),given true redshift
         z_true and photometric bin z_i
 
-        Parameters
-        ----------
-        z_true
-            true redshift
-        z_i
-            photometric redshift bin
-        sigma_0, optional
-            _description_, by default 0.05
+        Args:
+            z_true (float): true redshift
+            z_i (float): photometric redshift bin
+            sigma_0 (float): defaults to 0.05
+        Returns:
 
-        Returns
-        -------
-            _description_
         """
 
         sigma_z = sigma_0 * (1 + z_true)
@@ -198,19 +187,15 @@ class CovarianceClusters(CovarianceBuilder):
         return integral
 
     def dV(self, z_true, z_i):
-        """Evaluates the comoving volume per steridian as function of
-        z_true for a photometric redshift bin in units of Mpc^3
+        """
+            Evaluates the comoving volume per steridian as function of
+            z_true for a photometric redshift bin in units of Mpc^3
+        Args:
+            z_true (float): true redshift
+            z_i (float): photometric redshift bin
 
-        Parameters
-        ----------
-        z_true
-            true redshift
-        z_i
-            photometric redshift bin
-
-        Returns
-        -------
-             dv(z) = dz*dr/dz(z)*(r(z)**2)*photoz(z, bin z_i)
+        Returns:
+            dv(z) = dz*dr/dz(z)*(r(z)**2)*photoz(z, bin z_i)
         """
 
         dV = (
@@ -222,19 +207,13 @@ class CovarianceClusters(CovarianceBuilder):
         return dV
 
     def mass_richness(self, ln_true_mass, lbd_i):
-        """Calculates the probability that the true mass ln(M_true) is
+        """
+        Calculates the probability that the true mass ln(M_true) is
         observed within the bins lambda_i and lambda_i + 1
 
-        Parameters
-        ----------
-        ln_true_mass
-            True mass
-        lbd_i
-            richness bin
-
-        Returns
-        -------
-            _description_
+        Args:
+            ln_true_mass: True mass
+            lbd_i (int): richness bin
         """
         richness_bin = self.richness_bins[lbd_i]
         richness_bin_next = self.richness_bins[lbd_i + 1]
@@ -244,16 +223,14 @@ class CovarianceClusters(CovarianceBuilder):
         )
 
     def integral_mass(self, z, lbd_i):
-        """Integral mass function
+        """
+        Integral mass function
         note: ccl.function returns dn/dlog10m, I am changing integrand
         below to d(lnM)
 
-        Parameters
-        ----------
-        z
-            redshift
-        lbd_i
-            richness bin
+        Args:
+            z (float): redshift
+            lbd_i (int): richness bin
         """
 
         f = (
@@ -273,18 +250,11 @@ class CovarianceClusters(CovarianceBuilder):
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def integral_mass_no_bias(self, z, lbd_i):
-        """Integral mass for shot noise function
-
-        Parameters
-        ----------
-        z
-            redshift
-        lbd_i
-            Richness bin
-
-        Returns
-        -------
-            _description_
+        """
+        Integral mass for shot noise function
+        Args:
+            z (float): redshift
+            lbd_i (int): Richness bin
         """
         f = (
             lambda ln_m: (1 / np.log(10))
@@ -298,17 +268,12 @@ class CovarianceClusters(CovarianceBuilder):
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def Limber(self, z):
-        """Calculating Limber approximation for double Bessel
+        """
+        Calculating Limber approximation for double Bessel
         integral for l equal zero
 
-        Parameters
-        ----------
-        z
-            redshift
-
-        Returns
-        -------
-            _description_
+        Args:
+            z (float): redshift
         """
 
         return ccl.linear_matter_power(
@@ -318,25 +283,18 @@ class CovarianceClusters(CovarianceBuilder):
         ) / (4 * np.pi)
 
     def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
-        """Calculating the covariance of diagonal terms using Limber
+        """
+        Calculating the covariance of diagonal terms using Limber
         (the delta transforms the double redshift integral into a
         single redshift integral)
         CAUTION: hard-wired ovdelta and survey_area!
 
-        Parameters
-        ----------
-        z_i
-            redshift bin i
-        z_j
-            redshift bin j
-        lbd_i
-            richness bin i
-        lbd_j
-            richness bin j
+        Args:
+            z_i (int): redshift bin i
+            z_j (int): redshift bin j
+            lbd_i (int): richness bin i
+            lbd_j (int): richness bin j
 
-        Returns
-        -------
-            _description_
         """
 
         def integrand(z_true):
@@ -368,18 +326,13 @@ class CovarianceClusters(CovarianceBuilder):
         )[0]
 
     def shot_noise(self, z_i, lbd_i):
-        """Evaluates the Shot Noise term
+        """
+        Evaluates the Shot Noise term
 
-        Parameters
-        ----------
-        z_i
-            redshift bin i
-        lbd_i
-            richness bin i
+        Args:
+            z_i (int): redshift bin i
+            lbd_i (int): richness bin i
 
-        Returns
-        -------
-            _description_
         """
 
         def integrand(z):
@@ -395,20 +348,10 @@ class CovarianceClusters(CovarianceBuilder):
         return self.survey_area * result[0]
 
     def I_ell(self, m, R):
-        """Calculating the function M_0_0
+        """
+        Calculating the function M_0_0
         the formula below only valid for R <=1, l = 0,
         formula B2 ASZ and 31 from 2-fast paper
-
-        Parameters
-        ----------
-        m
-            _description_
-        R
-            _description_
-
-        Returns
-        -------
-            _description_
         """
 
         t_m = 2 * np.pi * m / self.G
@@ -437,24 +380,17 @@ class CovarianceClusters(CovarianceBuilder):
         return iell
 
     def partial2(self, z1, bin_z_j, bin_lbd_j, approx=True):
-        """Romberg integration of a function using scipy.integrate.romberg
+        """
+        Romberg integration of a function using scipy.integrate.romberg
         Faster and more reliable than quad used in partial
         Approximation: Put the integral_mass outside looping in m
 
-        Parameters
-        ----------
-        z1
-            redshift
-        bin_z_j
-            redshift bin i
-        bin_lbd_j
-            richness bin j
-        approx, optional
-            _description_, by default True
+        Args:
+            z1 (float): redshift
+            bin_z_j (int): redshift bin i
+            bin_lbd_j (int): richness bin j
+            approx (bool, optional): Defaults to True.
 
-        Returns
-        -------
-            _description_
         """
         romb_k = 5
 
@@ -508,20 +444,15 @@ class CovarianceClusters(CovarianceBuilder):
         return (romb(kernel, dx=romb_range)) * factor_approx
 
     def double_bessel_integral(self, z1, z2):
-        """Calculates the double bessel integral from I-ell algorithm,
+        """
+        Calculates the double bessel integral from I-ell algorithm,
         as function of z1 and z2
 
-        Parameters
-        ----------
-        z1
-            redshift lower bound
-        z2
-            redshift upper bounds
-
-        Returns
-        -------
-            _description_
+        Args:
+            z1 (float): redshift lower bound
+            z2 (float): redshift upper bound
         """
+
         # definition of t, forcing it to be <= 1
         r1 = ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z1))
         r2 = r1
@@ -571,23 +502,17 @@ class MassRichnessRelation(object):
 
     @staticmethod
     def MurataCostanzi(ln_true_mass, richness_bin, richness_bin_next, h0):
-        """Define lognormal mass-richness relation
+        """
+        Define lognormal mass-richness relation
         (leveraging paper from Murata et. alli - ArxIv 1707.01907
         and Costanzi et al ArxIv 1810.09456v1)
 
-        Parameters
-        ----------
-        ln_true_mass
-            ln(true mass)
-        richness_bin
-            ith richness bin
-        richness_bin_next
-            i+1th richness bin
-        h0
-            _description_
-
-        Returns
-        -------
+        Args:
+            ln_true_mass: ln(true mass)
+            richness_bin: ith richness bin
+            richness_bin_next: i+1th richness bin
+            h0:
+        Returns:
             The probability that the true mass ln(ln_true_mass)
             is observed within the bins richness_bin and
             richness_bin_next
