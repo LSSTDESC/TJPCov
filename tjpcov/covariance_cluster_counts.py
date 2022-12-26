@@ -5,20 +5,36 @@ from scipy.integrate import romb
 
 
 class ClusterCounts(CovarianceClusters):
-    """Implementation of cluster covariance that calculates
-    the autocorrelation of cluster counts (NxN)"""
+    """Implementation of cluster covariance that calculates the autocorrelation
+    of cluster counts (NxN)
+    """
 
     cov_type = "fourier"
     _reshape_order = "F"
     _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
+        """Concrete implementation of covariance of cluster counts, specifically
+        the number count auto-correlation.
+
+        Args:
+            config: The configuration file path used to calculate the covariance
+        """
         super().__init__(config)
         self.romberg_num = 2**6 + 1
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
+        """_summary_
+
+        Args:
+            tracer_comb1: _description_
+            tracer_comb2: _description_
+
+        Returns:
+            _description_
+        """
         """
         This function returns the covariance block with the
         elements in the sacc file
@@ -26,6 +42,15 @@ class ClusterCounts(CovarianceClusters):
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """_summary_
+
+        Args:
+            tracer_comb1: _description_
+            tracer_comb2: _description_
+
+        Returns:
+            _description_
+        """
         """
         This function returns the covariance block with the
         elements in the sacc file
@@ -33,6 +58,15 @@ class ClusterCounts(CovarianceClusters):
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
+        """_summary_
+
+        Args:
+            tracer_comb1: _description_
+            tracer_comb2: _description_
+
+        Returns:
+            _description_
+        """
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
@@ -79,6 +113,14 @@ class ClusterCounts(CovarianceClusters):
         return cov_total
 
     def calc_Z1(self, z_i):
+        """_summary_
+
+        Args:
+            z_i: _description_
+
+        Returns:
+            _description_
+        """
         z_low_limit = max(
             self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_range
         )
@@ -89,14 +131,40 @@ class ClusterCounts(CovarianceClusters):
         return np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
 
     def calc_G1(self, Z1_true_vec):
+        """_summary_
+
+        Args:
+            Z1_true_vec: _description_
+
+        Returns:
+            _description_
+        """
         return np.array(ccl.growth_factor(self.cosmo, 1 / (1 + Z1_true_vec)))
 
     def calc_dV(self, Z1_true_vec, z_i):
+        """_summary_
+
+        Args:
+            Z1_true_vec: _description_
+            z_i: _description_
+
+        Returns:
+            _description_
+        """
         return np.array(
             [self.dV(Z1_true_vec[m], z_i) for m in range(self.romberg_num)]
         )
 
     def calc_M1(self, Z1_true_vec, richness_i):
+        """_summary_
+
+        Args:
+            Z1_true_vec: _description_
+            richness_i: _description_
+
+        Returns:
+            _description_
+        """
         M1_true = np.zeros(self.romberg_num)
 
         for m in range(self.romberg_num):

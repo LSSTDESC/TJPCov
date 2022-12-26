@@ -15,7 +15,6 @@ fft_params:
   N: 1024
 
 clusters_params:
-  c: 299792.458
   overdensity_delta: 200
 
 parameters:

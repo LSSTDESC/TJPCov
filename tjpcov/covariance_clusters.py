@@ -9,13 +9,19 @@ from scipy.interpolate import interp1d
 
 
 class CovarianceClusters(CovarianceBuilder):
-    """
-    Contains the extra logic needed to add cluster count
-    covariance to the existing 3x2pt covariance, N x C_ell
-    (gg gk kk).
+    """The base class for calculating covariance that includes galaxy cluster
+    number counts.
     """
 
     def __init__(self, config, survey_area=4 * np.pi):
+        """Constructor for the base class, used to pass through config options
+        for covariance calculation.
+
+        Args:
+            config: Path to the config file to be used
+            survey_area: The area of the survey on the sky.  This will be pulled
+            from the sacc file eventually. Defaults to 4*np.pi.
+        """
         super().__init__(config)
 
         sacc_file = self.io.get_sacc_file()
@@ -34,7 +40,10 @@ class CovarianceClusters(CovarianceBuilder):
         self.load_from_cosmology(self.get_cosmology())
 
     def load_from_config(self):
-        self.c = float(self.config["clusters_params"].get("c"))
+        """Some cosmology values and numerical integration methods are hard
+        coded into the config file.  We extract those here, cast them to their
+        proper types, and set them as attributes."""
+        self.c = ccl.physical_constants.CLIGHT / 1000
         self.bias_fft = float(self.config["fft_params"].get("bias_fft"))
         self.ko = float(self.config["fft_params"].get("ko"))
         self.kmax = int(self.config["fft_params"].get("kmax"))
@@ -45,7 +54,8 @@ class CovarianceClusters(CovarianceBuilder):
         self.h0 = float(self.config["parameters"].get("h"))
 
     def set_fft_params(self):
-        """Sets up the required attributes for the FFT used later"""
+        """The numerical implementation of the FFT needs some values
+        set by some simple calculations.  Those are performed here."""
         self.ro = 1 / self.kmax
         self.rmax = 1 / self.ko
         self.G = np.log(self.kmax / self.ko)
@@ -58,10 +68,11 @@ class CovarianceClusters(CovarianceBuilder):
         )
 
     def load_from_cosmology(self, cosmo):
-        """Allows a user to override the cosmology from the SACC file.
+        """Values used by the covariance calculation that come from a CCL
+        cosmology object.  Derived attributes from the cosmology are set here.
 
         Args:
-            cosmo (Astropy Cosmology Object)
+            cosmo: CCL Cosmology Object
         """
         self.cosmo = cosmo
         mass_def = ccl.halos.MassDef200m()
@@ -69,8 +80,12 @@ class CovarianceClusters(CovarianceBuilder):
         # TODO: optimize these ranges like Nelson did interpolation limits
         # for double_bessel_integral
         # zmin & zmax drawn from Z_true_vec
-        self.radial_lower_limit = self.radial_distance(self.z_lower_limit)
-        self.radial_upper_limit = self.radial_distance(self.z_upper_limit)
+        self.radial_lower_limit = ccl.comoving_radial_distance(
+            self.cosmo, 1 / (1 + self.z_lower_limit)
+        )
+        self.radial_upper_limit = ccl.comoving_radial_distance(
+            self.cosmo, 1 / (1 + self.z_upper_limit)
+        )
         self.imin = np.argwhere(self.r_vec < 0.95 * self.radial_lower_limit)[
             -1
         ][0]
@@ -85,10 +100,13 @@ class CovarianceClusters(CovarianceBuilder):
         self.Phi_vec = np.conjugate(np.fft.rfft(self.fk_vec)) / self.L
 
     def load_from_sacc(self, sacc_file):
-        """Loads all the required parameters from a sacc file.
+        """Cluster covariance has special parameters set in the SACC file. This
+        informs the code that the data to calculate the cluster covariance is
+        there.  We set extract those values from the sacc file here, and set
+        the attributes here.
 
         Args:
-            sacc_file
+            sacc_file: SACC file object, already loaded.
         """
         # Read from SACC file relevant quantities
         self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]
@@ -147,28 +165,19 @@ class CovarianceClusters(CovarianceBuilder):
         self.min_mass = np.log(min_mass)
         self.max_mass = np.log(1e16)
 
-    def radial_distance(self, z):
-        """
-        Given a redshift, returns the comoving radial distance for a given
-        cosmology.
+    def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
+        """We don't assume that redshift can be measured exactly, so we include
+        a measurement of the uncertainty around photometric redshifts. Assume,
+        given a true redshift z, the measured redshift will be gaussian. The
+        uncertainty will increase with redshift bin.
+
+        See section 2.3 of N. Ferreira
 
         Args:
-            z (float or array_like): Redshift
-
-        Returns:
-            float or array_like: Comoving radial distance; Mpc.
-        """
-        return ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z))
-
-    def photoz(self, z_true, z_i, sigma_0=0.05):
-        """
-        Evaluation of Photometric redshift (Photo-z),given true redshift
-        z_true and photometric bin z_i
-
-        Args:
-            z_true (float): true redshift
-            z_i (float): photometric redshift bin
-            sigma_0 (float): defaults to 0.05
+            z_true (float): True redshift
+            z_i (float): Photometric redshift bin index
+            sigma_0 (float): Spread in the uncertainty of the photo-z
+                distribution, defaults to 0.05 (DES Y1)
         Returns:
 
         """
@@ -176,39 +185,40 @@ class CovarianceClusters(CovarianceBuilder):
         sigma_z = sigma_0 * (1 + z_true)
 
         def integrand(z_phot):
-            return np.exp(
-                -((z_phot - z_true) ** 2.0) / (2.0 * sigma_z**2.0)
-            ) / (np.sqrt(2.0 * np.pi) * sigma_z)
+            prefactor = 1 / (np.sqrt(2.0 * np.pi) * sigma_z)
+            dist = np.exp(-(1 / 2) * ((z_phot - z_true) / sigma_z) ** 2.0)
+            return prefactor * dist
 
-        integral = quad(integrand, self.z_bins[z_i], self.z_bins[z_i + 1])[
-            0
-        ] / (1.0 - quad(integrand, -np.inf, 0.0)[0])
+        # Using the formula for a truncated normal distribution
+        numerator = quad(integrand, self.z_bins[z_i], self.z_bins[z_i + 1])[0]
+        denominator = 1.0 - quad(integrand, -np.inf, 0.0)[0]
 
-        return integral
+        return numerator / denominator
 
     def dV(self, z_true, z_i):
-        """
-            Evaluates the comoving volume per steridian as function of
-            z_true for a photometric redshift bin in units of Mpc^3
+        """Given a true redshift, and a redshift bin, this will give the
+        volume element for this bin including photo-z uncertainties.
+
         Args:
-            z_true (float): true redshift
-            z_i (float): photometric redshift bin
+            z_true (float): True redshift
+            z_i (float): Photometric redshift bin
 
         Returns:
-            dv(z) = dz*dr/dz(z)*(r(z)**2)*photoz(z, bin z_i)
+            Photo-z-weighted comoving volume element per steridian for redshift
+            bin i in units of Mpc^3
         """
 
+        # Check CLIGHT_HMPC
         dV = (
             self.c
             * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z_true)) ** 2)
             / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z_true)))
-            * (self.photoz(z_true, z_i))
+            * (self.observed_photo_z(z_true, z_i))
         )
         return dV
 
     def mass_richness(self, ln_true_mass, lbd_i):
-        """
-        Calculates the probability that the true mass ln(M_true) is
+        """Calculates the probability that the true mass ln(M_true) is
         observed within the bins lambda_i and lambda_i + 1
 
         Args:
@@ -223,8 +233,7 @@ class CovarianceClusters(CovarianceBuilder):
         )
 
     def integral_mass(self, z, lbd_i):
-        """
-        Integral mass function
+        """Integral mass function
         note: ccl.function returns dn/dlog10m, I am changing integrand
         below to d(lnM)
 
@@ -250,8 +259,7 @@ class CovarianceClusters(CovarianceBuilder):
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def integral_mass_no_bias(self, z, lbd_i):
-        """
-        Integral mass for shot noise function
+        """Integral mass for shot noise function
         Args:
             z (float): redshift
             lbd_i (int): Richness bin
@@ -268,8 +276,7 @@ class CovarianceClusters(CovarianceBuilder):
         return quad(f, self.min_mass, self.max_mass)[0]
 
     def Limber(self, z):
-        """
-        Calculating Limber approximation for double Bessel
+        """Calculating Limber approximation for double Bessel
         integral for l equal zero
 
         Args:
@@ -283,8 +290,7 @@ class CovarianceClusters(CovarianceBuilder):
         ) / (4 * np.pi)
 
     def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
-        """
-        Calculating the covariance of diagonal terms using Limber
+        """Calculating the covariance of diagonal terms using Limber
         (the delta transforms the double redshift integral into a
         single redshift integral)
         CAUTION: hard-wired ovdelta and survey_area!
@@ -301,7 +307,7 @@ class CovarianceClusters(CovarianceBuilder):
             return (
                 self.dV(self.cosmo, z_true, z_i)
                 * (ccl.growth_factor(self.cosmo, 1 / (1 + z_true)) ** 2)
-                * self.photoz(z_true, z_j)
+                * self.observed_photo_z(z_true, z_j)
                 * self.integral_mass(
                     self.cosmo,
                     z_true,
@@ -326,8 +332,7 @@ class CovarianceClusters(CovarianceBuilder):
         )[0]
 
     def shot_noise(self, z_i, lbd_i):
-        """
-        Evaluates the Shot Noise term
+        """Evaluates the Shot Noise term
 
         Args:
             z_i (int): redshift bin i
@@ -341,15 +346,14 @@ class CovarianceClusters(CovarianceBuilder):
                 * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)) ** 2)
                 / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z)))
                 * self.integral_mass_no_bias(z, lbd_i)
-                * self.photoz(z, z_i)
+                * self.observed_photo_z(z, z_i)
             )  # TODO remove the bias!
 
         result = quad(integrand, self.z_lower_limit, self.z_upper_limit)
         return self.survey_area * result[0]
 
     def I_ell(self, m, R):
-        """
-        Calculating the function M_0_0
+        """Calculating the function M_0_0
         the formula below only valid for R <=1, l = 0,
         formula B2 ASZ and 31 from 2-fast paper
         """
@@ -380,8 +384,7 @@ class CovarianceClusters(CovarianceBuilder):
         return iell
 
     def partial2(self, z1, bin_z_j, bin_lbd_j, approx=True):
-        """
-        Romberg integration of a function using scipy.integrate.romberg
+        """Romberg integration of a function using scipy.integrate.romberg
         Faster and more reliable than quad used in partial
         Approximation: Put the integral_mass outside looping in m
 
@@ -444,8 +447,7 @@ class CovarianceClusters(CovarianceBuilder):
         return (romb(kernel, dx=romb_range)) * factor_approx
 
     def double_bessel_integral(self, z1, z2):
-        """
-        Calculates the double bessel integral from I-ell algorithm,
+        """Calculates the double bessel integral from I-ell algorithm,
         as function of z1 and z2
 
         Args:
@@ -496,14 +498,11 @@ class CovarianceClusters(CovarianceBuilder):
 
 
 class MassRichnessRelation(object):
-    """
-    Helper class to hold different mass richness relations
-    """
+    """Helper class to hold different mass richness relations"""
 
     @staticmethod
     def MurataCostanzi(ln_true_mass, richness_bin, richness_bin_next, h0):
-        """
-        Define lognormal mass-richness relation
+        """Define lognormal mass-richness relation
         (leveraging paper from Murata et. alli - ArxIv 1707.01907
         and Costanzi et al ArxIv 1810.09456v1)
 
