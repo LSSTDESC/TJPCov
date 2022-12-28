@@ -26,7 +26,8 @@ class ClusterCounts(CovarianceClusters):
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        """_summary_
+        """This function returns the covariance block with the
+        elements in the sacc file
 
         Args:
             tracer_comb1: _description_
@@ -34,15 +35,12 @@ class ClusterCounts(CovarianceClusters):
 
         Returns:
             _description_
-        """
-        """
-        This function returns the covariance block with the
-        elements in the sacc file
         """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        """_summary_
+        """This function returns the covariance block with the
+        elements in the sacc file
 
         Args:
             tracer_comb1: _description_
@@ -50,28 +48,18 @@ class ClusterCounts(CovarianceClusters):
 
         Returns:
             _description_
-        """
-        """
-        This function returns the covariance block with the
-        elements in the sacc file
         """
         return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
     def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
-        """_summary_
-
-        Args:
-            tracer_comb1: _description_
-            tracer_comb2: _description_
-
-        Returns:
-            _description_
-        """
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
             tracer_comb1 (_type_): e.g. ('clusters_0_0',)
             tracer_comb2 (_type_): e.g. ('clusters_0_1',)
+
+        Returns:
+            _description_
         """
 
         tracer_split1 = tracer_comb1[0].split("_")

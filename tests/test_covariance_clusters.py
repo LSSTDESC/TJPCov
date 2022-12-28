@@ -3,6 +3,7 @@ import numpy as np
 import pyccl as ccl
 import sacc
 from tjpcov.covariance_cluster_counts import ClusterCounts
+from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
 
 cosmo = ccl.Cosmology.read_yaml("tests/data/cosmo_desy1.yaml")
@@ -64,6 +65,9 @@ def get_mock_covariance():
     cc_cov = ClusterCounts(input_yml)
     cc_cov.load_from_sacc(get_mock_sacc())
     cc_cov.load_from_cosmology(get_mock_cosmo())
+    cc_cov.fft_helper = FFTHelper(
+        get_mock_cosmo(), cc_cov.z_lower_limit, cc_cov.z_upper_limit
+    )
     cc_cov.mass_func = hmf.MassFuncTinker10(get_mock_cosmo())
     cc_cov.h0 = 0.67
     return cc_cov
@@ -74,11 +78,14 @@ def test_integral_mass_no_bias():
     ref2 = 1.4251538328691035e-05
     cc_cov = get_mock_covariance()
 
-    test1 = cc_cov.integral_mass_no_bias(0.3, 0)
-    test2 = cc_cov.integral_mass_no_bias(0.35, 0)
+    test1 = cc_cov.mass_richness_integral(0.3, 0, remove_bias=True)
+    test2 = cc_cov.mass_richness_integral(0.35, 0, remove_bias=True)
 
     np.testing.assert_almost_equal(ref1, test1)
     np.testing.assert_almost_equal(ref2, test2)
+
+
+test_integral_mass_no_bias()
 
 
 def test_double_bessel_integral():
@@ -88,11 +95,17 @@ def test_double_bessel_integral():
     np.testing.assert_almost_equal(ref, test)
 
 
+test_double_bessel_integral()
+
+
 def test_shot_noise():
     ref = 63973.635143644424
     cc_cov = get_mock_covariance()
     test = cc_cov.shot_noise(0, 0)
     np.testing.assert_almost_equal(test, ref)
+
+
+test_shot_noise()
 
 
 def test_calc_G1():
@@ -112,6 +125,9 @@ def test_calc_G1():
     np.testing.assert_almost_equal(np.sum(test_G1_1), ref_sum_1)
 
 
+test_calc_G1()
+
+
 def test_calc_dV():
 
     ref_sum_0 = 41736789276.57224
@@ -125,8 +141,11 @@ def test_calc_dV():
     Z1_true = cc_cov.calc_Z1(1)
     test_dV_1 = cc_cov.calc_dV(Z1_true, 1)
 
-    np.testing.assert_almost_equal(np.sum(test_dV_0), ref_sum_0)
+    np.testing.assert_almost_equal(np.sum(test_dV_0) / 1e12, ref_sum_0 / 1e12)
     np.testing.assert_almost_equal(np.sum(test_dV_1) / 1e12, ref_sum_1 / 1e12)
+
+
+test_calc_dV()
 
 
 def test_calc_M1():
@@ -146,6 +165,9 @@ def test_calc_M1():
     np.testing.assert_almost_equal(np.sum(test_1_1), ref_1_1)
 
 
+test_calc_M1()
+
+
 def test_calc_Z1():
 
     ref_sum_0 = 24.374999999999996
@@ -160,6 +182,9 @@ def test_calc_Z1():
     np.testing.assert_almost_equal(np.sum(test_Z1_1), ref_sum_1)
 
 
+test_calc_Z1()
+
+
 def test_integral_mass():
     cc_cov = get_mock_covariance()
     ref1 = 2.596895139062984e-05
@@ -172,6 +197,9 @@ def test_integral_mass():
     np.testing.assert_almost_equal(ref2, test2)
 
 
+test_integral_mass()
+
+
 def test_mass_richness():
     cc_cov = get_mock_covariance()
     reference_min = 0.0009528852621284171
@@ -181,6 +209,9 @@ def test_mass_richness():
         for i in range(cc_cov.num_richness_bins)
     ]
     np.testing.assert_almost_equal(np.sum(test_min), reference_min)
+
+
+test_mass_richness()
 
 
 def test_calc_dv():
@@ -197,8 +228,11 @@ def test_calc_dv():
 
     for i, z_i in enumerate([0, 4, 8, 14, 17]):
         np.testing.assert_almost_equal(
-            cc_cov.dV(z_true, z_i), reference_values[i]
+            cc_cov.dV(z_true, z_i) / 1e4, reference_values[i] / 1e4
         )
+
+
+test_calc_dv()
 
 
 def test_cov_nxn():
@@ -211,3 +245,6 @@ def test_cov_nxn():
     )
 
     np.testing.assert_almost_equal(ref_sum, cov_00)
+
+
+test_cov_nxn()

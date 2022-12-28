@@ -179,7 +179,7 @@ class CovarianceClusters(CovarianceBuilder):
         numerator = self._quad_integrate(
             integrand, self.z_bins[z_i], self.z_bins[z_i + 1]
         )
-        denominator = 1.0 - self._quad_integrate(integrand, -np.inf, 0.0)[0]
+        denominator = 1.0 - self._quad_integrate(integrand, -np.inf, 0.0)
 
         return numerator / denominator
 
@@ -240,7 +240,7 @@ class CovarianceClusters(CovarianceBuilder):
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
         """The derivative of the number density of halos with variations in the
-        background density (Eqn 3.31)
+        background density (Eqn 3.31 N. Ferreira)
 
         Args:
             z (float): Redshift
@@ -262,7 +262,6 @@ class CovarianceClusters(CovarianceBuilder):
                 self.cosmo, np.exp(ln_m), scale_factor
             )
 
-            argument *= scale_factor
             argument *= mass_func
 
             if not remove_bias:
@@ -306,69 +305,53 @@ class CovarianceClusters(CovarianceBuilder):
         )
         return self.survey_area * result
 
-    def partial2(self, z1, bin_z_j, bin_lbd_j, approx=True):
+    def partial2(self, z, bin_z_j, bin_lbd_j, approx=True):
         """TODO figure out what formula this is
-
-        Approximation: Put the integral_mass outside looping in m
 
         Args:
             z1 (float): redshift
             bin_z_j (int): redshift bin i
             bin_lbd_j (int): richness bin j
-            approx (bool, optional): Defaults to True.
+            approx (bool, optional): Will only calculate the mass richness
+            integral once and multiply at end. Defaults to True.
 
         """
         # Nelson tested and found convergence at 5 iterations
         romb_k = 5
+        num_samples = 2 ** (romb_k - 1) + 1
 
-        if z1 <= np.average(self.z_bins):
-            vec_left = np.linspace(
-                max(self.z_lower_limit, z1 - 6 * self.z_bin_spacing),
-                z1,
-                2 ** (romb_k - 1) + 1,
-            )
-            vec_right = np.linspace(
-                z1, z1 + (z1 - vec_left[0]), 2 ** (romb_k - 1) + 1
-            )
-            vec_final = np.append(vec_left, vec_right[1:])
+        # Build an equally sampled redshift array based on input and bounds
+        if z <= np.average(self.z_bins):
+            min_z = max(self.z_lower_limit, z - 6 * self.z_bin_spacing)
+            vec_left = np.linspace(min_z, z, num_samples)
+            vec_right = np.linspace(z, z + (z - vec_left[0]), num_samples)
         else:
-            vec_right = np.linspace(
-                z1,
-                min(self.z_upper_limit, z1 + 6 * self.z_bin_spacing),
-                2 ** (romb_k - 1) + 1,
-            )
-            vec_left = np.linspace(
-                z1 - (vec_right[-1] - z1), z1, 2 ** (romb_k - 1) + 1
-            )
-            vec_final = np.append(vec_left, vec_right[1:])
+            max_z = min(self.z_upper_limit, z + 6 * self.z_bin_spacing)
+            vec_right = np.linspace(z, max_z, num_samples)
+            vec_left = np.linspace(z - (vec_right[-1] - z), z, num_samples)
 
-        romb_range = (vec_final[-1] - vec_final[0]) / (2**romb_k)
-        kernel = np.zeros(2**romb_k + 1)
+        z_values = np.append(vec_left, vec_right[1:])
+        romb_range = (z_values[-1] - z_values[0]) / (2**romb_k)
+        fn_values = np.zeros(2**romb_k + 1)
 
+        for i in range(2**romb_k + 1):
+            fn_values[i] = (
+                self.dV(z_values[i], bin_z_j)
+                * ccl.growth_factor(self.cosmo, 1 / (1 + z_values[i]))
+                * self.double_bessel_integral(z, z_values[i])
+            )
+
+            if approx:
+                continue
+
+            fn_values[i] *= self.mass_richness_integral(z_values[i], bin_lbd_j)
+
+        integral_val = self._romb_integrate(fn_values, romb_range)
+
+        factor_approx = 1
         if approx:
-            for m in range(2**romb_k + 1):
-                try:
-                    kernel[m] = (
-                        self.dV(vec_final[m], bin_z_j)
-                        * ccl.growth_factor(self.cosmo, 1 / (1 + vec_final[m]))
-                        * self.double_bessel_integral(z1, vec_final[m])
-                    )
-                except Exception as ex:
-                    print(ex)
+            factor_approx = self.mass_richness_integral(z, bin_lbd_j)
 
-            factor_approx = self.mass_richness_integral(z1, bin_lbd_j)
-
-        else:
-            for m in range(2**romb_k + 1):
-                kernel[m] = (
-                    self.dV(vec_final[m], bin_z_j)
-                    * ccl.growth_factor(self.cosmo, 1 / (1 + vec_final[m]))
-                    * self.double_bessel_integral(z1, vec_final[m])
-                    * self.mass_richness_integral(vec_final[m], bin_lbd_j)
-                )
-                factor_approx = 1
-
-        integral_val = self._romb_integrate(kernel, romb_range)
         return integral_val * factor_approx
 
     def double_bessel_integral(self, z1, z2):
