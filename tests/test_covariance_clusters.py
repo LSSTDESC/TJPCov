@@ -108,83 +108,6 @@ def test_shot_noise():
 test_shot_noise()
 
 
-def test_calc_G1():
-
-    ref_sum_0 = 53.77019327633519
-    ref_sum_1 = 52.42500031312957
-
-    cc_cov = get_mock_covariance()
-
-    Z1_true_0 = cc_cov.calc_Z1(0)
-    test_G1_0 = cc_cov.calc_G1(Z1_true_0)
-
-    Z1_true_1 = cc_cov.calc_Z1(1)
-    test_G1_1 = cc_cov.calc_G1(Z1_true_1)
-
-    np.testing.assert_almost_equal(np.sum(test_G1_0), ref_sum_0)
-    np.testing.assert_almost_equal(np.sum(test_G1_1), ref_sum_1)
-
-
-test_calc_G1()
-
-
-def test_calc_dV():
-
-    ref_sum_0 = 41736789276.57224
-    ref_sum_1 = 52065518985.98286
-
-    cc_cov = get_mock_covariance()
-
-    Z1_true = cc_cov.calc_Z1(0)
-    test_dV_0 = cc_cov.calc_dV(Z1_true, 0)
-
-    Z1_true = cc_cov.calc_Z1(1)
-    test_dV_1 = cc_cov.calc_dV(Z1_true, 1)
-
-    np.testing.assert_almost_equal(np.sum(test_dV_0) / 1e12, ref_sum_0 / 1e12)
-    np.testing.assert_almost_equal(np.sum(test_dV_1) / 1e12, ref_sum_1 / 1e12)
-
-
-test_calc_dV()
-
-
-def test_calc_M1():
-
-    ref_0_0 = 0.0016602249035099581
-    ref_1_1 = 0.0008823472776646072
-
-    cc_cov = get_mock_covariance()
-
-    Z1_true = cc_cov.calc_Z1(0)
-    test_0_0 = cc_cov.calc_M1(Z1_true, 0)
-
-    Z1_true = cc_cov.calc_Z1(1)
-    test_1_1 = cc_cov.calc_M1(Z1_true, 1)
-
-    np.testing.assert_almost_equal(np.sum(test_0_0), ref_0_0)
-    np.testing.assert_almost_equal(np.sum(test_1_1), ref_1_1)
-
-
-test_calc_M1()
-
-
-def test_calc_Z1():
-
-    ref_sum_0 = 24.374999999999996
-    ref_sum_1 = 27.624999999999996
-
-    cc_cov = get_mock_covariance()
-
-    test_Z1_0 = cc_cov.calc_Z1(0)
-    test_Z1_1 = cc_cov.calc_Z1(1)
-
-    np.testing.assert_almost_equal(np.sum(test_Z1_0), ref_sum_0)
-    np.testing.assert_almost_equal(np.sum(test_Z1_1), ref_sum_1)
-
-
-test_calc_Z1()
-
-
 def test_integral_mass():
     cc_cov = get_mock_covariance()
     ref1 = 2.596895139062984e-05
@@ -228,7 +151,8 @@ def test_calc_dv():
 
     for i, z_i in enumerate([0, 4, 8, 14, 17]):
         np.testing.assert_almost_equal(
-            cc_cov.dV(z_true, z_i) / 1e4, reference_values[i] / 1e4
+            cc_cov.comoving_volume_element(z_true, z_i) / 1e4,
+            reference_values[i] / 1e4,
         )
 
 

@@ -183,7 +183,7 @@ class CovarianceClusters(CovarianceBuilder):
 
         return numerator / denominator
 
-    def dV(self, z_true, z_i):
+    def comoving_volume_element(self, z_true, z_i):
         """Given a true redshift, and a redshift bin, this will give the
         volume element for this bin including photo-z uncertainties.
 
@@ -305,8 +305,10 @@ class CovarianceClusters(CovarianceBuilder):
         )
         return self.survey_area * result
 
-    def partial2(self, z, bin_z_j, bin_lbd_j, approx=True):
-        """TODO figure out what formula this is
+    def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
+        """Calculate part of the super sample covariance, or the non-diagonal
+        correlation between two point functions whose observed modes are larger
+        than the survey size
 
         Args:
             z1 (float): redshift
@@ -336,7 +338,7 @@ class CovarianceClusters(CovarianceBuilder):
 
         for i in range(2**romb_k + 1):
             fn_values[i] = (
-                self.dV(z_values[i], bin_z_j)
+                self.comoving_volume_element(z_values[i], bin_z_j)
                 * ccl.growth_factor(self.cosmo, 1 / (1 + z_values[i]))
                 * self.double_bessel_integral(z, z_values[i])
             )

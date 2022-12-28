@@ -65,31 +65,60 @@ class ClusterCounts(CovarianceClusters):
         tracer_split1 = tracer_comb1[0].split("_")
         tracer_split2 = tracer_comb2[0].split("_")
 
-        # Hack for now - until we decide on sorting for
-        # tracers in SACC, strip 0's and take the remaining
-        # number, if you strip everything, default to 0
+        # Hack for now - until we decide on sorting for tracers in SACC, strip
+        # 0's and take the remaining number, if you strip everything, default to
+        # 0
         z_i = int(tracer_split1[1].lstrip("0") or 0)
         richness_i = int(tracer_split1[2].lstrip("0") or 0)
         z_j = int(tracer_split2[1].lstrip("0") or 0)
         richness_j = int(tracer_split2[2].lstrip("0") or 0)
 
-        # Compute geometric values based on redshift bin
-        Z1_true = self.calc_Z1(z_i)
-        G1_true = self.calc_G1(Z1_true)
-        dV_true = self.calc_dV(Z1_true, z_i)
-        M1_true = self.calc_M1(Z1_true, richness_i)
+        # Create a redshift range grid
+        z_low_limit = max(
+            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_spacing
+        )
+        z_upper_limit = min(
+            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_spacing
+        )
+        z_range = np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
 
-        dz = (Z1_true[-1] - Z1_true[0]) / (self.romberg_num - 1)
+        linear_growth_factor = np.array(
+            ccl.growth_factor(self.cosmo, 1 / (1 + z_range))
+        )
 
-        partial_vec = np.array(
+        comoving_volume_elements = np.array(
             [
-                self.partial2(Z1_true[m], z_j, richness_j)
-                for m in range(self.romberg_num)
+                self.comoving_volume_element(redshift, z_i)
+                for redshift in z_range
             ]
         )
-        romb_vec = partial_vec * dV_true * M1_true * G1_true
+
+        mass_richness_prob_dist = np.array(
+            [
+                self.mass_richness_integral(redshift, richness_i)
+                for redshift in z_range
+            ]
+        )
+
+        partial_SSC = np.array(
+            [
+                self.partial_SSC(redshift, z_j, richness_j)
+                for redshift in z_range
+            ]
+        )
+
         # Eqn 4.18
-        cov = (self.survey_area**2) * romb(romb_vec, dx=dz)
+        super_sample_covariance = (
+            partial_SSC
+            * comoving_volume_elements
+            * mass_richness_prob_dist
+            * linear_growth_factor
+        )
+
+        redshift_spacing = (z_range[-1] - z_range[0]) / (self.romberg_num - 1)
+        cov = (self.survey_area**2) * romb(
+            super_sample_covariance, dx=redshift_spacing
+        )
 
         shot_noise = 0
         if richness_i == richness_j and z_i == z_j:
@@ -99,65 +128,3 @@ class ClusterCounts(CovarianceClusters):
 
         # TODO: store metadata in some header/log file
         return cov_total
-
-    def calc_Z1(self, z_i):
-        """_summary_
-
-        Args:
-            z_i: _description_
-
-        Returns:
-            _description_
-        """
-        z_low_limit = max(
-            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_spacing
-        )
-        z_upper_limit = min(
-            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_spacing
-        )
-
-        return np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
-
-    def calc_G1(self, Z1_true_vec):
-        """_summary_
-
-        Args:
-            Z1_true_vec: _description_
-
-        Returns:
-            _description_
-        """
-        return np.array(ccl.growth_factor(self.cosmo, 1 / (1 + Z1_true_vec)))
-
-    def calc_dV(self, Z1_true_vec, z_i):
-        """Photo-z-weighted comoving volume element per steridian for redshift bin i in units of Mpc^3
-
-        Args:
-            Z1_true_vec: _description_
-            z_i: _description_
-
-        Returns:
-            _description_
-        """
-        return np.array(
-            [self.dV(Z1_true_vec[m], z_i) for m in range(self.romberg_num)]
-        )
-
-    def calc_M1(self, Z1_true_vec, richness_i):
-        """mass-richness weighted probability distribution
-
-        Args:
-            Z1_true_vec: _description_
-            richness_i: _description_
-
-        Returns:
-            _description_
-        """
-        M1_true = np.zeros(self.romberg_num)
-
-        for m in range(self.romberg_num):
-            M1_true[m] = self.mass_richness_integral(
-                Z1_true_vec[m], richness_i
-            )
-
-        return M1_true
