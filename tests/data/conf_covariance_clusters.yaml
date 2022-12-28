@@ -8,16 +8,6 @@ tjpcov:
   outdir: ./
   fsky: 0.3
 
-fft_params:
-  bias_fft: 1.4165
-  ko: 1e-4
-  kmax: 3
-  N: 1024
-
-clusters_params:
-  c: 299792.458
-  overdensity_delta: 200
-
 parameters:
   # Not used for while (read by ccl.cosmo):
   Omega_c: 0.2640
