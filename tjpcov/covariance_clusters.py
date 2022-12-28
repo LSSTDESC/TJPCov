@@ -309,62 +309,6 @@ class CovarianceClusters(CovarianceBuilder):
 
         return self.integrate(integrand, self.min_mass, self.max_mass)
 
-    def Limber(self, z):
-        """Calculating Limber approximation for double Bessel
-        integral for l equal zero
-
-        Args:
-            z (float): redshift
-        """
-
-        return ccl.linear_matter_power(
-            self.cosmo,
-            0.5 / ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)),
-            1,
-        ) / (4 * np.pi)
-
-    def cov_Limber(self, z_i, z_j, lbd_i, lbd_j):
-        """Calculating the covariance of diagonal terms using Limber
-        (the delta transforms the double redshift integral into a
-        single redshift integral)
-        CAUTION: hard-wired ovdelta and survey_area!
-
-        Args:
-            z_i (int): redshift bin i
-            z_j (int): redshift bin j
-            lbd_i (int): richness bin i
-            lbd_j (int): richness bin j
-
-        """
-
-        def integrand(z_true):
-            return (
-                self.dV(self.cosmo, z_true, z_i)
-                * (ccl.growth_factor(self.cosmo, 1 / (1 + z_true)) ** 2)
-                * self.observed_photo_z(z_true, z_j)
-                * self.mass_richness_integral(
-                    self.cosmo,
-                    z_true,
-                    lbd_i,
-                    self.min_mass,
-                    self.max_mass,
-                    self.ovdelta,
-                )
-                * self.mass_richness_integral(
-                    self.cosmo,
-                    z_true,
-                    lbd_j,
-                    self.min_mass,
-                    self.max_mass,
-                    self.ovdelta,
-                )
-                * self.Limber(self.cosmo, z_true)
-            )
-
-        return (self.survey_area**2) * self.integrate(
-            integrand, self.z_lower_limit, self.z_upper_limit
-        )
-
     def shot_noise(self, z_i, lbd_i):
         """The covariance of number counts is a sum of a super sample
         covariance (SSC) term plus a gaussian diagonal term.  The diagonal
@@ -390,42 +334,8 @@ class CovarianceClusters(CovarianceBuilder):
         )
         return self.survey_area * result
 
-    def I_ell(self, m, R):
-        """Calculating the function M_0_0
-        the formula below only valid for R <=1, l = 0,
-        formula B2 ASZ and 31 from 2-fast paper
-        """
-
-        t_m = 2 * np.pi * m / self.G
-        alpha_m = self.bias_fft - 1.0j * t_m
-        pre_factor = (self.ko * self.ro) ** (-alpha_m)
-
-        if R < 1:
-            iell = (
-                pre_factor
-                * 0.5
-                * np.cos(np.pi * alpha_m / 2)
-                * gamma(alpha_m - 2)
-                * (1 / R)
-                * ((1 + R) ** (2 - alpha_m) - (1 - R) ** (2 - alpha_m))
-            )
-
-        elif R == 1:
-            iell = (
-                pre_factor
-                * 0.5
-                * np.cos(np.pi * alpha_m / 2)
-                * gamma(alpha_m - 2)
-                * ((1 + R) ** (2 - alpha_m))
-            )
-
-        return iell
-
     def partial2(self, z1, bin_z_j, bin_lbd_j, approx=True):
-        """The variation of cluster counts with regards to the background
-        density
-
-        Eqn 3.31
+        """TODO figure out what formula this is
 
         Approximation: Put the integral_mass outside looping in m
 
@@ -504,11 +414,36 @@ class CovarianceClusters(CovarianceBuilder):
             r2 = ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z2))
             R = min(r1, r2) / max(r1, r2)
 
-        I_ell_vec = [self.I_ell(m, R) for m in range(self.N // 2 + 1)]
+        def I_ell(m, R):
+            """Calculating the function M_0_0 the formula below only valid for
+            R <=1, l = 0, formula B2 ASZ and 31 from 2-fast paper
+            """
 
-        back_FFT_vec = (
-            np.fft.irfft(self.Phi_vec * I_ell_vec) * self.N
-        )  # FFT back
+            t_m = 2 * np.pi * m / self.G
+            alpha_m = self.bias_fft - 1.0j * t_m
+            pre_factor = (self.ko * self.ro) ** (-alpha_m)
+
+            return_val = (
+                pre_factor
+                * 0.5
+                * np.cos(np.pi * alpha_m / 2)
+                * gamma(alpha_m - 2)
+            )
+
+            if R < 1:
+                return_val *= (1 / R) * (
+                    (1 + R) ** (2 - alpha_m) - (1 - R) ** (2 - alpha_m)
+                )
+
+            elif R == 1:
+                return_val *= (1 + R) ** (2 - alpha_m)
+
+            return return_val
+
+        I_ell_vec = [I_ell(m, R) for m in range(self.N // 2 + 1)]
+
+        back_FFT_vec = np.fft.irfft(self.Phi_vec * I_ell_vec) * self.N
+
         two_fast_vec = (
             (1 / np.pi)
             * (self.ko**3)
@@ -530,11 +465,11 @@ class CovarianceClusters(CovarianceBuilder):
             print(
                 err,
                 f"""\n
-                Value you tried to interpolate: {max(r1,r2)} Mpc,
-                Input r {r1}, {r2}
-                Valid range range:
-                [{self.r_vec[self.imin]}, {self.r_vec[self.imax]}]
-                Mpc""",
+                    Value you tried to interpolate: {max(r1,r2)} Mpc,
+                    Input r {r1}, {r2}
+                    Valid range range:
+                    [{self.r_vec[self.imin]}, {self.r_vec[self.imax]}]
+                    Mpc""",
             )
 
 
