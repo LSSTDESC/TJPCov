@@ -100,7 +100,7 @@ class ClusterCounts(CovarianceClusters):
             ]
         )
         romb_vec = partial_vec * dV_true * M1_true * G1_true
-
+        # Eqn 4.18
         cov = (self.survey_area**2) * romb(romb_vec, dx=dz)
 
         shot_noise = 0
@@ -142,7 +142,7 @@ class ClusterCounts(CovarianceClusters):
         return np.array(ccl.growth_factor(self.cosmo, 1 / (1 + Z1_true_vec)))
 
     def calc_dV(self, Z1_true_vec, z_i):
-        """_summary_
+        """Photo-z-weighted comoving volume element per steridian for redshift bin i in units of Mpc^3
 
         Args:
             Z1_true_vec: _description_
@@ -156,7 +156,7 @@ class ClusterCounts(CovarianceClusters):
         )
 
     def calc_M1(self, Z1_true_vec, richness_i):
-        """_summary_
+        """mass-richness weighted probability distribution
 
         Args:
             Z1_true_vec: _description_
@@ -168,6 +168,8 @@ class ClusterCounts(CovarianceClusters):
         M1_true = np.zeros(self.romberg_num)
 
         for m in range(self.romberg_num):
-            M1_true[m] = self.integral_mass(Z1_true_vec[m], richness_i)
+            M1_true[m] = self.mass_richness_integral(
+                Z1_true_vec[m], richness_i
+            )
 
         return M1_true

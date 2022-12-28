@@ -165,8 +165,8 @@ def test_integral_mass():
     ref1 = 2.596895139062984e-05
     ref2 = 2.5910691906342223e-05
 
-    test1 = cc_cov.integral_mass(0.5, 0)
-    test2 = cc_cov.integral_mass(0.55, 0)
+    test1 = cc_cov.mass_richness_integral(0.5, 0)
+    test2 = cc_cov.mass_richness_integral(0.55, 0)
 
     np.testing.assert_almost_equal(ref1, test1)
     np.testing.assert_almost_equal(ref2, test2)

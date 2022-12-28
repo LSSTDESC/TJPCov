@@ -43,7 +43,6 @@ class CovarianceClusters(CovarianceBuilder):
         """Some cosmology values and numerical integration methods are hard
         coded into the config file.  We extract those here, cast them to their
         proper types, and set them as attributes."""
-        self.c = ccl.physical_constants.CLIGHT / 1000
         self.bias_fft = float(self.config["fft_params"].get("bias_fft"))
         self.ko = float(self.config["fft_params"].get("ko"))
         self.kmax = int(self.config["fft_params"].get("kmax"))
@@ -76,6 +75,7 @@ class CovarianceClusters(CovarianceBuilder):
         """
         self.cosmo = cosmo
         mass_def = ccl.halos.MassDef200m()
+        self.c = ccl.physical_constants.CLIGHT / 1000
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
         # TODO: optimize these ranges like Nelson did interpolation limits
         # for double_bessel_integral
@@ -165,6 +165,20 @@ class CovarianceClusters(CovarianceBuilder):
         self.min_mass = np.log(min_mass)
         self.max_mass = np.log(1e16)
 
+    def integrate(self, argument, from_lim, to_lim):
+        """Helper function to numerically integral arguments between bounds
+
+        Args:
+            argument: Function to integrate between bounds
+            from_lim: lower limit
+            to_lim: upper limit
+
+        Returns:
+            Value of the integral
+        """
+        integral_value = quad(argument, from_lim, to_lim)
+        return integral_value[0]
+
     def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
         """We don't assume that redshift can be measured exactly, so we include
         a measurement of the uncertainty around photometric redshifts. Assume,
@@ -190,8 +204,10 @@ class CovarianceClusters(CovarianceBuilder):
             return prefactor * dist
 
         # Using the formula for a truncated normal distribution
-        numerator = quad(integrand, self.z_bins[z_i], self.z_bins[z_i + 1])[0]
-        denominator = 1.0 - quad(integrand, -np.inf, 0.0)[0]
+        numerator = self.integrate(
+            integrand, self.z_bins[z_i], self.z_bins[z_i + 1]
+        )
+        denominator = 1.0 - self.integrate(integrand, -np.inf, 0.0)[0]
 
         return numerator / denominator
 
@@ -208,7 +224,6 @@ class CovarianceClusters(CovarianceBuilder):
             bin i in units of Mpc^3
         """
 
-        # Check CLIGHT_HMPC
         dV = (
             self.c
             * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z_true)) ** 2)
@@ -218,62 +233,81 @@ class CovarianceClusters(CovarianceBuilder):
         return dV
 
     def mass_richness(self, ln_true_mass, lbd_i):
-        """Calculates the probability that the true mass ln(M_true) is
-        observed within the bins lambda_i and lambda_i + 1
+        """The probability that we observe richness given the true mass M, is
+        given by the convolution of a Poisson distribution (relating observed
+        richness to true richness) with a Gaussian distribution (relating true
+        richness to M). Such convolution can be translated into a parametrized
+        log-normal mass-richness distribution, done so here.
 
         Args:
             ln_true_mass: True mass
-            lbd_i (int): richness bin
+            richness_bin: Richness bin i
+            richness_bin_next: Richness bin i+1
+        Returns:
+            The probability that the true mass ln(ln_true_mass)
+            is observed within the richness bin i and richness bin i+1
         """
+
         richness_bin = self.richness_bins[lbd_i]
         richness_bin_next = self.richness_bins[lbd_i + 1]
 
-        return MassRichnessRelation.MurataCostanzi(
-            ln_true_mass, richness_bin, richness_bin_next, self.h0
+        std_deviation, average = MassRichnessRelation.MurataCostanzi(
+            ln_true_mass, self.h0
         )
 
-    def integral_mass(self, z, lbd_i):
-        """Integral mass function
-        note: ccl.function returns dn/dlog10m, I am changing integrand
-        below to d(lnM)
+        def integrand(richness):
+            prefactor = 1.0 / (
+                richness * (np.sqrt(2.0 * np.pi) * std_deviation)
+            )
+            distribution = np.exp(
+                -(1 / 2) * ((np.log(richness) - average) / std_deviation) ** 2
+            )
+            return prefactor * distribution
+
+        return self.integrate(integrand, richness_bin, richness_bin_next)
+
+    def mass_richness_integral(self, z, richness_i, remove_bias=False):
+        """The derivative of the number density of halos with variations in the
+        background density (Eqn 3.31)
 
         Args:
-            z (float): redshift
-            lbd_i (int): richness bin
-        """
-
-        f = (
-            lambda ln_m: (1 / np.log(10.0))
-            * self.mass_func.get_mass_function(
-                self.cosmo, np.exp(ln_m), 1 / (1 + z)
-            )
-            * ccl.halo_bias(
-                self.cosmo,
-                np.exp(ln_m),
-                1 / (1 + z),
-                overdensity=self.overdensity_delta,
-            )
-            * self.mass_richness(ln_m, lbd_i)
-        )
-
-        return quad(f, self.min_mass, self.max_mass)[0]
-
-    def integral_mass_no_bias(self, z, lbd_i):
-        """Integral mass for shot noise function
-        Args:
-            z (float): redshift
+            z (float): Redshift
             lbd_i (int): Richness bin
+            remove_bias: If TRUE, will remove halo_bias from the mass integral.
+            Used for calculating the shot noise.
+        Returns:
+            The mass-richness weighed derivative of number density per
+            fluctuation in background
         """
-        f = (
-            lambda ln_m: (1 / np.log(10))
-            * self.mass_func.get_mass_function(
-                self.cosmo, np.exp(ln_m), 1 / (1 + z)
+
+        def integrand(ln_m):
+
+            argument = 1 / np.log(10.0)
+
+            scale_factor = 1 / (1 + z)
+
+            mass_func = self.mass_func.get_mass_function(
+                self.cosmo, np.exp(ln_m), scale_factor
             )
-            * self.mass_richness(ln_m, lbd_i)
-        )
-        # Remember ccl.function returns dn/dlog10m, I am changing
-        # integrand to d(lnM)
-        return quad(f, self.min_mass, self.max_mass)[0]
+
+            argument *= scale_factor
+            argument *= mass_func
+
+            if not remove_bias:
+                halo_bias = ccl.halo_bias(
+                    self.cosmo,
+                    np.exp(ln_m),
+                    scale_factor,
+                    overdensity=self.overdensity_delta,
+                )
+                argument *= halo_bias
+
+            mass_richness = self.mass_richness(ln_m, richness_i)
+            argument *= mass_richness
+
+            return argument
+
+        return self.integrate(integrand, self.min_mass, self.max_mass)
 
     def Limber(self, z):
         """Calculating Limber approximation for double Bessel
@@ -308,7 +342,7 @@ class CovarianceClusters(CovarianceBuilder):
                 self.dV(self.cosmo, z_true, z_i)
                 * (ccl.growth_factor(self.cosmo, 1 / (1 + z_true)) ** 2)
                 * self.observed_photo_z(z_true, z_j)
-                * self.integral_mass(
+                * self.mass_richness_integral(
                     self.cosmo,
                     z_true,
                     lbd_i,
@@ -316,7 +350,7 @@ class CovarianceClusters(CovarianceBuilder):
                     self.max_mass,
                     self.ovdelta,
                 )
-                * self.integral_mass(
+                * self.mass_richness_integral(
                     self.cosmo,
                     z_true,
                     lbd_j,
@@ -327,30 +361,34 @@ class CovarianceClusters(CovarianceBuilder):
                 * self.Limber(self.cosmo, z_true)
             )
 
-        return (self.survey_area**2) * quad(
+        return (self.survey_area**2) * self.integrate(
             integrand, self.z_lower_limit, self.z_upper_limit
-        )[0]
+        )
 
     def shot_noise(self, z_i, lbd_i):
-        """Evaluates the Shot Noise term
+        """The covariance of number counts is a sum of a super sample
+        covariance (SSC) term plus a gaussian diagonal term.  The diagonal
+        term is also referred to as "shot noise" which we compute here.
 
         Args:
             z_i (int): redshift bin i
             lbd_i (int): richness bin i
 
         """
-
+        # Eqn B.7 or 1601.05779.pdf eqn 1
         def integrand(z):
             return (
                 self.c
                 * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)) ** 2)
                 / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z)))
-                * self.integral_mass_no_bias(z, lbd_i)
+                * self.mass_richness_integral(z, lbd_i, remove_bias=True)
                 * self.observed_photo_z(z, z_i)
-            )  # TODO remove the bias!
+            )
 
-        result = quad(integrand, self.z_lower_limit, self.z_upper_limit)
-        return self.survey_area * result[0]
+        result = self.integrate(
+            integrand, self.z_lower_limit, self.z_upper_limit
+        )
+        return self.survey_area * result
 
     def I_ell(self, m, R):
         """Calculating the function M_0_0
@@ -384,8 +422,11 @@ class CovarianceClusters(CovarianceBuilder):
         return iell
 
     def partial2(self, z1, bin_z_j, bin_lbd_j, approx=True):
-        """Romberg integration of a function using scipy.integrate.romberg
-        Faster and more reliable than quad used in partial
+        """The variation of cluster counts with regards to the background
+        density
+
+        Eqn 3.31
+
         Approximation: Put the integral_mass outside looping in m
 
         Args:
@@ -432,7 +473,7 @@ class CovarianceClusters(CovarianceBuilder):
                 except Exception as ex:
                     print(ex)
 
-            factor_approx = self.integral_mass(z1, bin_lbd_j)
+            factor_approx = self.mass_richness_integral(z1, bin_lbd_j)
 
         else:
             for m in range(2**romb_k + 1):
@@ -440,7 +481,7 @@ class CovarianceClusters(CovarianceBuilder):
                     self.dV(vec_final[m], bin_z_j)
                     * ccl.growth_factor(self.cosmo, 1 / (1 + vec_final[m]))
                     * self.double_bessel_integral(z1, vec_final[m])
-                    * self.integral_mass(vec_final[m], bin_lbd_j)
+                    * self.mass_richness_integral(vec_final[m], bin_lbd_j)
                 )
                 factor_approx = 1
 
@@ -501,20 +542,16 @@ class MassRichnessRelation(object):
     """Helper class to hold different mass richness relations"""
 
     @staticmethod
-    def MurataCostanzi(ln_true_mass, richness_bin, richness_bin_next, h0):
-        """Define lognormal mass-richness relation
-        (leveraging paper from Murata et. alli - ArxIv 1707.01907
-        and Costanzi et al ArxIv 1810.09456v1)
+    def MurataCostanzi(ln_true_mass, h0):
+        """Uses constants from Murata et al - ArxIv 1707.01907 and Costanzi
+        et al ArxIv 1810.09456v1 to return the parameterized average and spread
+        of the log-normal mass-richness relation
 
         Args:
-            ln_true_mass: ln(true mass)
-            richness_bin: ith richness bin
-            richness_bin_next: i+1th richness bin
-            h0:
+            ln_true_mass: True mass
+            h0: Hubble's constant
         Returns:
-            The probability that the true mass ln(ln_true_mass)
-            is observed within the bins richness_bin and
-            richness_bin_next
+
         """
 
         alpha = 3.207  # Murata
@@ -526,14 +563,4 @@ class MassRichnessRelation(object):
         sigma_lambda = sigma_zero + q * (ln_true_mass - np.log(m_pivot))
         average = alpha + beta * (ln_true_mass - np.log(m_pivot))
 
-        def integrand(richness):
-            return (
-                (1.0 / richness)
-                * np.exp(
-                    -((np.log(richness) - average) ** 2.0)
-                    / (2.0 * sigma_lambda**2.0)
-                )
-                / (np.sqrt(2.0 * np.pi) * sigma_lambda)
-            )
-
-        return quad(integrand, richness_bin, richness_bin_next)[0]
+        return sigma_lambda, average
