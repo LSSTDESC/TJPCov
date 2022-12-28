@@ -122,10 +122,10 @@ class ClusterCounts(CovarianceClusters):
             _description_
         """
         z_low_limit = max(
-            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_range
+            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_spacing
         )
         z_upper_limit = min(
-            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_range
+            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_spacing
         )
 
         return np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
