@@ -14,11 +14,12 @@ class ClusterCounts(CovarianceClusters):
     _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
-        """Concrete implementation of covariance of cluster counts, specifically
-        the number count auto-correlation.
+        """Concrete implementation of covariance of cluster counts,
+        specifically the number count auto-correlation.
 
         Args:
-            config: The configuration file path used to calculate the covariance
+            config: The configuration file path used to calculate the
+            covariance
         """
         super().__init__(config)
         self.romberg_num = 2**6 + 1
@@ -52,8 +53,8 @@ class ClusterCounts(CovarianceClusters):
         tracer_split2 = tracer_comb2[0].split("_")
 
         # Hack for now - until we decide on sorting for tracers in SACC, strip
-        # 0's and take the remaining number, if you strip everything, default to
-        # 0
+        # 0's and take the remaining number, if you strip everything, default
+        # to 0
         z_i = int(tracer_split1[1].lstrip("0") or 0)
         richness_i = int(tracer_split1[2].lstrip("0") or 0)
         z_j = int(tracer_split2[1].lstrip("0") or 0)

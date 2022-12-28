@@ -7,14 +7,15 @@ class MassRichnessRelation(object):
     @staticmethod
     def MurataCostanzi(ln_true_mass, h0):
         """Uses constants from Murata et al - ArxIv 1707.01907 and Costanzi
-        et al ArxIv 1810.09456v1 to derive the log-normal mass-richness relation
+        et al ArxIv 1810.09456v1 to derive the log-normal mass-richness
+        relation
 
         Args:
             ln_true_mass: True mass
             h0: Hubble's constant
         Returns:
-            The parameterized average and spread of the log-normal mass-richness
-            relation
+            The parameterized average and spread of the log-normal
+            mass-richness relation
         """
 
         alpha = 3.207  # Murata

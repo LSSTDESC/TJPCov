@@ -85,9 +85,6 @@ def test_integral_mass_no_bias():
     np.testing.assert_almost_equal(ref2, test2)
 
 
-test_integral_mass_no_bias()
-
-
 def test_double_bessel_integral():
     ref = 8.427201745032292e-05
     cc_cov = get_mock_covariance()
@@ -95,17 +92,11 @@ def test_double_bessel_integral():
     np.testing.assert_almost_equal(ref, test)
 
 
-test_double_bessel_integral()
-
-
 def test_shot_noise():
     ref = 63973.635143644424
     cc_cov = get_mock_covariance()
     test = cc_cov.shot_noise(0, 0)
     np.testing.assert_almost_equal(test, ref)
-
-
-test_shot_noise()
 
 
 def test_integral_mass():
@@ -120,9 +111,6 @@ def test_integral_mass():
     np.testing.assert_almost_equal(ref2, test2)
 
 
-test_integral_mass()
-
-
 def test_mass_richness():
     cc_cov = get_mock_covariance()
     reference_min = 0.0009528852621284171
@@ -132,9 +120,6 @@ def test_mass_richness():
         for i in range(cc_cov.num_richness_bins)
     ]
     np.testing.assert_almost_equal(np.sum(test_min), reference_min)
-
-
-test_mass_richness()
 
 
 def test_calc_dv():
@@ -156,9 +141,6 @@ def test_calc_dv():
         )
 
 
-test_calc_dv()
-
-
 def test_cov_nxn():
     ref_sum = 130462.91921818888
 
@@ -169,6 +151,3 @@ def test_cov_nxn():
     )
 
     np.testing.assert_almost_equal(ref_sum, cov_00)
-
-
-test_cov_nxn()

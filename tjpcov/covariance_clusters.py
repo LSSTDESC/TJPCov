@@ -15,8 +15,8 @@ class CovarianceClusters(CovarianceBuilder):
 
         Args:
             config: Path to the config file to be used
-            survey_area: The area of the survey on the sky.  This will be pulled
-            from the sacc file eventually. Defaults to 4*np.pi.
+            survey_area: The area of the survey on the sky.  This will be
+            pulled from the sacc file eventually. Defaults to 4*np.pi.
         """
         super().__init__(config)
 
@@ -32,7 +32,7 @@ class CovarianceClusters(CovarianceBuilder):
         self.h0 = float(self.config["parameters"].get("h"))
         self.load_from_sacc(sacc_file)
 
-        # NOTE Survey area should be pulled from SACC file but is currently not.
+        # NOTE Survey area should be pulled from SACC file but is currently not
         self.survey_area = survey_area
 
         cosmo = self.get_cosmology()
