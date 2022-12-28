@@ -2,6 +2,7 @@ from .covariance_builder import CovarianceBuilder
 from .clusters_helpers import MassRichnessRelation, FFTHelper
 import numpy as np
 import pyccl as ccl
+from scipy.integrate import quad, romb
 
 
 class CovarianceClusters(CovarianceBuilder):
@@ -131,7 +132,6 @@ class CovarianceClusters(CovarianceBuilder):
         Returns:
             Value of the integral
         """
-        from scipy.integrate import quad
 
         integral_value = quad(argument, from_lim, to_lim)
         return integral_value[0]
@@ -147,8 +147,6 @@ class CovarianceClusters(CovarianceBuilder):
         Returns:
             Value of the integral
         """
-        from scipy.integrate import romb
-
         return romb(kernel, dx=spacing)
 
     def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
@@ -303,6 +301,10 @@ class CovarianceClusters(CovarianceBuilder):
         result = self._quad_integrate(
             integrand, self.z_lower_limit, self.z_upper_limit
         )
+        print(f"{self.z_lower_limit=}")
+        print(f"{self.z_upper_limit=}")
+        print(f"{self.survey_area=}")
+        print(f"{result=}")
         return self.survey_area * result
 
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
