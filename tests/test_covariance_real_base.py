@@ -10,7 +10,7 @@ from tjpcov.covariance_builder import (
 )
 
 input_yml_real = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
-xi_fn = "examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
+xi_fn = "examples/old_api/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits"
 sacc_file = sacc.Sacc.load_fits(xi_fn)
 
 
