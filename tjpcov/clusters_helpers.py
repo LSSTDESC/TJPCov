@@ -14,8 +14,8 @@ class MassRichnessRelation(object):
             ln_true_mass (float): True mass
             h0 (float): Hubble's constant
         Returns:
-            `tuple` of float: The parameterized average and spread of the log-normal
-            mass-richness relation
+            `tuple` of float: The parameterized average and spread of the
+            log-normal mass-richness relation
         """
 
         alpha = 3.207  # Murata
