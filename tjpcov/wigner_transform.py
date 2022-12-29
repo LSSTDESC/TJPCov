@@ -411,7 +411,7 @@ def bin_cov(r, cov, r_bins):  # works for cov and skewness
         r_bins: theta or ell bins to which the values should be binned.
 
     Returns:
-        array: Binned covariance or vector of C_ell or xi
+        array_like: Binned covariance or vector of C_ell or xi
     """
     bin_center = 0.5 * (r_bins[1:] + r_bins[:-1])
     n_bins = len(bin_center)

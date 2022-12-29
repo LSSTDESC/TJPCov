@@ -153,6 +153,10 @@ class CovarianceCalculator:
                 each of the requested contributions. The will have the
                 covariance term (e.g. gauss) appended to the filename (before
                 the extension, e.g. cls_cov_gauss.fits)
+
+        Returns:
+            :obj:`sacc.sacc.Sacc`: The final sacc file with the covariance
+            matrix included.
         """
         cov = self.get_covariance()
 
