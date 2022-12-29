@@ -17,8 +17,14 @@
 
 # -- Project information -----------------------------------------------------
 
+import datetime
+
+currentDateTime = datetime.datetime.now()
+date = currentDateTime.date()
+year = date.strftime("%Y")
+
 project = "TJPCov"
-copyright = "2019, LSST DESC"
+copyright = f"2019-{year}, LSST DESC"
 author = "LSST DESC"
 
 
