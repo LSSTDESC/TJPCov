@@ -151,7 +151,7 @@ def test_cov_nxn():
 
     cc_cov = get_mock_covariance()
 
-    cov_00 = cc_cov._get_covariance_cluster_counts(
+    cov_00 = cc_cov.get_covariance_block_for_sacc(
         ("clusters_0_0",), ("clusters_0_0",)
     )
 

@@ -63,7 +63,8 @@ class CovarianceClusters(CovarianceBuilder):
         the attributes here.
 
         Args:
-            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already loaded.
+            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already
+            loaded.
         """
         # Read from SACC file relevant quantities
         self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]
