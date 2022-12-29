@@ -325,7 +325,7 @@ def wigner_d(s1, s2, theta, ell, l_use_bessel=1.0e4):
             matrix to bessel functions at high ell (see the note below). This
             defines the scale at which the switch happens.
 
-    Returns
+    Returns:
         array: Wigner-d matrix
     """
     l0 = np.copy(ell)
