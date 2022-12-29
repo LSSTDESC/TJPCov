@@ -83,7 +83,11 @@ def test_create_sacc_cov():
     cc = CovarianceCalculator(input_yml)
     cov = cc.get_covariance() + 1e-100
 
-    cc.create_sacc_cov()
+    # Check returned file
+    s = cc.create_sacc_cov()
+    cov2 = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
+    # Check saved file
     s = sacc.Sacc.load_fits(outdir + "/cls_cov.fits")
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
@@ -96,7 +100,11 @@ def test_create_sacc_cov():
     os.remove(outdir + "/cls_cov_SSC.fits")
 
     # Custom name
-    cc.create_sacc_cov("test.fits", save_terms=False)
+    # Check returned file
+    s = cc.create_sacc_cov("test.fits", save_terms=False)
+    cov2 = s.covariance.covmat + 1e-100
+    assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
+    # Check saved file
     s = sacc.Sacc.load_fits(outdir + "/test.fits")
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)

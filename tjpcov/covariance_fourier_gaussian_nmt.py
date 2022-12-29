@@ -9,20 +9,21 @@ from .covariance_builder import CovarianceFourier
 
 
 class FourierGaussianNmt(CovarianceFourier):
-    """
-    Class to compute the Gaussian CellxCell covariance with NaMaster using the
-    Narrow Kernel Approximation. It can also use the Toeplitz approximation.
+    """Class to compute the Gaussian CellxCell covariance with NaMaster.
+
+    This class uses the Narrow Kernel Approximation. It can also use the
+    Toeplitz approximation.
     """
 
     cov_type = "gauss"
 
     def __init__(self, config):
-        """
-        Parameters
-        ----------
+        """Initialize the class with a config file or dictionary.
+
+        Args:
             config (dict or str): If dict, it returns the configuration
-            dictionary directly. If string, it asumes a YAML file and parses
-            it.
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
         """
         super().__init__(config)
 
@@ -47,18 +48,14 @@ class FourierGaussianNmt(CovarianceFourier):
         self.cache = self.config.get("cache", {})
 
     def _compute_all_blocks(self, **kwargs):
-        """
-        Compute all the independent covariance blocks.
+        """Compute all the independent covariance blocks.
 
-        Parameters:
-        -----------
-        **kwargs: The arguments to pass to `get_covariance_block`. See its
-        documentation.
+        Args:
+            **kwargs: The arguments to pass to get_covariance_block. See its
+                documentation.
 
         Returns:
-        --------
-        blocks (list):
-            List of all the independent covariance blocks.
+            list: List of all the independent covariance blocks.
         """
         # We are redefining this method to improve performance by parallelizing
         # first the blocks that produce independent workspaces and covariance
@@ -122,22 +119,20 @@ class FourierGaussianNmt(CovarianceFourier):
         return blocks, tracers_blocks
 
     def get_cl_for_cov(self, clab, nlab, ma, mb, w, nl_is_cp):
-        """
-        Computes the coupled Cell that goes into the covariance matrix
+        """Computes the coupled Cell that goes into the covariance matrix.
 
-        Parameters:
-        -----------
-            clab (array): Fiducial Cell for the tracers a and b, used for in
-            the covariance estimation
+        Args:
+            clab (array): Fiducial Cell for the tracers a and b, used in the
+                covariance estimation
             nlab (array): Coupled noise for the tracers a and b
             ma (array): Mask of the field a
             mb (array): Mask of the field b
-            w (NmtWorkspace): NmtWorkspace of the fields a and b
-            nl_is_cp (bool): True if nlab is coupled. False otherwise.
-        Returns:
-        --------
-            cl:  Coupled Cell with signal and noise
+            w (:obj:`pymaster.workspaces.NmtWorkspace`): NmtWorkspace of the
+            fields a and b nl_is_cp (bool): True if nlab is coupled. False
+            otherwise.
 
+        Returns:
+            array:  Coupled Cell with signal and noise
         """
         mean_mamb = np.mean(ma * mb)
         if mean_mamb == 0:
@@ -157,31 +152,31 @@ class FourierGaussianNmt(CovarianceFourier):
         coupled=False,
         cache=None,
     ):
-        """
-        Compute a single covariance matrix for a given pair of C_ell. If outdir
-        is set, it will save the covariance to a file called
-        `cov_tr1_tr2_tr3_tr4.npz`. This file will be read and its output
+        """Compute a single covariance matrix for a given pair of C_ell.
+
+        If outdir is set, it will save the covariance to a file called
+        cov_tr1_tr2_tr3_tr4.npz. This file will be read and its output
         returned if found.
 
-        Parameters:
-        -----------
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            use_coupled_noise (bool): If True, use the coupled noise. Note that
-            if noise is provided via the `cache` arg, this will be used and
-            assumed to be coupled if this option is True.
-            coupled (bool): True to return the coupled Gaussian covariance
-            (default False)
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            use_coupled_noise (bool, optional): If True, use the coupled noise.
+                Note that if noise is provided via the cache arg, this will
+                be used and assumed to be coupled if this option is True.
+                Defaults to True.
+            coupled (bool, optional): True to return the coupled Gaussian
+                covariance (default False)
             cache (dict): Dictionary with the corresponding noise, masks,
-            fields, workspaces and covariance workspaces. It accepts noise
-            (keys: 'SN13', 'SN23', 'SN14', 'SN24'), masks (keys: 'm1', 'm2',
-            'm3', 'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'), workspaces
-            (keys: 'w13', 'w23', 'w14', 'w24', 'w12', 'w34'), the covariance
-            workspace (key: 'cw') and a NmtBin (key: 'bins').
+                fields, workspaces and covariance workspaces. It accepts noise
+                (keys: 'SN13', 'SN23', 'SN14', 'SN24'), masks (keys: 'm1',
+                'm2', 'm3', 'm4'), fields (keys: 'f1', 'f2', 'f3', 'f4'),
+                workspaces (keys: 'w13', 'w23', 'w14', 'w24', 'w12', 'w34'),
+                the covariance workspace (key: 'cw') and a NmtBin (key:
+                'bins').
 
         Returns:
-        --------
-            cov (array):  Gaussian covariance matrix for a pair of C_ell.
+            array: Gaussian covariance matrix for a pair of C_ell.
         """
         if coupled:
             raise NotImplementedError(
@@ -365,28 +360,25 @@ class FourierGaussianNmt(CovarianceFourier):
     def get_covariance_workspace(
         self, f1, f2, f3, f4, m1, m2, m3, m4, **kwargs
     ):
-        """
-        Return the covariance workspace of the fields f1, f2, f3, f4
+        """Return the covariance workspace of the fields f1, f2, f3, f4.
 
-        Parameters:
-        -----------
-            f1 (NmtField):  Field 1
-            f2 (NmtField):  Field 2
-            f3 (NmtField):  Field 3
-            f4 (NmtField):  Field 4
+        Args:
+            f1 (:obj:`pymaster.field.NmtField`):  Field 1
+            f2 (:obj:`pymaster.field.NmtField`):  Field 2
+            f3 (:obj:`pymaster.field.NmtField`):  Field 3
+            f4 (:obj:`pymaster.field.NmtField`):  Field 4
             m1 (str): Mask name assotiated to the field 1
             m2 (str): Mask name assotiated to the field 2
             m3 (str): Mask name assotiated to the field 3
             m4 (str): Mask name assotiated to the field 4
-            workspace. If None, no file will be saved.
             **kwargs:  Extra arguments to pass to
-            `nmt.compute_coupling_coefficients`. In addition, if recompute=True
-            is passed, the cw will be recomputed even if found in the disk.
+                pymaster.compute_coupling_coefficients. In addition, if
+                recompute=True is passed, the cw will be recomputed even if
+                found in the disk.
 
         Returns:
-        --------
-            cw:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
-
+             :obj:`pymaster.covariance.NmtCovarianceWorkspace`: Covariance
+             Workspace of the fields f1, f2, f3, f4
         """
         outdir = self.io.outdir
         spins = {
@@ -450,31 +442,26 @@ class FourierGaussianNmt(CovarianceFourier):
         return cw
 
     def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
-        """
-        Return a dictionary with the masks assotiated to the fields to be
-        correlated
+        """Return a dictionary with the fields assotiated to the given tracers.
 
-        Parameters:
-        -----------
+        Args:
             tracer_names (dict):  Dictionary of the tracer names of the same
-            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
-            into the first and second Cell you are computing the covariance
-            for; i.e. <Cell^12 Cell^34>.
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
             cache (dict): Dictionary with cached variables. It will use the
-            cached field if found. The keys must be 'f1', 'f2', 'f3' or 'f4'
-            and the values the corresponding NmtFields.
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
             masks (dict): Dictionary of the masks of the fields correlated with
-            keys 1, 2, 3 or 4 and values the loaded masks.
+                keys 1, 2, 3 or 4 and values the loaded masks.
             **kwargs: Arguments to pass to NaMaster when computing the
-            field. They will override the ones passed in the configuration
-            file through nmt_conf['f'].
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
 
         Returns:
-        --------
-            fields_dict (dict):  Dictionary with the masks assotiated to the
-            fields to be correlated.
-
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
         """
         mask_names = self.get_mask_names_dict(tracer_names)
         if masks is None:
@@ -503,18 +490,12 @@ class FourierGaussianNmt(CovarianceFourier):
         return f
 
     def get_list_of_tracers_for_wsp(self):
-        """
-        Return the tracers needed to compute the independent workspaces.
-
-        Parameters:
-        -----------
+        """Return the tracers needed to compute the independent workspaces.
 
         Returns:
-        --------
-            tracers (list of str): List of tracers needed to compute the
-            independent workspaces.
+            list of str: List of tracers needed to compute the independent
+            workspaces.
         """
-
         sacc_file = self.io.get_sacc_file()
         tracers = sacc_file.get_tracer_combinations()
 
@@ -542,22 +523,18 @@ class FourierGaussianNmt(CovarianceFourier):
         return tracers_out
 
     def get_list_of_tracers_for_cov_wsp(self, remove_trs_wsp=False):
-        """
-        Return the tracers needed to compute the independent covariance
-        workspaces.
+        """Return the tracers to compute the independent covariance workspaces.
 
-        Parameters:
-        -----------
-            remove_trs_wsp (bool): If True, remove the tracer combinations from
-            used to generate the workspaces independently (i.e the output of
-            `get_list_of_tracers_for_wsp`).
+        Args:
+            remove_trs_wsp (bool, optional): If True, remove the tracer
+                combinations from used to generate the workspaces independently
+                (i.e the output of get_list_of_tracers_for_wsp). Defaults to
+                False.
 
         Returns:
-        --------
-            tracers (list of str): List of tracers needed to compute the
-            independent covariance workspaces.
+            list of str: List of tracers needed to compute the independent
+            covariance workspaces.
         """
-
         sacc_file = self.io.get_sacc_file()
         tracers = sacc_file.get_tracer_combinations()
 
@@ -583,18 +560,14 @@ class FourierGaussianNmt(CovarianceFourier):
         return tracers_out
 
     def get_list_of_tracers_for_cov_without_trs_wsp_cwsp(self):
-        """
-        Return the covariance independent tracers combinations without those
-        used to compute the workspaces and covariance workspaces.
+        """Return the remaining covariance tracers combinations.
 
-        Parameters:
-        -----------
+        It will remove the tracer combinations used to compute the workspaces
+        and covariance workspaces.
 
         Returns:
-        --------
-            tracers (list of str): List of independent tracers combinations.
+            list of str: List of independent tracers combinations.
         """
-
         tracers_out = self.get_list_of_tracers_for_cov()
 
         trs_cwsp = self.get_list_of_tracers_for_cov_wsp()
@@ -604,22 +577,21 @@ class FourierGaussianNmt(CovarianceFourier):
         return tracers_out
 
     def get_nell(self, bins=None, nside=None, cache=None):
-        """
-        Return the number of ells for the fiducial Cells. If the sacc file
-        stored bandpowers are wrong. You will need to pass one of the other
-        arguments.
+        """Return the number of ells for the fiducial Cells.
 
-        Parameters:
-        -----------
-            bins (NmtBin): NmtBin instance with the desired binning.
+        If the sacc file stored bandpowers are wrong. You will need to pass one
+        of the other arguments.
+
+        Args:
+            bins ( pymaster.NmtBin): NmtBin instance with the desired
+                binning.
             nside (int): Healpy map nside.
             cache (dict): Dictionary with cached variables. It will use the
-            cached workspaces to read the bandpower windows.
+                cached workspaces to read the bandpower windows.
 
         Returns:
-        --------
-            nell (int): Number of ells for the fidicual Cells points; i.e. lmax
-            or 3*nside
+            int: Number of ells for the fidicual Cells points; i.e. lmax or
+            3*nside
         """
         # Extracting the workspace from the cache first to use it later in a
         # easy way.
@@ -676,26 +648,23 @@ class FourierGaussianNmt(CovarianceFourier):
         return nell
 
     def get_workspace(self, f1, f2, m1, m2, bins, **kwargs):
-        """
-        Return the workspace of the fields f1, f2
+        """Return the workspace of the fields f1, f2.
 
-        Parameters:
-        -----------
-            f1 (NmtField):  Field 1
-            f2 (NmtField):  Field 2
+        Args:
+            f1 (:obj:`pymaster.field.NmtField`):  Field 1
+            f2 (:obj:`pymaster.field.NmtField`):  Field 2
             m1 (str): Mask name assotiated to the field 1
             m2 (str): Mask name assotiated to the field 2
-            bins (NmtBin):  NmtBin instance
+            bins (:obj:`pymaster.bins.NmtBin`):  NmtBin instance
             mask_names (dict): Dictionary with tracer names as key and maks
-            names as values.
-            **kwargs:  Extra arguments to pass to
-            `w.compute_coupling_matrix`. In addition, if recompute=True is
-            passed, the cw will be recomputed even if found in the disk.
+                names as values.
+            **kwargs:  Extra arguments to pass to w.compute_coupling_matrix.
+                In addition, if recompute=True is passed, the cw will be
+                recomputed even if found in the disk.
 
         Returns:
-        --------
-            w:  NmtCovarianceWorkspace of the fields f1, f2, f3, f4
-
+             :obj:`pymaster.covariance.NmtCovarianceWorkspace`: Covariance
+             Workspace of the fields f1, f2, f3, f4
         """
         if not isinstance(bins, nmt.NmtBin):
             raise ValueError(
@@ -746,38 +715,34 @@ class FourierGaussianNmt(CovarianceFourier):
     def get_workspaces_dict(
         self, tracer_names, bins, cache=None, fields=None, masks=None, **kwargs
     ):
-        """
-        Return a dictionary with the masks assotiated to the fields to be
-        correlated
+        """Return a dictionary with the workspaces for the given tracers.
 
-        Parameters:
-        -----------
+        Args:
             tracer_names (dict):  Dictionary of the masks names assotiated to
-            the fields to be correlated. It has to be given as {1: name1, 2:
-            name2, 3: name3, 4: name4}, where 12 and 34 are the pair of tracers
-            that go into the first and second Cell you are computing the
-            covariance for; i.e. <Cell^12 Cell^34>.
-            bins (NmtBin): NmtBin instance with the desired binning.
+                the fields to be correlated. It has to be given as {1: name1,
+                2: name2, 3: name3, 4: name4}, where 12 and 34 are the pair of
+                tracers that go into the first and second Cell you are
+                computing the covariance for; i.e. <Cell^12 Cell^34>.
+            bins (:obj:`pymaster.bins.NmtBin`): NmtBin instance with the
+            desired binning.
             cache (dict): Dictionary with cached variables. It will use the
-            cached field if found. The keys must be 'w12', 'w34', 'w13', 'w23',
-            'w14' or 'w24' and the values the corresponding NmtWorkspaces.
-            Alternatively, you can pass a dictionary with keys as (mask_name1,
-            mask_name2).
+                cached field if found. The keys must be 'w12', 'w34', 'w13',
+                'w23', 'w14' or 'w24' and the values the corresponding
+                NmtWorkspaces. Alternatively, you can pass a dictionary with
+                keys as (mask_name1, mask_name2).
             field (dict): Dictionary of the NmtFields of the fields correlated
-            with keys 1, 2, 3 or 4 and values the NmtFields.
-            masks (dict): Dictionary of the masks of the fields correlated with
-            keys 1, 2, 3 or 4 and values the loaded masks.
+                with keys 1, 2, 3 or 4 and values the NmtFields.
+                masks (dict): Dictionary of the masks of the fields correlated
+                with keys 1, 2, 3 or 4 and values the loaded masks.
             **kwargs: Arguments to pass to NaMaster when computing the
-            workspace. They will override the ones passed in the configuration
-            file through nmt_conf['w'].
+                workspace. They will override the ones passed in the
+                configuration file through nmt_conf['w'].
 
         Returns:
-        --------
-            workspaces_dict (dict):  Dictionary with the workspaces assotiated
-            to the different field combinations needed for the covariance. Its
-            keys are 13, 23, 14, 24, 12, 34; with values the corresponding
-            NmtWorkspaces.
-
+            dict:  Dictionary with the workspaces assotiated to the different
+            field combinations needed for the covariance. Its keys are 13, 23,
+            14, 24, 12, 34; with values the corresponding
+            :obj:`pymaster.workspaces.NmtWorkspaces`.
         """
         mask_names = self.get_mask_names_dict(tracer_names)
         if masks is None:
