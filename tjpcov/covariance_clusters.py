@@ -15,7 +15,9 @@ class CovarianceClusters(CovarianceBuilder):
         for covariance calculation.
 
         Args:
-            config: Path to the config file to be used
+            config (`dict` or `str`): If dict, it returns the configuration
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
             survey_area: The area of the survey on the sky.  This will be
             pulled from the sacc file eventually. Defaults to 4*np.pi.
         """
@@ -47,7 +49,7 @@ class CovarianceClusters(CovarianceBuilder):
         cosmology object.  Derived attributes from the cosmology are set here.
 
         Args:
-            cosmo: CCL Cosmology Object
+            cosmo (:obj:`pyccl.Cosmology`): Input cosmology
         """
         self.cosmo = cosmo
         mass_def = ccl.halos.MassDef200m()
@@ -61,7 +63,7 @@ class CovarianceClusters(CovarianceBuilder):
         the attributes here.
 
         Args:
-            sacc_file: SACC file object, already loaded.
+            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already loaded.
         """
         # Read from SACC file relevant quantities
         self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]

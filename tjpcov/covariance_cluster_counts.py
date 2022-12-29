@@ -6,11 +6,11 @@ from scipy.integrate import romb
 
 class ClusterCounts(CovarianceClusters):
     """Implementation of cluster covariance that calculates the autocorrelation
-    of cluster counts (NxN)
+    of cluster counts (NxN).  This class is able to compute the covariance for
+    `_tracers_types = ("cluster", "cluster")`
     """
 
     cov_type = "fourier"
-    _reshape_order = "F"
     _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
@@ -18,8 +18,9 @@ class ClusterCounts(CovarianceClusters):
         specifically the number count auto-correlation.
 
         Args:
-            config: The configuration file path used to calculate the
-            covariance
+            config (dict or str): If dict, it returns the configuration
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
         """
         super().__init__(config)
         self.romberg_num = 2**6 + 1
@@ -27,23 +28,35 @@ class ClusterCounts(CovarianceClusters):
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        """This function returns the covariance block with the
-        elements in the sacc file
-        """
-        return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-
-    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        """This function returns the covariance block with the
-        elements in the sacc file
-        """
-        return self.get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-
-    def get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (_type_): e.g. ('clusters_0_0',)
-            tracer_comb2 (_type_): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple`): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple`): e.g. ('clusters_0_1',)
+
+        Returns:
+            Covariance for a single block
+        """
+        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
+
+    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """Compute a single covariance entry 'clusters_redshift_richness'
+
+        Args:
+            tracer_comb1 (`tuple`): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple`): e.g. ('clusters_0_1',)
+
+        Returns:
+            Covariance for a single block
+        """
+        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
+
+    def _get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
+        """Compute a single covariance entry 'clusters_redshift_richness'
+
+        Args:
+            tracer_comb1 (`tuple`): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple`): e.g. ('clusters_0_1',)
 
         Returns:
             Covariance for a single block

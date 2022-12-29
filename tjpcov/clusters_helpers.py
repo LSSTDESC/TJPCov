@@ -46,7 +46,7 @@ class FFTHelper(object):
         """Constructor for the FFTHelper class
 
         Args:
-            cosmo: CCL Cosmology object
+            cosmo (:obj:`pyccl.Cosmology`): Input cosmology
             z_min: Lower bound on redshift integral
             z_max: Upper bound on redshift integral
         """

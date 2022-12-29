@@ -93,6 +93,11 @@ def test_double_bessel_integral():
 
 
 def test_shot_noise():
+    import scipy
+    import numpy
+
+    print(scipy.__version__)
+    print(numpy.__version__)
     ref = 63973.635143644424
     cc_cov = get_mock_covariance()
     test = cc_cov.shot_noise(0, 0)
@@ -146,7 +151,7 @@ def test_cov_nxn():
 
     cc_cov = get_mock_covariance()
 
-    cov_00 = cc_cov.get_covariance_cluster_counts(
+    cov_00 = cc_cov._get_covariance_cluster_counts(
         ("clusters_0_0",), ("clusters_0_0",)
     )
 
