@@ -11,10 +11,10 @@ class MassRichnessRelation(object):
         relation
 
         Args:
-            ln_true_mass: True mass
-            h0: Hubble's constant
+            ln_true_mass (float): True mass
+            h0 (float): Hubble's constant
         Returns:
-            The parameterized average and spread of the log-normal
+            `tuple` of float: The parameterized average and spread of the log-normal
             mass-richness relation
         """
 
@@ -47,8 +47,8 @@ class FFTHelper(object):
 
         Args:
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
-            z_min: Lower bound on redshift integral
-            z_max: Upper bound on redshift integral
+            z_min (float): Lower bound on redshift integral
+            z_max (float): Upper bound on redshift integral
         """
         self.cosmo = cosmo
         self._set_fft_params(z_min, z_max)
@@ -60,8 +60,8 @@ class FFTHelper(object):
         See Eqn 7.16 N. Ferreira disseration.
 
         Args:
-            z_min: Lower bound on redshift integral
-            z_max: Upper bound on redshift integral
+            z_min (float): Lower bound on redshift integral
+            z_max (float): Upper bound on redshift integral
         """
         import pyccl as ccl
 
@@ -98,11 +98,11 @@ class FFTHelper(object):
         See Eqn 7.4 of N. Ferreira
 
         Args:
-            z1: Lower redshift bound
-            z2: Upper redshift bound
+            z1 (float): Lower redshift bound
+            z2 (float): Upper redshift bound
 
         Returns:
-            Numerical approximation of double bessel function
+            float: Numerical approximation of double bessel function
         """
 
         import pyccl as ccl
@@ -110,10 +110,10 @@ class FFTHelper(object):
 
         r1 = ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z1))
         r2 = ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z2))
-        R_val = min(r1, r2) / max(r1, r2)
+        ratio = min(r1, r2) / max(r1, r2)
 
         I_ell_vec = [
-            self._I_ell_algorithm(i, R_val) for i in range(self.N // 2 + 1)
+            self._I_ell_algorithm(i, ratio) for i in range(self.N // 2 + 1)
         ]
         # Eqn 7.4 N. Ferreira
         fk_inv_fourier_xform = np.conjugate(np.fft.rfft(self.fk_grid)) / self.L
@@ -149,13 +149,21 @@ class FFTHelper(object):
                     Mpc""",
             )
 
-    def _I_ell_algorithm(self, m, R):
+    def _I_ell_algorithm(self, i, ratio):
         """Calculating the function M_0_0 the formula below only valid for
         R <=1, l = 0, formula B2 ASZ and 31 from 2-fast paper
+        https://arxiv.org/pdf/1709.02401v3.pdf
+
+        Args:
+            i (int): iteration
+            ratio (float): Ratio between comoving coordinates
+
+        Returns:
+            float: Fourier transform of spherical bessel function
         """
         from scipy.special import gamma
 
-        t_m = 2 * np.pi * m / self.G
+        t_m = 2 * np.pi * i / self.G
         alpha_m = self.bias_fft - 1.0j * t_m
         pre_factor = (self.k_min * self.r_min) ** (-alpha_m)
 
@@ -163,12 +171,12 @@ class FFTHelper(object):
             pre_factor * 0.5 * np.cos(np.pi * alpha_m / 2) * gamma(alpha_m - 2)
         )
 
-        if R < 1:
-            return_val *= (1 / R) * (
-                (1 + R) ** (2 - alpha_m) - (1 - R) ** (2 - alpha_m)
+        if ratio < 1:
+            return_val *= (1 / ratio) * (
+                (1 + ratio) ** (2 - alpha_m) - (1 - ratio) ** (2 - alpha_m)
             )
 
-        elif R == 1:
-            return_val *= (1 + R) ** (2 - alpha_m)
+        elif ratio == 1:
+            return_val *= (1 + ratio) ** (2 - alpha_m)
 
         return return_val

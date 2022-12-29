@@ -10,7 +10,8 @@ class ClusterCounts(CovarianceClusters):
     `_tracers_types = ("cluster", "cluster")`
     """
 
-    cov_type = "fourier"
+    # Need to break this out into Gauss and SSC
+    cov_type = "gauss"
     _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
@@ -31,11 +32,11 @@ class ClusterCounts(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple`): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple`): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
 
         Returns:
-            Covariance for a single block
+            float: Covariance for a single block
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
@@ -43,11 +44,11 @@ class ClusterCounts(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple`): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple`): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
 
         Returns:
-            Covariance for a single block
+            float: Covariance for a single block
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
@@ -55,11 +56,11 @@ class ClusterCounts(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple`): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple`): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
 
         Returns:
-            Covariance for a single block
+            float: Covariance for a single block
         """
 
         tracer_split1 = tracer_comb1[0].split("_")

@@ -15,11 +15,12 @@ class CovarianceClusters(CovarianceBuilder):
         for covariance calculation.
 
         Args:
-            config (`dict` or `str`): If dict, it returns the configuration
+            config (dict or str): If dict, it returns the configuration
                 dictionary directly. If string, it asumes a YAML file and
                 parses it.
-            survey_area: The area of the survey on the sky.  This will be
-            pulled from the sacc file eventually. Defaults to 4*np.pi.
+            survey_area (float): The area of the survey on the sky.
+                This will bepulled from the sacc file eventually.
+                Defaults to 4*np.pi.
         """
         super().__init__(config)
 
@@ -128,12 +129,12 @@ class CovarianceClusters(CovarianceBuilder):
         using scipy quad function.
 
         Args:
-            argument: Function to integrate between bounds
-            from_lim: lower limit
-            to_lim: upper limit
+            argument (callable): Function to integrate between bounds
+            from_lim (float): lower limit
+            to_lim (float): upper limit
 
         Returns:
-            Value of the integral
+            float: Value of the integral
         """
 
         integral_value = quad(argument, from_lim, to_lim)
@@ -144,11 +145,11 @@ class CovarianceClusters(CovarianceBuilder):
         using scipy romberg integration
 
         Args:
-            kernel: Vector of equally spaced samples of a function
-            spacing: Sample spacing
+            kernel (array_like): Vector of equally spaced samples of a function
+            spacing (float): Sample spacing
 
         Returns:
-            Value of the integral
+            float: Value of the integral
         """
         return romb(kernel, dx=spacing)
 
@@ -166,7 +167,7 @@ class CovarianceClusters(CovarianceBuilder):
             sigma_0 (float): Spread in the uncertainty of the photo-z
                 distribution, defaults to 0.05 (DES Y1)
         Returns:
-
+            float: Probability weighted photo-z
         """
 
         sigma_z = sigma_0 * (1 + z_true)
@@ -189,12 +190,12 @@ class CovarianceClusters(CovarianceBuilder):
         volume element for this bin including photo-z uncertainties.
 
         Args:
-            z_true: True redshift
-            z_i: Photometric redshift bin
+            z_true (float): True redshift
+            z_i (float): Photometric redshift bin
 
         Returns:
-            Photo-z-weighted comoving volume element per steridian for redshift
-            bin i in units of Mpc^3
+            float: Photo-z-weighted comoving volume element per steridian
+            for redshift bin i in units of Mpc^3
         """
 
         dV = (
@@ -205,7 +206,7 @@ class CovarianceClusters(CovarianceBuilder):
         )
         return dV
 
-    def mass_richness(self, ln_true_mass, lbd_i):
+    def mass_richness(self, ln_true_mass, richness_bin):
         """The probability that we observe richness given the true mass M, is
         given by the convolution of a Poisson distribution (relating observed
         richness to true richness) with a Gaussian distribution (relating true
@@ -213,16 +214,15 @@ class CovarianceClusters(CovarianceBuilder):
         log-normal mass-richness distribution, done so here.
 
         Args:
-            ln_true_mass: True mass
-            richness_bin: Richness bin i
-            richness_bin_next: Richness bin i+1
+            ln_true_mass (float): True mass
+            richness_bin (int): Richness bin i
         Returns:
-            The probability that the true mass ln(ln_true_mass)
+            float: The probability that the true mass ln(ln_true_mass)
             is observed within the richness bin i and richness bin i+1
         """
 
-        richness_bin = self.richness_bins[lbd_i]
-        richness_bin_next = self.richness_bins[lbd_i + 1]
+        richness_bin = self.richness_bins[richness_bin]
+        richness_bin_next = self.richness_bins[richness_bin + 1]
 
         std_deviation, average = MassRichnessRelation.MurataCostanzi(
             ln_true_mass, self.h0
@@ -246,10 +246,10 @@ class CovarianceClusters(CovarianceBuilder):
         Args:
             z (float): Redshift
             lbd_i (int): Richness bin
-            remove_bias: If TRUE, will remove halo_bias from the mass integral.
-            Used for calculating the shot noise.
+            remove_bias (bool, optional): If TRUE, will remove halo_bias from
+            the mass integral. Used for calculating the shot noise.
         Returns:
-            The mass-richness weighed derivative of number density per
+            float: The mass-richness weighed derivative of number density per
             fluctuation in background
         """
 
@@ -289,7 +289,8 @@ class CovarianceClusters(CovarianceBuilder):
         Args:
             z_i (int): redshift bin i
             lbd_i (int): richness bin i
-
+        Returns:
+            float: Gaussian covariance contribution
         """
         # Eqn B.7 or 1601.05779.pdf eqn 1
         def integrand(z):
@@ -317,6 +318,8 @@ class CovarianceClusters(CovarianceBuilder):
             bin_lbd_j (int): richness bin j
             approx (bool, optional): Will only calculate the mass richness
             integral once and multiply at end. Defaults to True.
+        Returns:
+            float: SSC covariance contribution.
 
         """
         # Nelson tested and found convergence at 5 iterations
@@ -365,5 +368,7 @@ class CovarianceClusters(CovarianceBuilder):
         Args:
             z1 (float): redshift lower bound
             z2 (float): redshift upper bound
+        Returns:
+            float: Numerical approximation of integral.
         """
         return self.fft_helper.two_fast_algorithm(z1, z2)
