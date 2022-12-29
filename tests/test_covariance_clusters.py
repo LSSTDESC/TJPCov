@@ -5,12 +5,14 @@ import sacc
 from tjpcov.covariance_cluster_counts import ClusterCounts
 from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
+import pytest
 
-cosmo = ccl.Cosmology.read_yaml("tests/data/cosmo_desy1.yaml")
+cosmo = ccl.Cosmology.read_yaml("./tests/data/cosmo_desy1.yaml")
 input_yml = "./tests/data/conf_covariance_clusters.yaml"
 
 
-def get_mock_cosmo():
+@pytest.fixture
+def mock_cosmo():
     Omg_c = 0.26
     Omg_b = 0.04
     h0 = 0.67  # so H0 = 100h0 will be in km/s/Mpc
@@ -31,7 +33,8 @@ def get_mock_cosmo():
     return cosmo
 
 
-def get_mock_sacc():
+@pytest.fixture
+def mock_sacc():
     # Using values from
     # https://github.com/nrussofer/Cosmological-Covariance-matrices
     # /blob/master/Full%20covariance%20N_N%20part%20vfinal.ipynb
@@ -60,98 +63,92 @@ def get_mock_sacc():
     return s
 
 
-def get_mock_covariance():
+@pytest.fixture
+def mock_covariance(mock_sacc, mock_cosmo):
 
     cc_cov = ClusterCounts(input_yml)
-    cc_cov.load_from_sacc(get_mock_sacc())
-    cc_cov.load_from_cosmology(get_mock_cosmo())
+    cc_cov.load_from_sacc(mock_sacc)
+    cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
-        get_mock_cosmo(), cc_cov.z_lower_limit, cc_cov.z_upper_limit
+        mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
     )
-    cc_cov.mass_func = hmf.MassFuncTinker10(get_mock_cosmo())
+    cc_cov.mass_func = hmf.MassFuncTinker10(mock_cosmo)
     cc_cov.h0 = 0.67
     return cc_cov
 
 
-def test_integral_mass_no_bias():
+def test_integral_mass_no_bias(mock_covariance: ClusterCounts):
     ref1 = 1.463291259900985e-05
     ref2 = 1.4251538328691035e-05
-    cc_cov = get_mock_covariance()
 
-    test1 = cc_cov.mass_richness_integral(0.3, 0, remove_bias=True)
-    test2 = cc_cov.mass_richness_integral(0.35, 0, remove_bias=True)
+    test1 = mock_covariance.mass_richness_integral(0.3, 0, remove_bias=True)
+    test2 = mock_covariance.mass_richness_integral(0.35, 0, remove_bias=True)
 
     np.testing.assert_almost_equal(ref1, test1)
     np.testing.assert_almost_equal(ref2, test2)
 
 
-def test_double_bessel_integral():
+def test_double_bessel_integral(mock_covariance: ClusterCounts):
     ref = 8.427201745032292e-05
-    cc_cov = get_mock_covariance()
-    test = cc_cov.double_bessel_integral(0.3, 0.3)
+    test = mock_covariance.double_bessel_integral(0.3, 0.3)
     np.testing.assert_almost_equal(ref, test)
 
 
-def test_shot_noise():
+def test_shot_noise(mock_covariance: ClusterCounts):
     import scipy
     import numpy
 
     print(scipy.__version__)
     print(numpy.__version__)
     ref = 63973.635143644424
-    cc_cov = get_mock_covariance()
-    test = cc_cov.shot_noise(0, 0)
+    test = mock_covariance.shot_noise(0, 0)
     np.testing.assert_almost_equal(test, ref)
 
 
-def test_integral_mass():
-    cc_cov = get_mock_covariance()
+def test_integral_mass(mock_covariance: ClusterCounts):
     ref1 = 2.596895139062984e-05
     ref2 = 2.5910691906342223e-05
 
-    test1 = cc_cov.mass_richness_integral(0.5, 0)
-    test2 = cc_cov.mass_richness_integral(0.55, 0)
+    test1 = mock_covariance.mass_richness_integral(0.5, 0)
+    test2 = mock_covariance.mass_richness_integral(0.55, 0)
 
     np.testing.assert_almost_equal(ref1, test1)
     np.testing.assert_almost_equal(ref2, test2)
 
 
-def test_mass_richness():
-    cc_cov = get_mock_covariance()
+def test_mass_richness(mock_covariance: ClusterCounts):
     reference_min = 0.0009528852621284171
 
     test_min = [
-        cc_cov.mass_richness(cc_cov.min_mass, i)
-        for i in range(cc_cov.num_richness_bins)
+        mock_covariance.mass_richness(mock_covariance.min_mass, i)
+        for i in range(mock_covariance.num_richness_bins)
     ]
     np.testing.assert_almost_equal(np.sum(test_min), reference_min)
 
 
-def test_calc_dv():
-    reference_values = [
-        6613.739621696188,
-        55940746.72160228,
-        3781771343.1278453,
-        252063237.8394578,
-        1113852.72571463,
-    ]
+@pytest.mark.parametrize(
+    "z_i, reference_val",
+    [
+        (0, 6613.739621696188),
+        (4, 55940746.72160228),
+        (8, 3781771343.1278453),
+        (14, 252063237.8394578),
+        (17, 1113852.72571463),
+    ],
+)
+def test_calc_dv(mock_covariance: ClusterCounts, z_i, reference_val):
 
-    cc_cov = get_mock_covariance()
     z_true = 0.8
-
-    for i, z_i in enumerate([0, 4, 8, 14, 17]):
-        np.testing.assert_almost_equal(
-            cc_cov.comoving_volume_element(z_true, z_i) / 1e4,
-            reference_values[i] / 1e4,
-        )
+    np.testing.assert_almost_equal(
+        mock_covariance.comoving_volume_element(z_true, z_i) / 1e4,
+        reference_val / 1e4,
+    )
 
 
-def test_cov_nxn():
+def test_cov_nxn(mock_covariance: ClusterCounts):
     ref_sum = 130462.91921818888
 
-    cc_cov = get_mock_covariance()
-
-    cov_00 = cc_cov.get_covariance_block_for_sacc(
+    cov_00 = mock_covariance.get_covariance_block_for_sacc(
         ("clusters_0_0",), ("clusters_0_0",)
     )
 
