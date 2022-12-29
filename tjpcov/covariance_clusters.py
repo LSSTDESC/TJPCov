@@ -44,7 +44,7 @@ class CovarianceClusters(CovarianceBuilder):
         cosmo = self.get_cosmology()
         self.load_from_cosmology(cosmo)
         self.fft_helper = FFTHelper(
-            cosmo, self.z_lower_limit, self.z_lower_limit
+            cosmo, self.z_lower_limit, self.z_upper_limit
         )
 
     def load_from_cosmology(self, cosmo):
@@ -120,8 +120,10 @@ class CovarianceClusters(CovarianceBuilder):
             np.linspace(self.z_min, self.z_max, self.num_z_bins + 1), 2
         )
         self.z_bin_spacing = (self.z_max - self.z_min) / self.num_z_bins
+        # Min redshift is 0.02
         self.z_lower_limit = max(0.02, self.z_bins[0] - 4 * self.z_bin_spacing)
-        self.z_upper_limit = self.z_bins[-1] + 6 * self.z_bin_spacing
+        # Set upper limit to be 40% higher than max redshift
+        self.z_upper_limit = self.z_bins[-1] + 0.4 * self.z_bins[-1]
 
         self.min_mass = np.log(min_mass)
         self.max_mass = np.log(1e16)
@@ -199,7 +201,6 @@ class CovarianceClusters(CovarianceBuilder):
             float: Photo-z-weighted comoving volume element per steridian
             for redshift bin i in units of Mpc^3
         """
-
         dV = (
             self.c
             * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z_true)) ** 2)
@@ -334,7 +335,7 @@ class CovarianceClusters(CovarianceBuilder):
             vec_left = np.linspace(min_z, z, num_samples)
             vec_right = np.linspace(z, z + (z - vec_left[0]), num_samples)
         else:
-            max_z = min(self.z_upper_limit, z + 6 * self.z_bin_spacing)
+            max_z = min(self.z_upper_limit, z + 0.4 * z)
             vec_right = np.linspace(z, max_z, num_samples)
             vec_left = np.linspace(z - (vec_right[-1] - z), z, num_samples)
 

@@ -88,26 +88,20 @@ class ClusterCounts(CovarianceClusters):
         )
 
         comoving_volume_elements = np.array(
-            [
-                self.comoving_volume_element(redshift, z_i)
-                for redshift in z_range
-            ]
+            [self.comoving_volume_element(z_ii, z_i) for z_ii in z_range]
         )
 
         mass_richness_prob_dist = np.array(
-            [
-                self.mass_richness_integral(redshift, richness_i)
-                for redshift in z_range
-            ]
+            [self.mass_richness_integral(z_ii, richness_i) for z_ii in z_range]
         )
 
-        partial_SSC = np.array(
-            [
-                self.partial_SSC(redshift, z_j, richness_j)
-                for redshift in z_range
-            ]
-        )
+        try:
 
+            partial_SSC = np.array(
+                [self.partial_SSC(z_ii, z_j, richness_j) for z_ii in z_range]
+            )
+        except Exception as ex:
+            print(ex.__traceback__)
         # Eqn 4.18
         super_sample_covariance = (
             partial_SSC
