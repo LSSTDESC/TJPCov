@@ -10,6 +10,8 @@ class CovarianceClusters(CovarianceBuilder):
     number counts.
     """
 
+    space_type = "Real"
+
     def __init__(self, config, survey_area=4 * np.pi):
         """Constructor for the base class, used to pass through config options
         for covariance calculation.
@@ -206,7 +208,7 @@ class CovarianceClusters(CovarianceBuilder):
         )
         return dV
 
-    def mass_richness(self, ln_true_mass, richness_bin):
+    def mass_richness(self, ln_true_mass, richness_i):
         """The probability that we observe richness given the true mass M, is
         given by the convolution of a Poisson distribution (relating observed
         richness to true richness) with a Gaussian distribution (relating true
@@ -221,8 +223,8 @@ class CovarianceClusters(CovarianceBuilder):
             is observed within the richness bin i and richness bin i+1
         """
 
-        richness_bin = self.richness_bins[richness_bin]
-        richness_bin_next = self.richness_bins[richness_bin + 1]
+        richness_bin = self.richness_bins[richness_i]
+        richness_bin_next = self.richness_bins[richness_i + 1]
 
         std_deviation, average = MassRichnessRelation.MurataCostanzi(
             ln_true_mass, self.h0

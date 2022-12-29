@@ -1,6 +1,7 @@
 tjpcov:
   use_mpi: False
   do_xi: False
+  cov_type: [ClusterCounts]
   # sacc input file 
   sacc_file: ./tests/data/clusters/mock_clusters.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file

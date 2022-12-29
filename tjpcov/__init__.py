@@ -2,6 +2,7 @@
 from .covariance_builder import CovarianceBuilder
 from .covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from .covariance_fourier_ssc import FourierSSCHaloModel
+from .covariance_cluster_counts import ClusterCounts
 from .covariance_gaussian_fsky import (
     FourierGaussianFsky,
     RealGaussianFsky,
