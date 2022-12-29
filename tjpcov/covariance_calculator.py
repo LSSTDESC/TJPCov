@@ -160,7 +160,7 @@ class CovarianceCalculator:
         if (self.rank is not None) and (self.rank != 0):
             return
 
-        self.io.create_sacc_cov(cov, output)
+        s = self.io.create_sacc_cov(cov, output)
 
         if save_terms:
             cov_terms = self.get_covariance_terms()
@@ -168,3 +168,5 @@ class CovarianceCalculator:
                 fname, ext = os.path.splitext(output)
                 fname += f"_{term}{ext}"
                 self.io.create_sacc_cov(cov, fname)
+
+        return s

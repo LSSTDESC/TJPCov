@@ -13,6 +13,7 @@ TJPCov is a general covariance calculator interface to be used within LSST DESC.
    :caption: Contents:
 
    installation
+   example
    autoapi/index
 
 
