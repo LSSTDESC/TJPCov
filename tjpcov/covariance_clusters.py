@@ -10,7 +10,7 @@ class CovarianceClusters(CovarianceBuilder):
     number counts.
     """
 
-    space_type = "Real"
+    space_type = "Fourier"
 
     def __init__(self, config, survey_area=4 * np.pi):
         """Constructor for the base class, used to pass through config options
