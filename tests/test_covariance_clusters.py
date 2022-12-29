@@ -77,32 +77,28 @@ def mock_covariance(mock_sacc, mock_cosmo):
     return cc_cov
 
 
-def test_integral_mass_no_bias(mock_covariance: ClusterCounts):
-    ref1 = 1.463291259900985e-05
-    ref2 = 1.4251538328691035e-05
-
-    test1 = mock_covariance.mass_richness_integral(0.3, 0, remove_bias=True)
-    test2 = mock_covariance.mass_richness_integral(0.35, 0, remove_bias=True)
-
-    pytest.approx(ref1, test1)
-    pytest.approx(ref2, test2)
+@pytest.mark.parametrize(
+    "z, ref_val",
+    [
+        (0.3, 1.463291259900985e-05),
+        (0.35, 1.4251538328691035e-05),
+    ],
+)
+def test_integral_mass_no_bias(mock_covariance: ClusterCounts, z, ref_val):
+    test = mock_covariance.mass_richness_integral(z, 0, remove_bias=True)
+    assert test == pytest.approx(ref_val)
 
 
 def test_double_bessel_integral(mock_covariance: ClusterCounts):
     ref = 8.427201745032292e-05
     test = mock_covariance.double_bessel_integral(0.3, 0.3)
-    pytest.approx(ref, test)
+    assert test == pytest.approx(ref)
 
 
 def test_shot_noise(mock_covariance: ClusterCounts):
-    import scipy
-    import numpy
-
-    print(scipy.__version__)
-    print(numpy.__version__)
     ref = 63973.635143644424
     test = mock_covariance.shot_noise(0, 0)
-    pytest.approx(test, ref)
+    assert test == pytest.approx(ref, 0.1)
 
 
 @pytest.mark.parametrize(
@@ -114,7 +110,7 @@ def test_shot_noise(mock_covariance: ClusterCounts):
 )
 def test_integral_mass(mock_covariance: ClusterCounts, z, reference_val):
     test = mock_covariance.mass_richness_integral(z, 0)
-    pytest.approx(test, reference_val)
+    assert test == pytest.approx(reference_val)
 
 
 def test_mass_richness(mock_covariance: ClusterCounts):
@@ -124,7 +120,7 @@ def test_mass_richness(mock_covariance: ClusterCounts):
         mock_covariance.mass_richness(mock_covariance.min_mass, i)
         for i in range(mock_covariance.num_richness_bins)
     ]
-    pytest.approx(np.sum(test_min), reference_min)
+    assert np.sum(test_min) == pytest.approx(reference_min)
 
 
 @pytest.mark.parametrize(
@@ -140,10 +136,8 @@ def test_mass_richness(mock_covariance: ClusterCounts):
 def test_calc_dv(mock_covariance: ClusterCounts, z_i, reference_val):
 
     z_true = 0.8
-    pytest.approx(
-        mock_covariance.comoving_volume_element(z_true, z_i) / 1e4,
-        reference_val / 1e4,
-    )
+    test = mock_covariance.comoving_volume_element(z_true, z_i) / 1e4
+    assert test == pytest.approx(reference_val / 1e4)
 
 
 def test_cov_nxn(mock_covariance: ClusterCounts):
@@ -152,5 +146,4 @@ def test_cov_nxn(mock_covariance: ClusterCounts):
     cov_00 = mock_covariance.get_covariance_block_for_sacc(
         ("clusters_0_0",), ("clusters_0_0",)
     )
-
-    pytest.approx(ref_sum, cov_00)
+    assert cov_00 == pytest.approx(ref_sum, 0.1)

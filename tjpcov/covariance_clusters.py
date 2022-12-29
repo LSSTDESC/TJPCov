@@ -304,10 +304,6 @@ class CovarianceClusters(CovarianceBuilder):
         result = self._quad_integrate(
             integrand, self.z_lower_limit, self.z_upper_limit
         )
-        print(f"{self.z_lower_limit}")
-        print(f"{self.z_upper_limit}")
-        print(f"{self.survey_area}")
-        print(f"{result}")
         return self.survey_area * result
 
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
