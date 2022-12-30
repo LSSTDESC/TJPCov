@@ -65,3 +65,4 @@ full = [
 [project.urls]
 "Homepage" = "https://github.com/LSSTDESC/TJPCov"
 "Bug Tracker" = "https://github.com/LSSTDESC/TJPCov/issues"
+"Documentation" = "https://tjpcov.readthedocs.io"
