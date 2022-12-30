@@ -40,6 +40,7 @@ in the root folder:
 black .
 flake8 .
 ```
+Furthermore, we are following GitHub's recommendation of using [Semantic Versioning](https://semver.org/) in our releases.
 
 For a general idea of TJPCov's scientific scope, see also the [terms of reference](https://github.com/LSSTDESC/TJPCov/blob/master/doc/Terms_of_Reference.md).
 
