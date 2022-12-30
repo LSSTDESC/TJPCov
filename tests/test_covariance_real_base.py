@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import sacc
 
-from tjpcov import bin_cov, WignerTransform
+from tjpcov.wigner_transform import bin_cov, WignerTransform
 from tjpcov.covariance_builder import (
     CovarianceProjectedReal,
     CovarianceReal,
