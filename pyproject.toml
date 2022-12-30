@@ -30,7 +30,9 @@ dependencies = [
     "pytest",
     "pyccl>=2.5.0",
     "sacc>=0.7",
-    "camb"
+    "camb",
+    "healpy",
+    "h5py"
 ]
 dynamic = ["version"]
 
@@ -45,17 +47,13 @@ doc = [
     "sphinx_rtd_theme",
 ]
 nmt = [
-    "healpy",
-    "pymaster>=1.4.0",
-    "h5py",
+    "pymaster>=1.4.0"
 ]
 mpi = [
     "mpi4py"
 ]
 full = [
-    "healpy",
     "pymaster>=1.4.0",
-    "h5py",
     "mpi4py",
     "sphinx",
     "sphinx-autoapi",
