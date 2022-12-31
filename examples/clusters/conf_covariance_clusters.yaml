@@ -6,7 +6,7 @@ tjpcov:
   sacc_file: ../tests/data/clusters/mock_clusters.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
-  outdir: ./
+  outdir: ../tests/data/clusters/
   fsky: 0.3
 
 parameters:
