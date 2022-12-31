@@ -95,13 +95,10 @@ class ClusterCounts(CovarianceClusters):
             [self.mass_richness_integral(z_ii, richness_i) for z_ii in z_range]
         )
 
-        try:
+        partial_SSC = np.array(
+            [self.partial_SSC(z_ii, z_j, richness_j) for z_ii in z_range]
+        )
 
-            partial_SSC = np.array(
-                [self.partial_SSC(z_ii, z_j, richness_j) for z_ii in z_range]
-            )
-        except Exception as ex:
-            print(ex.__traceback__)
         # Eqn 4.18
         super_sample_covariance = (
             partial_SSC
