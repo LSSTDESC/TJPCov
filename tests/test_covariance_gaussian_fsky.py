@@ -7,7 +7,7 @@ import pyccl as ccl
 import pytest
 import shutil
 
-from tjpcov import bin_cov
+from tjpcov.wigner_transform import bin_cov
 from tjpcov.covariance_gaussian_fsky import (
     FourierGaussianFsky,
     RealGaussianFsky,

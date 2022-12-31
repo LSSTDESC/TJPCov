@@ -45,6 +45,8 @@ jobs:
           # Install wheel to avoid recompiling packages already
           # in the cache.
           pip install -U wheel
+          # Installing numpy first to avoid CCL error
+          pip install numpy
           # Install the basic code first to avoid NaMaster being compiled
           # before its dependencies.
           # (https://github.com/LSSTDESC/NaMaster/issues/138)
