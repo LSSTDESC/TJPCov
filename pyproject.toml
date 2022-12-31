@@ -30,9 +30,7 @@ dependencies = [
     "pytest",
     "pyccl>=2.5.0",
     "sacc>=0.7",
-    "camb",
-    "healpy",
-    "h5py"
+    "camb"
 ]
 dynamic = ["version"]
 
@@ -41,26 +39,21 @@ dynamic = ["version"]
 [tool.setuptools_scm]
 
 [project.optional-dependencies]
-doc = [
-    "sphinx",
-    "sphinx-autoapi",
-    "sphinx_rtd_theme",
-]
 nmt = [
-    "pymaster>=1.4.0"
+    "healpy",
+    "pymaster>=1.4.0",
+    "h5py",
 ]
 mpi = [
     "mpi4py"
 ]
 full = [
+    "healpy",
     "pymaster>=1.4.0",
-    "mpi4py",
-    "sphinx",
-    "sphinx-autoapi",
-    "sphinx_rtd_theme",
+    "h5py",
+    "mpi4py"
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/LSSTDESC/TJPCov"
 "Bug Tracker" = "https://github.com/LSSTDESC/TJPCov/issues"
-"Documentation" = "https://tjpcov.readthedocs.io"

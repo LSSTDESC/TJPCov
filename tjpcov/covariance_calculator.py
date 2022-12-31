@@ -5,20 +5,19 @@ from .covariance_io import CovarianceIO
 
 
 class CovarianceCalculator:
-    """Class for the end user that will compute all covariance terms.
-
-    This will read the configuration file which will contain information of
-    what covariances are requested (by giving the Class names) and add all
-    their contributions.
+    """
+    Class meant to be use by the end user. This will read the configuration
+    file which will contain information of what covariances are requested (by
+    giving the Class names) and add all their contributions.
     """
 
     def __init__(self, config):
-        """Initialize the class with a config file or dictionary.
-
-        Args:
-            config (dict or str): If dict, it returns the configuration
-                dictionary directly. If string, it asumes a YAML file and
-                parses it.
+        """
+        Parameters
+        ----------
+        config (dict or str): If dict, it returns the configuration
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
         """
         self.io = CovarianceIO(config)
         self.config = self.io.config
@@ -45,11 +44,14 @@ class CovarianceCalculator:
             self.size = None
 
     def get_covariance_classes(self):
-        """Return a dictionary with the covariance classes initialized.
+        """
+        Return a dictionary with the covariance terms, tracer_types and
+        instances of their corresponding classes.
 
-        Returns:
-            dict: Dictionary with keys the covariance types ('gauss', SSC', ..
-            ) and values instances of the corresponding classes.
+        Returns
+        -------
+        classes (dict): Dictionary with keys the covariance types ('gauss',
+        SSC', .. ) and values instances of the corresponding classes.
         """
         if self.cov_classes is None:
             # cov_type will be a list or string with the class names that you
@@ -97,11 +99,13 @@ class CovarianceCalculator:
         return self.cov_classes
 
     def get_covariance(self):
-        """Return the covariance with all the contributions added up.
+        """
+        Return the covariance with all the requested contributions added up.
 
-        Returns:
-            array: Final covariance with all the requested contributions added
-            up.
+        Returns
+        -------
+            cov (array): Final covariance with all the requested contributions
+            added up.
         """
         if self.cov_total is None:
             cov_terms = self.get_covariance_terms()
@@ -113,16 +117,16 @@ class CovarianceCalculator:
         return self.cov_total
 
     def get_covariance_terms(self):
-        """Return a dictionary with the covariance contributions.
+        """
+        Return a dictionary with keys the covariace types and values their
+        covariance contributions. We add all the contributions for different
+        tracer types (e.g. ClxCl + ClxN + NxN). Since they are independent it
+        is easy to recover each of them independently.
 
-        The dictionary has keys the covariace types and values their covariance
-        contributions. We add all the contributions for different tracer types
-        (e.g. ClxCl + ClxN + NxN). Since they are independent it is easy to
-        recover each of them independently.
-
-        Returns:
+        Returns
+        -------
             dict: dictionary with keys the covariace types and values their
-            covariance contributions.
+        covariance contributions.
         """
         if self.cov_terms is None:
             cov_classes = self.get_covariance_classes()
@@ -143,20 +147,17 @@ class CovarianceCalculator:
         return self.cov_terms
 
     def create_sacc_cov(self, output="cls_cov.fits", save_terms=True):
-        """Write the sacc file with the total covariance.
+        """
+        Write the sacc file with the total covariance.
 
-        Args:
-            output (str, optional): Filename. This will be joined to the outdir
-                path specified in the configuration file. Default
-                "cls_cov.fits"
-            save_terms (bool, optional): If true, save individual files for
-                each of the requested contributions. The will have the
-                covariance term (e.g. gauss) appended to the filename (before
-                the extension, e.g. cls_cov_gauss.fits)
-
-        Returns:
-            :obj:`sacc.sacc.Sacc`: The final sacc file with the covariance
-            matrix included.
+        Parameters
+        ----------
+            output (str): Filename. This will be joined to the outdir path
+            specified in the configuration file.
+            save_terms (bool): If true, save individual files for each of the
+            requested contributions. The will have the covariance term (e.g.
+            gauss) appended to the filename (before the extension, e.g.
+            cls_cov_gauss.fits)
         """
         cov = self.get_covariance()
 
@@ -164,7 +165,7 @@ class CovarianceCalculator:
         if (self.rank is not None) and (self.rank != 0):
             return
 
-        s = self.io.create_sacc_cov(cov, output)
+        self.io.create_sacc_cov(cov, output)
 
         if save_terms:
             cov_terms = self.get_covariance_terms()
@@ -172,5 +173,3 @@ class CovarianceCalculator:
                 fname, ext = os.path.splitext(output)
                 fname += f"_{term}{ext}"
                 self.io.create_sacc_cov(cov, fname)
-
-        return s

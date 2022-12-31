@@ -1,5 +1,5 @@
 tjpcov:
-  sacc_file: examples/old_api/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits
+  sacc_file: examples/des_y1_3x2pt/generic_cl_des_y1_3x2pt_sacc_data.fits
 
   cosmo: tests/data/cosmo_desy1.yaml
 

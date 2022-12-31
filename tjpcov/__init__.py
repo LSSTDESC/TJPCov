@@ -11,13 +11,16 @@ from .wigner_transform import bin_cov, WignerTransform
 
 
 def covariance_from_name(name):
-    """Return the requested CovarianceBuilder child class.
+    """
+    Return the requested CovarianceBuilder child class
 
-    Args:
+    Parameters
+    ----------
         name (str): Name of the class
 
     Returns:
-        :class:`~tjpcov.covariance_builder.CovarianceBuilder` child class
+    -------
+        CovarianceBulder child class
     """
 
     def all_subclasses(cls):

@@ -6,7 +6,9 @@ from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 
 
 class FourierGaussianFsky(CovarianceFourier):
-    """Class to compute the Gaussian CellxCell cov. with the Knox formula."""
+    """
+    Class to compute the Gaussian CellxCell covariance with the Knox formula.
+    """
 
     # TODO: Improve this class to use the sacc file information or
     # configuration given in the yaml file. Kept like this for now to check I
@@ -14,12 +16,12 @@ class FourierGaussianFsky(CovarianceFourier):
     cov_type = "gauss"
 
     def __init__(self, config):
-        """Initialize the class with a config file or dictionary.
-
-        Args:
+        """
+        Parameters
+        ----------
             config (dict or str): If dict, it returns the configuration
-                dictionary directly. If string, it asumes a YAML file and
-                parses it.
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
         """
         super().__init__(config)
 
@@ -28,16 +30,18 @@ class FourierGaussianFsky(CovarianceFourier):
             raise ValueError("You need to set fsky for FourierGaussianFsky")
 
     def get_binning_info(self, binning="linear"):
-        """Get the ells for bins given the sacc object.
+        """
+        Get the ells for bins given the sacc object
 
-        Args:
-            binning (str): Binning type.
+        Parameters:
+        -----------
+        binning (str): Binning type.
 
         Returns:
-            tuple:
-                - ell (array): All the ells covered
-                - ell_eff (array): The effective ells
-                - ell_edges (array): The bandpower edges
+        --------
+        ell (array): All the ells covered
+        ell_eff (array): The effective ells
+        ell_edges (array): The bandpower edges
         """
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
@@ -68,23 +72,24 @@ class FourierGaussianFsky(CovarianceFourier):
         for_real=False,
         lmax=None,
     ):
-        """Compute a single covariance matrix for a given pair of C_ell.
+        """
+        Compute a single covariance matrix for a given pair of C_ell or xi
 
-        Args:
-            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
-            include_b_modes (bool, optional): If True, return the full SSC with
-                zeros in for B-modes (if any). If False, return the non-zero
-                block. This option cannot be modified through the configuration
-                file to avoid breaking the compatibility with the NaMaster
-                covariance.
-            for_real (bool, optional): If True, returns the covariance before
-                normalization and binning. It requires setting lmax.
-            lmax (int, optional): Maximum ell up to which to compute the
-            covariance
+        Parameters
+        ----------
+            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+            include_b_modes (bool): If True, return the full SSC with zeros in
+            for B-modes (if any). If False, return the non-zero block. This
+            option cannot be modified through the configuration file to avoid
+            breaking the compatibility with the NaMaster covariance.
+            for_real (bool): If True, returns the covariance before
+            normalization and binning. It requires setting lmax.
+            lmax (int): Maximum ell up to which to compute the covariance
 
         Returns:
-            array: The covariance block
+        --------
+            cov (array): The covariance
         """
         cosmo = self.get_cosmology()
         if for_real:
@@ -177,9 +182,9 @@ class FourierGaussianFsky(CovarianceFourier):
 
 
 class RealGaussianFsky(CovarianceProjectedReal):
-    """Class to compute the Real space Gaussian cov. with the Knox formula.
-
-    It projects the the Fourier space Gaussian covariance into the real space.
+    """
+    Class to compute the Real space Gaussian covariance projecting the Fourier
+    space covariance estimated with the Knox formula.
     """
 
     cov_type = "gauss"
@@ -187,12 +192,12 @@ class RealGaussianFsky(CovarianceProjectedReal):
     fourier = None
 
     def __init__(self, config):
-        """Initialize the class with a config file or dictionary.
-
-        Args:
+        """
+        Parameters
+        ----------
             config (dict or str): If dict, it returns the configuration
-                dictionary directly. If string, it asumes a YAML file and
-                parses it.
+            dictionary directly. If string, it asumes a YAML file and parses
+            it.
         """
         super().__init__(config)
         # Note that the sacc file that the Fourier class will read is in real
@@ -202,14 +207,17 @@ class RealGaussianFsky(CovarianceProjectedReal):
         self.fsky = self.fourier.fsky
 
     def _get_fourier_block(self, tracer_comb1, tracer_comb2):
-        """Return the Fourier covariance block for two pair of tracers.
+        """
+        Return the Fourier covariance block for two pair of tracers.
 
-        Args:
-            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+        Parameters
+        ----------
+        tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
+        tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
 
         Returns:
-            array: The Fourier space covariance matrix block
+        --------
+        cov (array): Covariance matrix
         """
         # For now we just use the EE block which should be dominant over the
         # EB, BE and BB pieces when projecting to real space
