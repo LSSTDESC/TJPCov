@@ -1,0 +1,22 @@
+tjpcov:
+  use_mpi: False
+  do_xi: False
+  cov_type: [ClusterCounts]
+  # sacc input file 
+  sacc_file: ./tests/data/clusters/mock_clusters.sacc
+  # 'set' from parameters OR pass CCL cosmology object OR yaml file
+  cosmo: 'set' 
+  outdir: ./
+  fsky: 0.3
+
+parameters:
+  # Not used for while (read by ccl.cosmo):
+  Omega_c: 0.2640
+  Omega_b: 0.0493
+  h: 0.6736
+  n_s: 0.9649
+  sigma8: 0.8111
+  w0: -1
+  wa: 0
+  transfer_function: 'boltzmann_camb'
+  baryons_power_spectrum: 'nobaryons'
