@@ -98,7 +98,7 @@ def test_double_bessel_integral(mock_covariance: ClusterCounts):
 def test_shot_noise(mock_covariance: ClusterCounts):
     ref = 63973.635143644424
     test = mock_covariance.shot_noise(0, 0)
-    assert test == pytest.approx(ref, 0.1)
+    assert test == pytest.approx(ref, 1e-5)
 
 
 @pytest.mark.parametrize(
@@ -146,4 +146,4 @@ def test_cov_nxn(mock_covariance: ClusterCounts):
     cov_00 = mock_covariance.get_covariance_block_for_sacc(
         ("clusters_0_0",), ("clusters_0_0",)
     )
-    assert cov_00 == pytest.approx(ref_sum, 0.1)
+    assert cov_00 == pytest.approx(ref_sum, 1e-5)

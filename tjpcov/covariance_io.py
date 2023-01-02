@@ -84,7 +84,7 @@ class CovarianceIO:
         output = os.path.join(self.get_outdir(), output)
 
         s = self.get_sacc_file().copy()
-        s.add_covariance(cov)
+        s.add_covariance(cov, overwrite=True)
 
         if os.path.isfile(output) and (not overwrite):
             date = datetime.utcnow()
