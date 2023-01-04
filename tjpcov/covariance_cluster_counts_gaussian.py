@@ -36,7 +36,7 @@ class ClusterCountsGaussian(CovarianceClusters):
             tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
 
         Returns:
-            float: Covariance for a single block
+            array_like: Covariance for a single block
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
@@ -55,20 +55,21 @@ class ClusterCountsGaussian(CovarianceClusters):
             tracer_comb1, tracer_comb2
         )
 
-        cov_full = np.zeros(
-            (
-                self.num_z_bins,
-                self.num_z_bins,
-                self.num_richness_bins,
-                self.num_richness_bins,
-            )
-        )
-
         if richness_i != richness_j or z_i != z_j:
-            return cov_full
+            return np.array(0)
 
         shot_noise = self.shot_noise(z_i, richness_i)
 
-        cov_full[z_i, z_j, richness_i, richness_j] = shot_noise
+        cov_full = np.array(shot_noise)
 
         return cov_full
+
+    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """Compute a single covariance entry 'clusters_redshift_richness'
+        Args:
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+        Returns:
+            array_like: Covariance for a single block
+        """
+        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)

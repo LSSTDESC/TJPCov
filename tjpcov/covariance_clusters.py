@@ -158,13 +158,22 @@ class CovarianceClusters(CovarianceBuilder):
         return romb(kernel, dx=spacing)
 
     def _get_redshift_richness_bins(self, tracer_comb1, tracer_comb2):
+        """Tracers for clusters don't sort correctly in the SACC file, so for
+        now we do a "hack" and pad the numbers with 0's to the left.  This
+        helper function converts those padded numbers into regular numbers and
+        returns them to the caller.
 
+        Args:
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+
+        Returns:
+            `tuple` of int: redshift bin i, richness bin i, redshift bin j,
+            richness bin j.
+        """
         tracer_split1 = tracer_comb1[0].split("_")
         tracer_split2 = tracer_comb2[0].split("_")
 
-        # Hack for now - until we decide on sorting for tracers in SACC, strip
-        # 0's and take the remaining number, if you strip everything, default
-        # to 0
         z_i = int(tracer_split1[1].lstrip("0") or 0)
         richness_i = int(tracer_split1[2].lstrip("0") or 0)
         z_j = int(tracer_split2[1].lstrip("0") or 0)

@@ -47,7 +47,7 @@ class ClusterCountsSSC(CovarianceClusters):
             tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
 
         Returns:
-            float: Covariance for a single block
+            array_like: Covariance for a single block
         """
 
         z_i, richness_i, z_j, richness_j = self._get_redshift_richness_bins(
@@ -92,14 +92,16 @@ class ClusterCountsSSC(CovarianceClusters):
             super_sample_covariance, dx=redshift_spacing
         )
 
-        cov_full = np.zeros(
-            (
-                self.num_z_bins,
-                self.num_z_bins,
-                self.num_richness_bins,
-                self.num_richness_bins,
-            )
-        )
-        cov_full[z_i, z_j, richness_i, richness_j] = cov
+        cov_full = np.array(cov)
 
         return cov_full
+
+    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """Compute a single covariance entry 'clusters_redshift_richness'
+        Args:
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+        Returns:
+            array_like: Covariance for a single block
+        """
+        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
