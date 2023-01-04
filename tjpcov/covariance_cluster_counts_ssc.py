@@ -4,19 +4,18 @@ import pyccl as ccl
 from scipy.integrate import romb
 
 
-class ClusterCounts(CovarianceClusters):
+class ClusterCountsSSC(CovarianceClusters):
     """Implementation of cluster covariance that calculates the autocorrelation
     of cluster counts (NxN).  This class is able to compute the covariance for
     `_tracers_types = ("cluster", "cluster")`
     """
 
-    # Need to break this out into Gauss and SSC
-    cov_type = "gauss"
+    cov_type = "SSC"
     _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
         """Concrete implementation of covariance of cluster counts,
-        specifically the number count auto-correlation.
+        specifically the SSC contribution to the number count auto-correlation.
 
         Args:
             config (dict or str): If dict, it returns the configuration
@@ -40,18 +39,6 @@ class ClusterCounts(CovarianceClusters):
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
-    def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        """Compute a single covariance entry 'clusters_redshift_richness'
-
-        Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
-
-        Returns:
-            float: Covariance for a single block
-        """
-        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-
     def _get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
@@ -63,16 +50,9 @@ class ClusterCounts(CovarianceClusters):
             float: Covariance for a single block
         """
 
-        tracer_split1 = tracer_comb1[0].split("_")
-        tracer_split2 = tracer_comb2[0].split("_")
-
-        # Hack for now - until we decide on sorting for tracers in SACC, strip
-        # 0's and take the remaining number, if you strip everything, default
-        # to 0
-        z_i = int(tracer_split1[1].lstrip("0") or 0)
-        richness_i = int(tracer_split1[2].lstrip("0") or 0)
-        z_j = int(tracer_split2[1].lstrip("0") or 0)
-        richness_j = int(tracer_split2[2].lstrip("0") or 0)
+        z_i, richness_i, z_j, richness_j = self._get_redshift_richness_bins(
+            tracer_comb1, tracer_comb2
+        )
 
         # Create a redshift range grid
         z_low_limit = max(
@@ -112,11 +92,14 @@ class ClusterCounts(CovarianceClusters):
             super_sample_covariance, dx=redshift_spacing
         )
 
-        shot_noise = 0
-        if richness_i == richness_j and z_i == z_j:
-            shot_noise = self.shot_noise(z_i, richness_i)
+        cov_full = np.zeros(
+            (
+                self.num_z_bins,
+                self.num_z_bins,
+                self.num_richness_bins,
+                self.num_richness_bins,
+            )
+        )
+        cov_full[z_i, z_j, richness_i, richness_j] = cov
 
-        cov_total = shot_noise + cov
-
-        # TODO: store metadata in some header/log file
-        return cov_total
+        return cov_full

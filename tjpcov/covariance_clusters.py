@@ -157,6 +157,21 @@ class CovarianceClusters(CovarianceBuilder):
         """
         return romb(kernel, dx=spacing)
 
+    def _get_redshift_richness_bins(self, tracer_comb1, tracer_comb2):
+
+        tracer_split1 = tracer_comb1[0].split("_")
+        tracer_split2 = tracer_comb2[0].split("_")
+
+        # Hack for now - until we decide on sorting for tracers in SACC, strip
+        # 0's and take the remaining number, if you strip everything, default
+        # to 0
+        z_i = int(tracer_split1[1].lstrip("0") or 0)
+        richness_i = int(tracer_split1[2].lstrip("0") or 0)
+        z_j = int(tracer_split2[1].lstrip("0") or 0)
+        richness_j = int(tracer_split2[2].lstrip("0") or 0)
+
+        return z_i, richness_i, z_j, richness_j
+
     def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
         """We don't assume that redshift can be measured exactly, so we include
         a measurement of the uncertainty around photometric redshifts. Assume,
