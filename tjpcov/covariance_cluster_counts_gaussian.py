@@ -1,7 +1,5 @@
 from .covariance_clusters import CovarianceClusters
 import numpy as np
-import pyccl as ccl
-from scipy.integrate import romb
 
 
 class ClusterCountsGaussian(CovarianceClusters):
