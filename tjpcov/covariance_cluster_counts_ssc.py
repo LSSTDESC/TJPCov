@@ -5,8 +5,9 @@ from scipy.integrate import romb
 
 
 class ClusterCountsSSC(CovarianceClusters):
-    """Implementation of cluster covariance that calculates the autocorrelation
-    of cluster counts (NxN).  This class is able to compute the covariance for
+    """Implementation of cluster covariance that calculates the SSC
+    contribution to the autocorrelation of cluster counts (NxN) following
+    N. Ferreira 2019.  This class is able to compute the covariance for
     `_tracers_types = ("cluster", "cluster")`
     """
 

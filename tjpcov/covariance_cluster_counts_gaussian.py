@@ -1,10 +1,12 @@
 from .covariance_clusters import CovarianceClusters
 import numpy as np
+import pyccl as ccl
 
 
 class ClusterCountsGaussian(CovarianceClusters):
-    """Implementation of cluster covariance that calculates the autocorrelation
-    of cluster counts (NxN).  This class is able to compute the covariance for
+    """Implementation of cluster covariance that calculates the gaussian
+    (shot-noise) contribution to the autocorrelation of cluster counts (NxN).
+    This class is able to compute the covariance for
     `_tracers_types = ("cluster", "cluster")`
     """
 
@@ -13,7 +15,7 @@ class ClusterCountsGaussian(CovarianceClusters):
 
     def __init__(self, config):
         """Concrete implementation of covariance of cluster counts,
-        specifically gaussian contribution to the number count
+        specifically gaussian contribution (shot-noise) to the number count
         auto-correlation.
 
         Args:
@@ -22,7 +24,6 @@ class ClusterCountsGaussian(CovarianceClusters):
                 parses it.
         """
         super().__init__(config)
-        self.romberg_num = 2**6 + 1
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
@@ -36,9 +37,9 @@ class ClusterCountsGaussian(CovarianceClusters):
         Returns:
             array_like: Covariance for a single block
         """
-        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
+        return self._get_covariance_gaussian(tracer_comb1, tracer_comb2)
 
-    def _get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
+    def _get_covariance_gaussian(self, tracer_comb1, tracer_comb2):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
@@ -70,4 +71,30 @@ class ClusterCountsGaussian(CovarianceClusters):
         Returns:
             array_like: Covariance for a single block
         """
-        return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
+        return self._get_covariance_gaussian(tracer_comb1, tracer_comb2)
+
+    def shot_noise(self, z_i, lbd_i):
+        """The covariance of number counts is a sum of a super sample
+        covariance (SSC) term plus a gaussian diagonal term.  The diagonal
+        term is also referred to as "shot noise" which we compute here.
+
+        Args:
+            z_i (int): redshift bin i
+            lbd_i (int): richness bin i
+        Returns:
+            float: Gaussian covariance contribution
+        """
+        # Eqn B.7 or 1601.05779.pdf eqn 1
+        def integrand(z):
+            return (
+                self.c
+                * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)) ** 2)
+                / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z)))
+                * self.mass_richness_integral(z, lbd_i, remove_bias=True)
+                * self.observed_photo_z(z, z_i)
+            )
+
+        result = self._quad_integrate(
+            integrand, self.z_lower_limit, self.z_upper_limit
+        )
+        return self.survey_area * result

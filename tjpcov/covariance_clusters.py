@@ -308,32 +308,6 @@ class CovarianceClusters(CovarianceBuilder):
 
         return self._quad_integrate(integrand, self.min_mass, self.max_mass)
 
-    def shot_noise(self, z_i, lbd_i):
-        """The covariance of number counts is a sum of a super sample
-        covariance (SSC) term plus a gaussian diagonal term.  The diagonal
-        term is also referred to as "shot noise" which we compute here.
-
-        Args:
-            z_i (int): redshift bin i
-            lbd_i (int): richness bin i
-        Returns:
-            float: Gaussian covariance contribution
-        """
-        # Eqn B.7 or 1601.05779.pdf eqn 1
-        def integrand(z):
-            return (
-                self.c
-                * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)) ** 2)
-                / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z)))
-                * self.mass_richness_integral(z, lbd_i, remove_bias=True)
-                * self.observed_photo_z(z, z_i)
-            )
-
-        result = self._quad_integrate(
-            integrand, self.z_lower_limit, self.z_upper_limit
-        )
-        return self.survey_area * result
-
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
         """Calculate part of the super sample covariance, or the non-diagonal
         correlation between two point functions whose observed modes are larger
