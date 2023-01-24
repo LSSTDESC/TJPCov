@@ -102,7 +102,7 @@ def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusters):
     cosmo = ccl.CosmologyVanillaLCDM()
     mock_covariance_gauss.load_from_cosmology(cosmo)
 
-    assert mock_covariance_gauss.cosmo.name == cosmo.name
+    assert mock_covariance_gauss.cosmo == cosmo
 
 
 @pytest.mark.parametrize(
