@@ -157,6 +157,30 @@ class CovarianceClusters(CovarianceBuilder):
         """
         return romb(kernel, dx=spacing)
 
+    def _get_redshift_richness_bins(self, tracer_comb1, tracer_comb2):
+        """Tracers for clusters don't sort correctly in the SACC file, so for
+        now we do a "hack" and pad the numbers with 0's to the left.  This
+        helper function converts those padded numbers into regular numbers and
+        returns them to the caller.
+
+        Args:
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+
+        Returns:
+            `tuple` of int: redshift bin i, richness bin i, redshift bin j,
+            richness bin j.
+        """
+        tracer_split1 = tracer_comb1[0].split("_")
+        tracer_split2 = tracer_comb2[0].split("_")
+
+        z_i = int(tracer_split1[1].lstrip("0") or 0)
+        richness_i = int(tracer_split1[2].lstrip("0") or 0)
+        z_j = int(tracer_split2[1].lstrip("0") or 0)
+        richness_j = int(tracer_split2[2].lstrip("0") or 0)
+
+        return z_i, richness_i, z_j, richness_j
+
     def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
         """We don't assume that redshift can be measured exactly, so we include
         a measurement of the uncertainty around photometric redshifts. Assume,
@@ -283,32 +307,6 @@ class CovarianceClusters(CovarianceBuilder):
             return argument
 
         return self._quad_integrate(integrand, self.min_mass, self.max_mass)
-
-    def shot_noise(self, z_i, lbd_i):
-        """The covariance of number counts is a sum of a super sample
-        covariance (SSC) term plus a gaussian diagonal term.  The diagonal
-        term is also referred to as "shot noise" which we compute here.
-
-        Args:
-            z_i (int): redshift bin i
-            lbd_i (int): richness bin i
-        Returns:
-            float: Gaussian covariance contribution
-        """
-        # Eqn B.7 or 1601.05779.pdf eqn 1
-        def integrand(z):
-            return (
-                self.c
-                * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)) ** 2)
-                / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z)))
-                * self.mass_richness_integral(z, lbd_i, remove_bias=True)
-                * self.observed_photo_z(z, z_i)
-            )
-
-        result = self._quad_integrate(
-            integrand, self.z_lower_limit, self.z_upper_limit
-        )
-        return self.survey_area * result
 
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
         """Calculate part of the super sample covariance, or the non-diagonal
