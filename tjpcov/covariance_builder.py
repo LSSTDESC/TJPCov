@@ -12,20 +12,21 @@ from .covariance_io import CovarianceIO
 
 
 class CovarianceBuilder(ABC):
-    """
-    Class in charge of building the full covariance needed for the sacc file
-    from individual covariance blocks. This is meant to be used as a parent
-    class and the child classes would actually implement the actual
+    """Base class in charge of building the full covariance.
+
+    Class in charge of building the full covariance needed for the sacc
+    file from individual covariance blocks. This is meant to be used as a
+    parent class and the child classes would actually implement the actual
     computation of the blocks.
     """
 
     def __init__(self, config):
-        """
-        Parameters
-        ----------
+        """Init the base class with a config file or dictionary.
+
+        Args:
             config (dict or str): If dict, it returns the configuration
-            dictionary directly. If string, it asumes a YAML file and parses
-            it.
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
         """
         self.io = CovarianceIO(config)
         config = self.config = self.io.config
@@ -85,19 +86,16 @@ class CovarianceBuilder(ABC):
         self.nside = config["tjpcov"].get("nside")
 
     def _split_tasks_by_rank(self, tasks):
-        """
+        """Yield the tasks corresponding to the given process.
+
         Iterate through a list of items, yielding the ones this process is
         responsible for. The tasks are allocated in a round-robin way.
 
-        Parameters
-        ----------
-        tasks: iterable
-            Tasks to split up
+        Args:
+            tasks (iterable): Tasks to split up
 
-        Returns
-        -------
-        generator:
-            Tasks associated to this process
+        Returns:
+            :obj:`generator`: Tasks associated to this process
         """
         # Copied from https://github.com/LSSTDESC/ceci/blob/7043ae5776d9b2c210a26dde6f84bcc2366c56e7/ceci/stage.py#L586  # noqa: E501
 
@@ -109,35 +107,24 @@ class CovarianceBuilder(ABC):
 
     @property
     def _tracer_types(self):
-        """
-        Tuple with the tracer types (e.g. ("cl", "cl") or ("clusters",
-        "clusters"))
-        """
-        pass
+        """Tuple with the tracer types (e.g. ("cl", "cl")).
 
-    @property
-    def _reshape_order(self):
-        """
-        order (str) : {'C', 'F', 'A'}, optional. The order option to pass to
-        numpy.reshape when reshaping the blocks to `(nbpw, ncell1, nbpw,
-        ncell2)`. If you are using NaMaster blocks, 'C' should be used. If the
-        blocks are as in the sacc file, 'F' should be used.
+        This is used to decide if the block covariance should be computed or is
+        zero. For instance, if the class is meant to produce the covariance for
+        Cells and the tracer types are clusters, the class should return 0.
         """
         pass
 
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """
-        Build full matrix from blocks.
+        """Build full matrix from blocks.
 
-        Parameters:
-        -----------
-        blocks (list): List of blocks
-        tracers_cov (list): List of tracer combinations corresponding to each
-        block in blocks. They must have the same order
+        Args:
+            blocks (list): List of blocks
+            tracers_cov (list): List of tracer combinations corresponding to
+                each block in blocks. They must have the same order
 
         Returns:
-        --------
-        cov (array): Covariance matrix for all combinations in the sacc file.
+            array: Covariance matrix for all combinations in the sacc file.
         """
         blocks = iter(blocks)
 
@@ -167,20 +154,19 @@ class CovarianceBuilder(ABC):
         return cov_full
 
     def _compute_all_blocks(self, **kwargs):
-        """
-        Compute all the independent covariance blocks.
+        """Compute all the independent covariance blocks.
 
-        Parameters:
-        -----------
-        kwargs: Parameters to pass to the `get_covariance_block` method. These
-        will depend on the covariance type requested
+        Args:
+            **kwargs: Arguments to pass to the get_covariance_block method.
+                These will depend on the covariance type requested.
 
         Returns:
-        --------
-        blocks (list): List of all the independent super sample covariance
-        blocks.
+            tuple:
+                - blocks (list): List of all the independent super sample
+                  covariance blocks.
+                - tracer_blocks (list): List of all tracer combinations in
+                  order as the blocks.
         """
-
         # Make a list of all independent tracer combinations
         tracers_cov = self.get_list_of_tracers_for_cov()
 
@@ -203,11 +189,15 @@ class CovarianceBuilder(ABC):
         return blocks, tracers_blocks
 
     def get_cosmology(self):
-        """
-        Return a CCL Cosmology instance. This is generated with the information
-        passed in the configuration file in the "cosmo" section of "tjpcov".
-        This can be a file path to a yaml, pickle object or "set" to read the
-        parameters from the "parameters" section.
+        """Return a CCL Cosmology instance.
+
+        The Cosmology is generated with the information passed in the
+        configuration file in the "cosmo" section of "tjpcov". This can be a
+        file path to a yaml, pickle object or "set" to read the parameters from
+        the "parameters" section.
+
+        Returns:
+            :obj:`pyccl.Cosmology` instance
         """
         if self.cosmo is None:
             cosmo = self.config["tjpcov"].get("cosmo")
@@ -239,20 +229,19 @@ class CovarianceBuilder(ABC):
 
     @abstractmethod
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
-        """
-        Return the covariance block for the two pair of tracers. This can have
-        all elements. This is what you would get from an external code, for
-        instance.
+        """Return the covariance block for the two pair of tracers.
 
-        Parameters:
-        -----------
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            kwargs: extra possible arguments
+        This is what you would get from an external code and could contain
+        data types not present in the sacc file. For Fourier space covariances,
+        we assume the same order as in NaMaster.
+
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            **kwargs: extra possible arguments
 
         Returns:
-        --------
-            cov (array):  Covariance block
+            array:  Covariance block
         """
         # This function returns the covariance block with all elements (e.g.
         # EE-EB-BE-BB in the case of shear-shear), which might not be all
@@ -265,20 +254,19 @@ class CovarianceBuilder(ABC):
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        """
-        Return the covariance block for the two pair of tracers as needed for
-        the sacc file (e.g. if in the sacc file there are no B-modes, the
-        covariance would only have the EE-EE component)
+        """Return the covariance block as needed for the sacc file.
 
-        Parameters:
-        -----------
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            kwargs: Arguments accepted by `get_covariance_block`
+        For instance, if the sacc file does not contain B-modes, the covariance
+        block would only have the EE-EE component). Furthermore, the ordering
+        must be the same as in the sacc file.
+
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            **kwargs: Arguments accepted by get_covariance_block
 
         Returns:
-        --------
-            cov (array):  Covariance block
+            array:  Covariance block
         """
         # This function returns the covariance block with the elements in the
         # sacc file (e.g. only EE in the case of shear-shear)
@@ -287,20 +275,22 @@ class CovarianceBuilder(ABC):
     def get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        """
-        Return the covariance block for the two pair of tracers as needed for
-        the sacc file (e.g. if in the sacc file there are no B-modes, the
-        covariance would only have the EE-EE component)
+        """Return the covariance block as needed for the sacc file.
 
-        Parameters:
-        -----------
-            tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-            tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            kwargs: Arguments accepted by `get_covariance_block`
+        For instance, if the sacc file does not contain B-modes, the covariance
+        block would only have the EE-EE component). Furthermore, the ordering
+        must be the same as in the sacc file.
+
+        This function returns 0 if the covariance class is not meant to produce
+        covariances for the given tracer combination.
+
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            **kwargs: Arguments accepted by get_covariance_block
 
         Returns:
-        --------
-            cov (array):  Covariance block
+            array:  Covariance block
         """
         # If the tracers are of a data type not supported by the instantiated
         # class, return 0's. Elsewise, call _get_covariance_block_for_sacc
@@ -333,9 +323,13 @@ class CovarianceBuilder(ABC):
         )
 
     def get_covariance(self, **kwargs):
-        """
-        Return the full covariance for the tracer combinations in the sacc
-        file.
+        """Return the full covariance.
+
+        Args:
+            **kwargs: Arguments to pass to _compute_all_blocks.
+
+        Returns:
+            array: Full covariance
         """
         if self.cov is None:
             blocks, tracers_cov = self._compute_all_blocks(**kwargs)
@@ -372,15 +366,10 @@ class CovarianceBuilder(ABC):
         return self.cov
 
     def get_list_of_tracers_for_cov(self):
-        """
-        Return the covariance independent tracers combinations.
-
-        Parameters:
-        -----------
+        """Return the covariance independent tracers combinations.
 
         Returns:
-        --------
-            tracers (list of str): List of independent tracers combinations.
+            list of str: List of independent tracers combinations.
         """
         sacc_file = self.io.get_sacc_file()
         tracers = sacc_file.get_tracer_combinations()
@@ -393,23 +382,18 @@ class CovarianceBuilder(ABC):
         return tracers_out
 
     def get_mask_names_dict(self, tracer_names):
-        """
-        Return a dictionary with the mask names assotiated to the fields to be
-        correlated
+        """Return a dictionary with the mask names for the given tracers.
 
-        Parameters:
-        -----------
+        Args:
             tracer_names (dict):  Dictionary of the tracer names of the same
-            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
-            into the first and second Cell you are computing the covariance
-            for; i.e. <Cell^12 Cell^34>.
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
 
         Returns:
-        --------
-            masks_names_dict (dict):  Dictionary with the mask names assotiated
-            to the fields to be correlated.
-
+            dict:  Dictionary with the mask names assotiated to the fields to
+            be correlated.
         """
         mask_names = self.mask_names
         mn = {}
@@ -418,26 +402,21 @@ class CovarianceBuilder(ABC):
         return mn
 
     def get_masks_dict(self, tracer_names, cache=None):
-        """
-        Return a dictionary with the masks assotiated to the fields to be
-        correlated
+        """Return a dictionary with the masks assotiated to the given tracers.
 
-        Parameters:
-        -----------
+        Args:
             tracer_names (dict):  Dictionary of the tracer names of the same
-            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
-            into the first and second Cell you are computing the covariance
-            for; i.e. <Cell^12 Cell^34>.
-            cache (dict): Dictionary with cached variables. It will use the
-            cached masks if found. The keys must be 'm1', 'm2', 'm3' or 'm4'
-            and the values the loaded maps.
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict, optional): Dictionary with cached variables. It will
+                use the cached masks if found. The keys must be 'm1', 'm2',
+                'm3' or 'm4' and the values the loaded maps.
 
         Returns:
-        --------
-            masks_dict (dict):  Dictionary with the masks assotiated to the
-            fields to be correlated.
-
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
         """
         mask_files = self.mask_files
         mask_names = self.get_mask_names_dict(tracer_names)
@@ -467,15 +446,10 @@ class CovarianceBuilder(ABC):
         return mask
 
     def get_nbpw(self):
-        """
-        Return the number of bandpowers in which the data has been binned
-
-        Parameters:
-        -----------
+        """Return the number of bandpowers in which the data has been binned.
 
         Returns:
-        --------
-            nbpw (int): Number of bandpowers; i.e. ell_effective.size
+            int: Number of bandpowers; i.e. ell_effective.size
         """
         if self.nbpw is None:
             sacc_file = self.io.get_sacc_file()
@@ -487,22 +461,18 @@ class CovarianceBuilder(ABC):
         return self.nbpw
 
     def get_tracers_spin_dict(self, tracer_names):
-        """
-        Return a dictionary with the masks assotiated to the fields to be
-        correlated
+        """Return a dictionary with the spins assotiated to the given tracers.
 
-        Parameters:
-        -----------
+        Args:
             tracer_names (dict):  Dictionary of the tracer names of the same
-            form as mask_name. It has to be given as {1: name1, 2: name2, 3:
-            name3, 4: name4}, where 12 and 34 are the pair of tracers that go
-            into the first and second Cell you are computing the covariance
-            for; i.e. <Cell^12 Cell^34>.
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
 
         Returns:
-        --------
-            spins_dict (dict):  Dictionary with the spins assotiated to the
-            fields to be correlated.
+            dict: Dictionary with the spins assotiated to the fields to be
+            correlated.
         """
         s = {}
         for i, tni in tracer_names.items():
@@ -510,17 +480,15 @@ class CovarianceBuilder(ABC):
         return s
 
     def get_tracer_comb_spin(self, tracer_comb):
-        """
-        Return the spins of a pair of tracers
+        """Return the spins of a pair of tracers.
 
-        Parameters:
-        -----------
+        Args:
             tracer_comb (tuple):  List or tuple of a pair of tracer names
 
         Returns:
-        --------
-            s1 (int):  Spin of the first tracer
-            s2 (int):  Spin of the second tracer
+            tuple:
+                - s1 (int):  Spin of the first tracer
+                - s2 (int):  Spin of the second tracer
 
         """
         s1 = self.get_tracer_spin(tracer_comb[0])
@@ -529,18 +497,14 @@ class CovarianceBuilder(ABC):
         return s1, s2
 
     def get_tracer_spin(self, tracer):
-        """
-        Return the spin of a given tracer
+        """Return the spin of a given tracer.
 
-        Parameters:
-        -----------
+        Args:
             sacc_data (Sacc):  Data Sacc instance
             tracer (str):  Tracer name
 
         Returns:
-        --------
-            spin (int):  Spin of the given tracer
-
+            int:  Spin of the given tracer
         """
         sacc_file = self.io.get_sacc_file()
         tr = sacc_file.get_tracer(tracer)
@@ -560,18 +524,14 @@ class CovarianceBuilder(ABC):
             )
 
     def get_tracer_nmaps(self, tracer):
-        """
-        Return the number of maps assotiated to the given tracer
+        """Return the number of maps assotiated to the given tracer.
 
-        Parameters:
-        -----------
+        Args:
             sacc_data (Sacc):  Data Sacc instance
             tracer (str):  Tracer name
 
         Returns:
-        --------
-            nmaps (int):  Number of maps assotiated to the tracer.
-
+            int:  Number of maps assotiated to the tracer.
         """
         s = self.get_tracer_spin(tracer)
         if s == 0:
@@ -580,20 +540,14 @@ class CovarianceBuilder(ABC):
             return 2
 
     def get_tracer_comb_data_types(self, tracer_comb):
+        """Return the tracer data types associated to the given tracers.
+
+        Args:
+            tracer_comb (list): List of a pair of tracer names in the sacc file
+
+        Returns:
+            list: List of data types associated to the given tracer pair.
         """
-        Return the tracer data types associated to a pair of tracers in the
-        sacc file.
-
-        Parameters
-        ----------
-        tracer_comb (list): List of a pair of tracer names in the sacc file
-
-        Return
-        ------
-        data_types (list): List of data types associated to the given tracer
-        pair.
-        """
-
         s = self.io.get_sacc_file()
         data_types = s.get_data_types()
 
@@ -606,16 +560,24 @@ class CovarianceBuilder(ABC):
 
 
 class CovarianceFourier(CovarianceBuilder):
-    """
-    Parent class for Cell x Cell covariances in Fourier space. This has all the
-    methods common to all the Fourier covariance calculations. The child
-    classes will actually implement the actual computation of the blocks.
+    """Parent class for Cell x Cell covariances in Fourier space.
+
+    This has all the methods common to all the Fourier covariance calculations.
+    The child classes will actually implement the actual computation of the
+    blocks.
     """
 
     space_type = "Fourier"
     _tracer_types = ("cl", "cl")
 
     def __init__(self, config):
+        """Init the base class with a config file or dictionary.
+
+        Args:
+            config (dict or str): If dict, it returns the configuration
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
+        """
         super().__init__(config)
         self.ccl_tracers = None
         self.tracer_Noise = None
@@ -624,21 +586,20 @@ class CovarianceFourier(CovarianceBuilder):
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
-        """
-        Return the covariance block for the two pair of tracers as needed for
-        the sacc file (e.g. if in the sacc file there are no B-modes, the
-        covariance would only have the EE-EE component)
+        """Return the covariance block as needed for the sacc file.
 
-        Parameters:
-        -----------
+        For instance, if the sacc file does not contain B-modes, the covariance
+        block would only have the EE-EE component). Furthermore, the ordering
+        must be the same as in the sacc file.
+
+        Args:
             tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
             tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
-            kwargs: Arguments accepted by `get_covariance_block`
+            **kwargs: Arguments accepted by get_covariance_block
 
         Returns:
-        --------
-            cov (array):  Gaussian covariance matrix for a pair of C_ell for
-            the data types considered in the sacc file.
+            array: Covariance matrix for a pair of C_ell for the data
+            types considered in the sacc file.
         """
         nbpw = self.get_nbpw()
 
@@ -648,50 +609,47 @@ class CovarianceFourier(CovarianceBuilder):
         ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
         dtypes2 = self.get_datatypes_from_ncell(ncell2)
 
-        # The reshape works for the NaMaster ordering with order 'C'
-        # If the blocks are ordered as in the sacc file, you need order 'F'
+        # The reshape below assumes that the covariances from
+        # get_covariance_block follow the NaMaster ordering. This is because
+        # NaMaster is the main code at the moment. If in the future we have new
+        # ways of comuting the covariance that follow a different ordering, eg.
+        # Cell[:, None] * Cell[None, :], as in sacc, we could modify this and
+        # make this a NaMaster specific method.
         cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
         cov = cov.reshape(
-            (nbpw, ncell1, nbpw, ncell2), order=self._reshape_order
+            (nbpw, ncell1, nbpw, ncell2),
         )
 
         # Keep only elements in the sacc file
         s = self.get_sacc_with_concise_dtypes()
-        ix1_todelete = []
-        ix2_todelete = []
+
+        # To avoid having to modify the indices for the block. This is a waste
+        # of time though
+        cov_full = -1 * np.ones((s.mean.size, s.mean.size))
+
         for i, dt1 in enumerate(dtypes1):
             ix1 = s.indices(tracers=tracer_comb1, data_type=dt1)
             if len(ix1) == 0:
-                ix1_todelete.append(i)
+                continue
             for j, dt2 in enumerate(dtypes2):
                 ix2 = s.indices(tracers=tracer_comb2, data_type=dt2)
                 if len(ix2) == 0:
-                    ix2_todelete.append(j)
-
-        cov = np.delete(cov, ix1_todelete, axis=1)
-        cov = np.delete(cov, ix2_todelete, axis=3)
+                    continue
+                cov_full[np.ix_(ix1, ix2)] = cov[:, i, :, j]
 
         ix1 = s.indices(tracers=tracer_comb1)
         ix2 = s.indices(tracers=tracer_comb2)
-        # Use order='F' to have a block covariance in the same order as in the
-        # sacc file
-        cov = cov.reshape((ix1.size, ix2.size), order="F")
 
-        return cov
+        return cov_full[ix1][:, ix2]
 
     def get_datatypes_from_ncell(self, ncell):
-        """
-        Return the possible datatypes (cl_00, cl_0e, cl_0b, etc.) given a
-        number of cells for a pair of tracers
+        """Return the datatypes (e.g cl_00) for a the number of cells.
 
-        Parameters:
-        -----------
+        Args:
             ncell (int):  Number of Cell for a pair of tracers
-        Returns:
-        --------
-            datatypes (list):  List of data types assotiated to the given
-            degrees of freedom
 
+        Returns:
+            list: List of data types assotiated to the given degrees of freedom
         """
         # Copied from https://github.com/xC-ell/xCell/blob/069c42389f56dfff3a209eef4d05175707c98744/xcell/cls/to_sacc.py#L202-L212  # noqa: E501
         if ncell == 1:
@@ -706,17 +664,16 @@ class CovarianceFourier(CovarianceBuilder):
         return cl_types
 
     def get_ell_eff(self):
-        """
-        Return the effective ell in the sacc file. It assume that all of them
-        have the same effective ell (true with current TXPipe implementation).
+        """Return the effective ell in the sacc file.
 
-        Parameters:
-        -----------
-            sacc_data (Sacc):  Data Sacc instance
+        It assume that all of them have the same effective ell (true with
+        current TXPipe implementation).
+
+        Args:
+            sacc_data (:obj:`sacc.sacc.Sacc`): Data Sacc instance
 
         Returns:
-        --------
-            ell (array): Array with the effective ell in the sacc file.
+            array: Array with the effective ell in the sacc file.
         """
         sacc_file = self.io.get_sacc_file()
         dtype = sacc_file.get_data_types()[0]
@@ -726,16 +683,11 @@ class CovarianceFourier(CovarianceBuilder):
         return ell
 
     def get_sacc_with_concise_dtypes(self):
-        """
-        Return a copy of the sacc file with concise data types
-
-        Parameters:
+        """Return a copy of the sacc file with concise data types.
 
         Returns:
-        --------
-            sacc_data (Sacc): Data Sacc instance with concise data types
+            :obj:`sacc.sacc.Sacc`: Data Sacc instance with concise data types
         """
-
         s = self.io.get_sacc_file().copy()
         dtypes = s.get_data_types()
 
@@ -776,21 +728,18 @@ class CovarianceFourier(CovarianceBuilder):
         return s
 
     def get_tracer_comb_ncell(self, tracer_comb, independent=False):
-        """
-        Return the number of Cell for a pair of tracers (e.g. for shear-shear,
-        ncell = 4: EE, EB, BE, BB)
+        """Return the number of Cell for a pair of tracers.
 
-        Parameters:
-        -----------
-            sacc_data (Sacc):  Data Sacc instance
+        For instance, for shear-shear, ncell = 4: EE, EB, BE, BB.
+
+        Args:
+            sacc_data ( Sacc):  Data Sacc instance
             tracer_comb (tuple):  List or tuple of a pair of tracer names
-            independent (bool): If True, just return the number of independent
-            Cell.
+            independent (bool, optional): If True, just return the number of
+                independent Cell.
 
         Returns:
-        --------
-            ncell (int):  Number of Cell for the pair of tracers given
-
+            int:  Number of Cell for the pair of tracers given
         """
         nmaps1 = self.get_tracer_nmaps(tracer_comb[0])
         nmaps2 = self.get_tracer_nmaps(tracer_comb[1])
@@ -804,25 +753,24 @@ class CovarianceFourier(CovarianceBuilder):
         return ncell
 
     def get_tracer_info(self, return_noise_coupled=False):
-        """
-        Creates CCL tracer objects and computes the noise for all the tracers
-        based on the specifications given in the configuration file.
+        """Returns CCL tracer objects and the noise for all the tracers.
 
-        Parameters:
-        -----------
-            return_noise_coupled (bool): If True, also return
-            tracers_Noise_coupled. Default False.
+        This is done based on the specifications given in the configuration
+        file.
+
+        Args:
+            return_noise_coupled (bool, optional): If True, also return
+                tracers_Noise_coupled. Default False.
 
         Returns:
-        --------
-            ccl_tracers: dict, ccl obj
-                ccl.WeakLensingTracer or ccl.NumberCountsTracer
-            tracer_Noise ({dict: float}):
-                shot (shape) noise for lens (sources)
-            tracer_Noise_coupled ({dict: float}):
-                coupled shot (shape) noise for lens (sources). Returned if
-                retrun_noise_coupled is True.
-
+            tuple:
+                - ccl_tracers (:obj:`pyccl.tracers.Tracer`): CCL tracers used
+                  to compute the theory vector
+                - tracer_Noise (:obj:`dict`): shot (shape) noise for lens
+                  (sources) tracers
+                - tracer_Noise_coupled (:obj:`dict`): coupled shot (shape)
+                  noise for lens (sources). Returned if retrun_noise_coupled is
+                  True.
         """
         if self.ccl_tracers is None:
             cosmo = self.get_cosmology()
@@ -915,28 +863,27 @@ class CovarianceFourier(CovarianceBuilder):
 
 
 class CovarianceReal(CovarianceBuilder):
-    """
-    Parent class for xi x xi covariances in Real space. This has all the
-    methods common to all the Real covariance calculations. The child
-    classes will actually implement the actual computation of the blocks.
+    """Parent class for xi x xi covariances in Real space.
+
+    This has all the methods common to all the Real covariance calculations.
+    The child classes will actually implement the actual computation of the
+    blocks.
     """
 
     space_type = "Real"
     _tracer_types = ("xi", "xi")
 
     def get_theta_eff(self):
-        """
-        Return the effective theta in the sacc file. It assume that all of them
-        have the same effective theta (true with current TXPipe
-        implementation).
+        """Return the effective theta in the sacc file.
 
-        Parameters:
-        -----------
-            sacc_data (Sacc):  Data Sacc instance
+        It assume that all of them have the same effective theta (true with
+        current TXPipe implementation).
+
+        Args:
+            sacc_data (:obj:`sacc.sacc.Sacc`):  Data Sacc instance
 
         Returns:
-        --------
-            theta (array): Array with the effective theta in the sacc file.
+            array: Array with the effective theta in the sacc file.
         """
         sacc_file = self.io.get_sacc_file()
         dtype = sacc_file.get_data_types()[0]
@@ -950,14 +897,22 @@ class CovarianceProjectedReal(CovarianceReal):
     # TODO: The transforms here should be generalized to handle EB-BE-BB modes.
     # For now we will only consider the EE contribution, which should be
     # dominant
-    """
-    Parent class for xi x xi covariances in Real space. This has all the
-    methods common to all the Real covariance calculations that are computed by
-    projecting the Fourier space ones. The child classes will only have to call
-    a CovarianceFourier child to get the covariance in Fourier space.
+    """Parent class for xi x xi covariances in Real space.
+
+    This has all the methods common to all the Real covariance calculations
+    that are computed by projecting the Fourier space ones. The child classes
+    will only have to call a CovarianceFourier child to get the covariance in
+    Fourier space.
     """
 
     def __init__(self, config):
+        """Init the base class with a config file or dictionary.
+
+        Args:
+            config (dict or str): If dict, it returns the configuration
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
+        """
         super().__init__(config)
         self.WT = None
         self.lmax = self.config["ProjectedReal"].get("lmax")
@@ -972,20 +927,18 @@ class CovarianceProjectedReal(CovarianceReal):
         pass
 
     def get_binning_info(self, binning="log", in_radians=True):
-        """
-        Get the theta for bins given the sacc object
+        """Get the theta for bins given the sacc object.
 
-        Parameters:
-        -----------
-        binning (str): Binning type.
-        in_radians (bool): If the angles must be given in radians. Needed for
-        the Wigner transforms.
+        Args:
+            binning (str): Binning type.
+            in_radians (bool): If the angles must be given in radians. Needed
+                for the Wigner transforms.
 
         Returns:
-        --------
-        theta (array): All the thetas covered
-        theta_eff (array): The effective thetas
-        theta_edges (array): The bandpower edges
+            tuple:
+                - theta (array): All the thetas covered
+                - theta_eff (array): The effective thetas
+                - theta_edges (array): The bandpower edges
         """
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
@@ -1024,17 +977,13 @@ class CovarianceProjectedReal(CovarianceReal):
         return theta, theta_eff, theta_edges
 
     def get_cov_WT_spin(self, tracer_comb):
-        """
-        Get the Wigner transform factors
+        """Get the Wigner transform factors.
 
-        Parameters:
-        -----------
-        tracer_comb (str, str): tracer combination in sacc format
+        Args:
+            tracer_comb (list of two str): tracer combination in sacc format
 
         Returns:
-        --------
-        WT_factors:
-
+            WT_factors
         """
         WT_factors = {}
         WT_factors["lens", "source"] = (0, 2)
@@ -1057,12 +1006,10 @@ class CovarianceProjectedReal(CovarianceReal):
         return WT_factors[tuple(tracers)]
 
     def get_Wigner_transform(self):
-        """
-        Return the wigner_transform class
+        """Return an instance of the wigner_transform class.
 
         Returns:
-        --------
-        wigner_transform class
+            :obj:`~tjpcov.wigner_transform.WignerTransform` instance
         """
         if self.WT is None:
             # Removing ell <= 1 (following original implementation)
@@ -1091,21 +1038,18 @@ class CovarianceProjectedReal(CovarianceReal):
         xi_plus_minus2="plus",
         binned=True,
     ):
-        """
-        Compute a single covariance matrix for a given pair of xi
+        """Compute a single covariance matrix for a given pair of xi.
 
-        Parameters
-        ----------
-        tracer_comb1 (list): List of the pair of tracer names of C_ell^1
-        tracer_comb2 (list): List of the pair of tracer names of C_ell^2
-        xi_plus_minus1 (str): 'plus' if one wants the covariance for the xi+
-        component or 'minus' for the xi-. This is ignored if tracer_comb1 is
-        not a spin 2 (e.g. shear) field.
-        xi_plus_minus2 (str): As xi_plus_minus1 for tracer_comb2.
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            xi_plus_minus1 (str): 'plus' if one wants the covariance for the
+                xi+ component or 'minus' for the xi-. This is ignored if
+                tracer_comb1 is not a spin 2 (e.g. shear) field.
+            xi_plus_minus2 (str): As xi_plus_minus1 for tracer_comb2.
 
         Returns:
-        --------
-        cov (array): Covariance matrix
+            array: Covariance matrix
         """
         # For now we just use the EE block which should be dominant over the
         # EB, BE and BB pieces
@@ -1132,19 +1076,15 @@ class CovarianceProjectedReal(CovarianceReal):
         return cov
 
     def _get_covariance_block_for_sacc(self, tracer_comb1, tracer_comb2):
-        """
-        Compute a the covariance matrix for a given pair of C_ell or xi
+        """Compute a the covariance matrix for a given pair of C_ell or xi.
 
-        Parameters
-        ----------
-        tracer_comb 1 (list): List of the pair of tracer names of C_ell^1
-        tracer_comb 2 (list): List of the pair of tracer names of C_ell^2
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
 
         Returns:
-        --------
-        cov (array): Covariance matrix
+            array: Covariance matrix
         """
-
         data_types1 = self.get_tracer_comb_data_types(tracer_comb1)
         data_types2 = self.get_tracer_comb_data_types(tracer_comb2)
 
@@ -1165,8 +1105,5 @@ class CovarianceProjectedReal(CovarianceReal):
                 if auto:
                     cov[:, j, :, i] = cov[:, i, :, j].T
 
-        cov = cov.reshape(
-            (nbpw * len(data_types1), nbpw * len(data_types2)),
-            order=self._reshape_order,
-        )
+        cov = cov.reshape((nbpw * len(data_types1), nbpw * len(data_types2)))
         return cov

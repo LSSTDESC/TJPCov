@@ -18,32 +18,28 @@ from scipy.special import jn
 
 
 class WignerTransform:
-    """
-    Class to compute curved sky Hankel transforms using the wigner-d matrices.
-    """
+    """Class to compute curved sky Hankel transforms with wigner-d matrices."""
 
     def __init__(self, theta, ell, s1_s2, ncpu=None):
-        """
-        Parameters
-        ----------
-        theta:
-            Values of angular separation, theta, at which the Hankel transform
-            is done. Should be in radians.
+        """Initialize the class for the given angles, scales and spins.
 
-        ell:
-            ell values at which the Hankel transform is done. Should be
-            integers
+        Args:
+            theta: Values of angular separation, theta, at which the Hankel
+                transform is done. Should be in radians.
 
-        s1_s2:
-            List of spin pairs of the tracers. Each spin pair should be a
-            tuple. e.g. for 3X2 analysis, pass [(0,0),(0,2),(2,2),(2,-2)].
+            ell: ell values at which the Hankel transform is done. Should be
+                integers
 
-            (0,0): (galaxy,galaxy)
-            (0,2): (galaxy,shear). (2,0) is equivalent.
-            (2,2): (shear,shear), xi+
-            (2,-2): (shear,shear), xi-
-        ncpu:
-            Number of python processes to use when computing wigner-d matrices.
+            s1_s2: List of spin pairs of the tracers. Each spin pair should be
+                a tuple. e.g. for 3X2 analysis, pass
+                [(0,0),(0,2),(2,2),(2,-2)].
+
+                (0,0): (galaxy,galaxy)
+                (0,2): (galaxy,shear). (2,0) is equivalent.
+                (2,2): (shear,shear), xi+
+                (2,-2): (shear,shear), xi-
+            ncpu: Number of python processes to use when computing wigner-d
+                matrices.
         """
         self.name = "Wigner"
 
@@ -73,24 +69,22 @@ class WignerTransform:
         self.taper_f2 = None
 
     def cl_grid(self, ell_cl, cl, taper=False, **taper_kwargs):
-        """
-        Interpolate input C_ell in case the ell values of C_ell are different
-        from the grid on which wigner-d matrices were computed during
-        intialization.
+        """Interpolate the input C_ell.
 
-        Parameters
-        ----------
-        ell_cl (array):
-            ell at which the input C_ell is computed.
-        cl (array):
-            input C_ell
-        taper (bool):
-            if True apply the tapering to the input C_ell. Tapering can help in
-            reducing ringing.
+        This is done in case the ell values of C_ell are different from the
+        grid on which wigner-d matrices were computed during intialization.
 
-        Returns
-        -------
-        cl (array): C_ell evaluated at the initialization ells.
+        Args:
+            ell_cl (array):
+                ell at which the input C_ell is computed.
+            cl (array):
+                input C_ell
+            taper (bool):
+                if True apply the tapering to the input C_ell. Tapering can
+                help in reducing ringing.
+
+        Returns:
+            array: C_ell evaluated at the initialization ells.
         """
         if taper:
             self.taper_f = self.taper(ell=ell_cl, **taper_kwargs)
@@ -103,25 +97,20 @@ class WignerTransform:
         return cl2
 
     def cl_cov_grid(self, ell_cl, cl_cov, taper=False, **taper_kwargs):
-        """
-        Interpolate input 2D covariances in case the ell values are different
-        from the grid on which wigner-d matrices were computed during
-        intialization.
+        """Interpolate the input 2D covariances.
 
-        Parameters
-        ----------
-        ell_cl (array):
-            ell at which the input covariance was computed.
-        cl (array):
-            input covariance
-        taper (bool):
-            if True apply the tapering to the input C_ell. Tapering can help in
-            reducing ringing.
-        taper_kwargs: Arguments to pass to the tapering method
+        This is done in case in case the ell values are different from the grid
+        on which wigner-d matrices were computed during intialization.
 
-        Returns
-        -------
-        cov (array): covariance evaluated at the initialization ells.
+        Args:
+            ell_cl (array): ell at which the input covariance was computed.
+            cl (array): input covariance
+            taper (bool): if True apply the tapering to the input C_ell.
+                Tapering can help in reducing ringing.
+            **taper_kwargs: Arguments to pass to the tapering method
+
+        Returns:
+            array: covariance evaluated at the initialization ells.
 
         """
         # TODO: This method is not used in TJPCov. Consider enforcing passing a
@@ -157,8 +146,7 @@ class WignerTransform:
     #     """
     #     Convert input C_ell to the correlation function.
 
-    #     Parameters
-    #     ----------
+    #     Args:
     #     cl:
     #         Input C_ell
     #     ell_cl:
@@ -180,8 +168,7 @@ class WignerTransform:
     # ):
     #     """
     #     Convert input xi to C_ell, the inverse hankel transform
-    #     Parameters
-    #     ----------
+    #     Args:
     #     xi:
     #         The input correlation function
     #     theta_xi:
@@ -203,32 +190,26 @@ class WignerTransform:
     def projected_covariance(
         self, ell_cl, cl_cov, s1_s2, s1_s2_cross=None, taper=False, **kwargs
     ):
-        """
-        Convert C_ell covariance to correlation function.
+        """Convert C_ell covariance to correlation function.
+
         This function assumes that cl_cov is 2D matrix.
 
-        Parameters
-        ----------
-        cl_cov:
-            C_ell covariance matrix.
-        ell_cl:
-            ell values at which input C_ell is computed.
-        s1_s2:
-            Tuple of the spin factors of the first set of tracers. Used to
-            identify the correct wigner-d matrix to use.
-        s1_s2_cross:
-            Tuple of the spin factors of the second set of tracers, if
-            different from s1_s2. Used to identify the correct wigner-d matrix
-            to use.
-        taper (bool):
-            if True apply the tapering to the input C_ell. Tapering can help in
-            reducing ringing.
-        kwargs: Arguments to pass to the tapering method
+        Args:
+            cl_cov: C_ell covariance matrix.
+            ell_cl: ell values at which input C_ell is computed.
+            s1_s2: Tuple of the spin factors of the first set of tracers. Used
+                to identify the correct wigner-d matrix to use.
+            s1_s2_cross: Tuple of the spin factors of the second set of
+                tracers, if different from s1_s2. Used to identify the correct
+                wigner-d matrix to use.
+            taper (bool): if True apply the tapering to the input C_ell.
+                Tapering can help in reducing ringing.
+            **kwargs: Arguments to pass to the tapering method
 
-        Returns
-        -------
-        theta (array): angles given at initialization
-        cov (array): real space covariance at the given angles
+        Returns:
+            tuple:
+                - theta (array): angles given at initialization
+                - cov (array): real space covariance at the given angles
         """
         if (ell_cl.size != self.ell.size) or np.all(ell_cl != self.ell):
             # TODO: This option is not used in TJPCov. We can generate the
@@ -275,16 +256,19 @@ class WignerTransform:
         low_k_lower=0,
         low_k_upper=1.0e-5,
     ):
-        """
-        Function to apply tapering to input C_ell. Tapering is useful to reduce
-        the ringing. This function uses the cosine function to apply the
-        tapering. See eq. 71 in https://arxiv.org/pdf/2105.04548.pdf for the
-        function and meaning of input parameters.
+        """Apply tapering to input C_ell.
 
-        Parameters
-        ----------
-        ell:
-            ell values at which input C_ell is computed.
+        Tapering is useful to reduce the ringing. This function uses the cosine
+        function to apply the tapering. See eq. 71 in
+        https://arxiv.org/pdf/2105.04548.pdf for the function and meaning of
+        input parameters.
+
+        Args:
+            ell: ell values at which input C_ell is computed.
+            large_k_lower:
+            large_k_upper:
+            low_k_lower:
+            low_k_upper:
         """
         raise NotImplementedError("Tapering is not implemented yet")
         # TODO: Commented out because it is not used anywhere in the covariance
@@ -316,42 +300,33 @@ class WignerTransform:
         # return self.taper_f
 
     def diagonal_err(self, cov):
-        """
-        Returns the diagonal error from the covariance. Useful for errorbar
-        plots.
+        """Returns the diagonal error from the covariance.
 
-        Parameters
-        ----------
-        cov (array): Covariance
+        Useful for errorbar plots.
 
-        Returns
-        -------
-        sigma (array): Diagonal errors (i.e. `sqrt(diag(cov))`)
+        Args:
+            cov (array): Covariance
+
+        Returns:
+            array: Diagonal errors (i.e. sqrt(diag(cov)))
         """
         return np.sqrt(np.diagonal(cov))
 
 
 def wigner_d(s1, s2, theta, ell, l_use_bessel=1.0e4):
-    """
-    Function to compute the wigner-d matrices
+    """Function to compute the wigner-d matrices.
 
-    Parameters
-    ----------
-    s1,s2:
-        Spin factors for the wigner-d matrix.
-    theta:
-        Angular separation for which to compute the wigner-d matrix. The matrix
-        depends on cos(theta).
-    ell:
-        The spherical harmonics mode ell for which to compute the matrix.
-    l_use_bessel:
-        Due to numerical issues, we need to switch from wigner-d matrix to
-        bessel functions at high ell (see the note below). This defines the
-        scale at which the switch happens.
+    Args:
+        s1,s2: Spin factors for the wigner-d matrix.
+        theta: Angular separation for which to compute the wigner-d matrix. The
+            matrix depends on cos(theta).
+        ell: The spherical harmonics mode ell for which to compute the matrix.
+        l_use_bessel: Due to numerical issues, we need to switch from wigner-d
+            matrix to bessel functions at high ell (see the note below). This
+            defines the scale at which the switch happens.
 
-    Returns
-    -------
-    wigner_d (array): Wigner-d matrix
+    Returns:
+        array: Wigner-d matrix
     """
     l0 = np.copy(ell)
     if l_use_bessel is not None:
@@ -393,29 +368,22 @@ def wigner_d(s1, s2, theta, ell, l_use_bessel=1.0e4):
 
 
 def wigner_d_parallel(s1, s2, theta, ell, ncpu=None, l_use_bessel=1.0e4):
-    """
-    compute the wigner-d matrix in parallel using multiprocessing Pool.
+    """Compute the wigner-d matrix in parallel using multiprocessing Pool.
+
     This function calls the wigner-d function defined above.
 
-    Parameters
-    ----------
-    s1,s2:
-        Spin factors for the wigner-d matrix.
-    theta:
-        Angular separation for which to compute the wigner-d matrix. The matrix
-        depends on cos(theta).
-    ell:
-        The spherical harmonics mode ell for which to compute the matrix.
-    ncpu:
-        number of processes to use for computing the matrix.
-    l_use_bessel:
-        Due to numerical issues, we need to switch from wigner-d matrix to
-        bessel functions at high ell (see the note below). This defines the
-        scale at which the switch happens.
+    Args:
+        s1,s2: Spin factors for the wigner-d matrix.
+        theta: Angular separation for which to compute the wigner-d matrix. The
+            matrix depends on cos(theta).
+        ell: The spherical harmonics mode ell for which to compute the matrix.
+        ncpu: number of processes to use for computing the matrix.
+        l_use_bessel: Due to numerical issues, we need to switch from wigner-d
+            matrix to bessel functions at high ell (see the note below). This
+            defines the scale at which the switch happens.
 
-    Returns
-    -------
-    wigner_d (array): Wigner-d matrix
+    Returns:
+        array: Wigner-d matrix
     """
     if ncpu is None:
         ncpu = cpu_count()
@@ -432,22 +400,18 @@ def wigner_d_parallel(s1, s2, theta, ell, ncpu=None, l_use_bessel=1.0e4):
 #  to use the faster version, but if weird results appear, it might be this
 #  function has some remaining bug.
 def bin_cov(r, cov, r_bins):  # works for cov and skewness
-    """
-    Function to apply the binning operator. This function works on both one
-    dimensional vectors and two dimensional covariance covrices.
+    """Function to apply the binning operator.
 
-    Parameters
-    ----------
-    r:
-        theta or ell values at which the un-binned vector is computed.
-    cov:
-        Unbinned covariance. It also works for a vector of C_ell or xi
-    r_bins:
-        theta or ell bins to which the values should be binned.
+    This function works on both one dimensional vectors and two dimensional
+    covariance covrices.
 
-    Returns
-    -------
-    (array): Binned covariance or vector of C_ell or xi
+    Args:
+        r: theta or ell values at which the un-binned vector is computed.
+        cov: Unbinned covariance. It also works for a vector of C_ell or xi
+        r_bins: theta or ell bins to which the values should be binned.
+
+    Returns:
+        array_like: Binned covariance or vector of C_ell or xi
     """
     bin_center = 0.5 * (r_bins[1:] + r_bins[:-1])
     n_bins = len(bin_center)

@@ -7,7 +7,7 @@ import pyccl as ccl
 import pytest
 import shutil
 
-from tjpcov import bin_cov
+from tjpcov.wigner_transform import bin_cov
 from tjpcov.covariance_gaussian_fsky import (
     FourierGaussianFsky,
     RealGaussianFsky,
@@ -80,7 +80,7 @@ def test_Fourier_get_covariance_block():
 
     fsky = cfsky.fsky
     dl = np.gradient(ell)
-    cov = np.diag(2 * cl ** 2 / ((2 * ell + 1) * fsky * dl))
+    cov = np.diag(2 * cl**2 / ((2 * ell + 1) * fsky * dl))
     lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
     cov2 = cfsky.get_covariance_block(
@@ -100,8 +100,8 @@ def test_Fourier_get_covariance_block():
     )
 
     nbpw = lb.size
-    assert np.all(cov2b[:nbpw][:, :nbpw] == cov2)
-    cov2b = cov2b.reshape((nbpw, 4, nbpw, 4), order="F")
+    cov2b = cov2b.reshape((nbpw, 4, nbpw, 4))
+    assert np.all(cov2b[:, 0, :, 0] == cov2)
     cov2b[:, 0, :, 0] -= cov2
     assert not np.any(cov2b)
 
@@ -118,7 +118,7 @@ def test_Fourier_get_covariance_block():
     ell = np.arange(30 + 1)
     ccltr = ccl_tracers["src0"]
     cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise["src0"]
-    cov = np.diag(2 * cl ** 2)
+    cov = np.diag(2 * cl**2)
     assert cov2.shape == (ell.size, ell.size)
     np.testing.assert_allclose(cov2, cov)
 
