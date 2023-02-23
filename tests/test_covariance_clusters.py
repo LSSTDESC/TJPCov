@@ -69,7 +69,6 @@ def mock_sacc():
 
 @pytest.fixture
 def mock_covariance_gauss(mock_sacc, mock_cosmo):
-
     cc_cov = ClusterCountsGaussian(input_yml)
     cc_cov.load_from_sacc(mock_sacc)
     cc_cov.load_from_cosmology(mock_cosmo)
@@ -83,7 +82,6 @@ def mock_covariance_gauss(mock_sacc, mock_cosmo):
 
 @pytest.fixture
 def mock_covariance_ssc(mock_sacc, mock_cosmo):
-
     cc_cov = ClusterCountsSSC(input_yml)
     cc_cov.load_from_sacc(mock_sacc)
     cc_cov.load_from_cosmology(mock_cosmo)
@@ -168,7 +166,6 @@ def test_mass_richness(mock_covariance_gauss: CovarianceClusters):
 def test_calc_dv(
     mock_covariance_gauss: CovarianceClusters, z_i, reference_val
 ):
-
     z_true = 0.8
     test = mock_covariance_gauss.comoving_volume_element(z_true, z_i) / 1e4
     assert test == pytest.approx(reference_val / 1e4)

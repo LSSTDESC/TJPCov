@@ -295,7 +295,6 @@ class FourierGaussianNmt(CovarianceFourier):
             or np.any(cl[14])
             or np.any(cl[23])
         ):
-
             # TODO: Modify depending on how TXPipe caches things
             # Mask, mask_names, field and workspaces dictionaries
             mn = self.get_mask_names_dict(tr)

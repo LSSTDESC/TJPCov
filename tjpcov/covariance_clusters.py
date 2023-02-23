@@ -281,7 +281,6 @@ class CovarianceClusters(CovarianceBuilder):
         """
 
         def integrand(ln_m):
-
             argument = 1 / np.log(10.0)
 
             scale_factor = 1 / (1 + z)

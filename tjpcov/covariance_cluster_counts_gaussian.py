@@ -84,6 +84,7 @@ class ClusterCountsGaussian(CovarianceClusters):
         Returns:
             float: Gaussian covariance contribution
         """
+
         # Eqn B.7 or 1601.05779.pdf eqn 1
         def integrand(z):
             return (
