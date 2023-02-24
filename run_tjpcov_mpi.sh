@@ -3,13 +3,13 @@
 This is a simple helper script to run TJPCov on NERSC with srun.  You can use 
 the commands below:
 
-This will allocate 16 nodes at NERSC on the DESC account
+This will allocate 16 nodes at NERSC (cori haswell) on the DESC account
 
     salloc -N 16 -C haswell -A m1727 -t 01:00:00 --qos interactive 
 
 This will run this script (which runs tjpcov)
 
-    srun -n 16 -c 64 run_tjpcov_mpi.sh your_config.yaml your_output.sacc
+    srun -u -n 16 -c 64 run_tjpcov_mpi.sh your_config.yaml your_output.sacc
 
 comment
 
