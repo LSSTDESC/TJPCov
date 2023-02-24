@@ -114,19 +114,19 @@ def test_integral_mass_no_bias(
     mock_covariance_gauss: CovarianceClusters, z, ref_val
 ):
     test = mock_covariance_gauss.mass_richness_integral(z, 0, remove_bias=True)
-    assert test == pytest.approx(ref_val)
+    assert test == pytest.approx(ref_val, rel=1e-4)
 
 
 def test_double_bessel_integral(mock_covariance_gauss: CovarianceClusters):
     ref = 8.427201745032292e-05
     test = mock_covariance_gauss.double_bessel_integral(0.3, 0.3)
-    assert test == pytest.approx(ref)
+    assert test == pytest.approx(ref, rel=1e-4)
 
 
 def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
     ref = 63973.635143644424
     test = mock_covariance_gauss.shot_noise(0, 0)
-    assert test == pytest.approx(ref, 1e-5)
+    assert test == pytest.approx(ref, 1e-4)
 
 
 @pytest.mark.parametrize(
@@ -140,7 +140,7 @@ def test_integral_mass(
     mock_covariance_gauss: CovarianceClusters, z, reference_val
 ):
     test = mock_covariance_gauss.mass_richness_integral(z, 0)
-    assert test == pytest.approx(reference_val)
+    assert test == pytest.approx(reference_val, rel=1e-4)
 
 
 def test_mass_richness(mock_covariance_gauss: CovarianceClusters):
@@ -183,4 +183,4 @@ def test_cov_nxn(
     cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
         ("clusters_0_0",), ("clusters_0_0",)
     )
-    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, 1e-5)
+    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-4)

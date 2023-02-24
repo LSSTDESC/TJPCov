@@ -267,8 +267,10 @@ class CovarianceClusters(CovarianceBuilder):
         return self._quad_integrate(integrand, richness_bin, richness_bin_next)
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
-        """The derivative of the number density of halos with variations in the
-        background density (Eqn 3.31 N. Ferreira)
+        """The halo mass function weighted by the probability that we measure
+        observed richness lambda given true mass M.  Can also be understood
+        as the derivative of the number density of halos with variations in
+        the background density (Eqn 3.31 N. Ferreira)
 
         Args:
             z (float): Redshift
@@ -310,7 +312,7 @@ class CovarianceClusters(CovarianceBuilder):
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
         """Calculate part of the super sample covariance, or the non-diagonal
         correlation between two point functions whose observed modes are larger
-        than the survey size
+        than the survey size.
 
         Args:
             z1 (float): redshift
