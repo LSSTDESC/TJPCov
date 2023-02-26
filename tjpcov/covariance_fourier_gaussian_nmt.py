@@ -6,6 +6,7 @@ import pyccl as ccl
 import pymaster as nmt
 
 from .covariance_builder import CovarianceFourier
+from tjpcov.tools import GlobalLock
 
 
 class FourierGaussianNmt(CovarianceFourier):
@@ -424,16 +425,16 @@ class FourierGaussianNmt(CovarianceFourier):
             recompute = False
         if recompute or (not np.any(isfiles)):
             cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
-            # Recheck that the file has not been written by other proccess
-            if fnames[0] and not os.path.isfile(fnames[0]):
-                cw.write_to(fnames[0])
-            for fn, isf in zip(fnames[1:], isfiles[1:]):
-                # This will only be run if they don't exist or recompute = True
-                # Recheck the file exist in case other process has removed it
-                # in the mean time.
-                if isf and os.path.isfile(fn):
-                    # Remove old covariance workspace if you have recomputed it
-                    os.remove(fn)
+            # Use a global lock to ensure another process does not come and
+            # delete the file before we've read it.
+            with GlobalLock():
+                if fnames[0] and not os.path.isfile(fnames[0]):
+                    cw.write_to(fnames[0])
+                for fn, isf in zip(fnames[1:], isfiles[1:]):
+                    if isf and os.path.isfile(fn):
+                        # Remove old covariance workspace if you have
+                        # recomputed it
+                        os.remove(fn)
         else:
             ix = isfiles.index(True)
             cw.read_from(fnames[ix])
@@ -697,13 +698,14 @@ class FourierGaussianNmt(CovarianceFourier):
         if recompute or ((not isfile) and (not isfile2)):
             w.compute_coupling_matrix(f1, f2, bins, **kwargs)
             # Recheck that the file has not been written by other proccess
-            if fname and not os.path.isfile(fname):
-                w.write_to(fname)
-            # Check if the other files exist. Recheck in case other process has
-            # removed it in the mean time.
-            if isfile2 and os.path.isfile(fname2):
-                # Remove the other to avoid later confusions.
-                os.remove(fname2)
+            with GlobalLock():
+                if fname and not os.path.isfile(fname):
+                    w.write_to(fname)
+                # Check if the other files exist. Recheck in case other process has
+                # removed it in the mean time.
+                if isfile2 and os.path.isfile(fname2):
+                    # Remove the other to avoid later confusions.
+                    os.remove(fname2)
         elif isfile:
             w.read_from(fname)
         else:
