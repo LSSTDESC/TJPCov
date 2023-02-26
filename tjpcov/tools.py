@@ -75,14 +75,15 @@ else:
 
 
 class GlobalLock:
-    """Global mutex implementation.  Ensures only one process can access
-    a block of code.
+    """Global mutex implementation.
 
-    Use
+    Ensures only one process can access a block of code. Use:
+
     with Locker():
         # do something
 
-    See https://stackoverflow.com/a/60214222/6419909
+    See https://stackoverflow.com/a/60214222/6419909 for details.
+
     """
 
     def __enter__(self):
