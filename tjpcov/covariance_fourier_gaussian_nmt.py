@@ -697,12 +697,11 @@ class FourierGaussianNmt(CovarianceFourier):
 
         if recompute or ((not isfile) and (not isfile2)):
             w.compute_coupling_matrix(f1, f2, bins, **kwargs)
-            # Recheck that the file has not been written by other proccess
+            # Use a global lock to ensure another process does not come and
+            # delete the file before we've read it.
             with GlobalLock():
                 if fname and not os.path.isfile(fname):
                     w.write_to(fname)
-                # Check if the other files exist. Recheck in case other process has
-                # removed it in the mean time.
                 if isfile2 and os.path.isfile(fname2):
                     # Remove the other to avoid later confusions.
                     os.remove(fname2)
