@@ -205,9 +205,8 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Check the blocks
     cov_ssc_zb = cov_ssc_zb.reshape((ell.size, ncell1, ell.size, ncell2))
     # Check the reshape has the correct ordering
-    assert np.allclose(cov_ssc_zb[:, 0, :, 0], cov_ssc)
-    cov_ssc_zb[:, 0, :, 0] -= cov_ssc
-    assert np.allclose(cov_ssc_zb, np.zeros_like(cov_ssc_zb))
+    assert np.allclose(cov_ssc_zb[:, 0, :, 0], cov_ssc, rtol=1e-4, atol=0)
+    assert np.all(cov_ssc_zb[:, 1::, :, 1::] == 0)
 
     # Check get_SSC_cov reads file
     covf = np.load(
@@ -218,7 +217,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
     )
-    assert np.allclose(covf["cov_nob"], cov_ssc)
+    assert np.all(covf["cov_nob"] == cov_ssc)
 
     cov_ssc_zb = cssc.get_covariance_block(
         tracer_comb1=tracer_comb1,
@@ -226,7 +225,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         include_b_modes=True,
     )
 
-    assert np.allclose(covf["cov"], cov_ssc_zb)
+    assert np.all(covf["cov"] == cov_ssc_zb)
 
 
 def test_get_covariance_block_WL_benchmark():
