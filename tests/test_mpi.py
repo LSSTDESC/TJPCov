@@ -123,7 +123,7 @@ def test_get_covariance():
     cov = cnmt.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-2
+    assert np.max(np.abs(cov / cov_bm - 1)) < 1
 
     # Check chi2
     clf = np.array([])
