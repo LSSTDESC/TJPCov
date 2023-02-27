@@ -93,4 +93,3 @@ class GlobalLock:
     def __exit__(self, _type, value, tb):
         portable_unlock(self.fp)
         self.fp.close()
-        os.remove("./lockfile.lock")
