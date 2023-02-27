@@ -464,7 +464,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         "cov_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2),
     )
     assert os.path.isfile(fname)
-    assert np.allclose(np.load(fname)["cov"] + 1e-100, cov)
+    assert np.all(np.load(fname)["cov"] + 1e-100 == cov)
 
     # Test you read it independently of what other arguments you pass
     cov2 = (
@@ -473,7 +473,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         )
         + 1e-100
     )
-    assert np.allclose(cov2, cov)
+    assert np.all(cov2 == cov)
     os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     # Test error with 'bins' in cache different to that at initialization
@@ -1194,7 +1194,7 @@ def test_full_covariance_benchmark():
 
     cnmt.cl_data = s2
     cov2 = cnmt.get_covariance() + 1e-100
-    assert np.allclose(cov, cov2)
+    assert np.all(cov == cov2)
 
     # Clean after the test
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
@@ -1202,7 +1202,7 @@ def test_full_covariance_benchmark():
     # Check that it fails if tracer_noise is used instead of tracer_noise_cp
     cnmt = FourierGaussianNmt(config)
     cov2 = cnmt.get_covariance(use_coupled_noise=False) + 1e-100
-    assert not np.allclose(cov, cov2)
+    assert not np.all(cov == cov2)
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
     # Check that binning can be passed through cache
