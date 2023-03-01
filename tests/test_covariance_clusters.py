@@ -96,6 +96,27 @@ def mock_covariance_ssc(mock_sacc, mock_cosmo):
 # Tests start
 
 
+def test_is_not_null():
+
+    cc_cov = ClusterCountsSSC(input_yml)
+    assert cc_cov is not None
+    cc_cov = None
+
+    cc_cov = ClusterCountsGaussian(input_yml)
+    assert cc_cov is not None
+
+
+def test_load_from_sacc(mock_covariance_gauss: CovarianceClusters):
+
+    assert mock_covariance_gauss.min_mass == np.log(1e13)
+    assert mock_covariance_gauss.num_richness_bins == 3
+    assert mock_covariance_gauss.num_z_bins == 18
+    assert mock_covariance_gauss.min_richness == 10
+    assert mock_covariance_gauss.max_richness == 100
+    assert mock_covariance_gauss.z_min == 0.3
+    assert mock_covariance_gauss.z_max == 1.2
+
+
 def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusters):
     cosmo = ccl.CosmologyVanillaLCDM()
     mock_covariance_gauss.load_from_cosmology(cosmo)
