@@ -97,7 +97,6 @@ def mock_covariance_ssc(mock_sacc, mock_cosmo):
 
 
 def test_is_not_null():
-
     cc_cov = ClusterCountsSSC(input_yml)
     assert cc_cov is not None
     cc_cov = None
@@ -107,7 +106,6 @@ def test_is_not_null():
 
 
 def test_load_from_sacc(mock_covariance_gauss: CovarianceClusters):
-
     assert mock_covariance_gauss.min_mass == np.log(1e13)
     assert mock_covariance_gauss.num_richness_bins == 3
     assert mock_covariance_gauss.num_z_bins == 18
