@@ -9,6 +9,7 @@ import pytest
 import sacc
 import shutil
 import yaml
+import itertools
 
 from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_io import CovarianceIO
@@ -1153,7 +1154,8 @@ def test_full_covariance_benchmark():
     cov = cnmt.get_covariance() + 1e-100
     cov_bm = s_nlcp.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1
+    for x, y in list(zip(itertools.chain(*cov), itertools.chain(*cov_bm))):
+        assert x == pytest.approx(y, rel=1e-3)
 
     # Check chi2
     clf = np.array([])
@@ -1226,7 +1228,8 @@ def test_txpipe_like_input():
     cov = cnmt.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1
+    for x, y in list(zip(itertools.chain(*cov), itertools.chain(*cov_bm))):
+        assert x == pytest.approx(y, rel=1e-3)
 
     # Check chi2
     clf = np.array([])
