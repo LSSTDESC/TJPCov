@@ -1,6 +1,5 @@
 from .covariance_clusters import CovarianceClusters
 import numpy as np
-import pyccl as ccl
 
 
 class ClusterCountsGaussian(CovarianceClusters):
@@ -84,15 +83,12 @@ class ClusterCountsGaussian(CovarianceClusters):
         Returns:
             float: Gaussian covariance contribution
         """
+
         # Eqn B.7 or 1601.05779.pdf eqn 1
         def integrand(z):
-            return (
-                self.c
-                * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z)) ** 2)
-                / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z)))
-                * self.mass_richness_integral(z, lbd_i, remove_bias=True)
-                * self.observed_photo_z(z, z_i)
-            )
+            return self.mass_richness_integral(
+                z, lbd_i, remove_bias=True
+            ) * self.comoving_volume_element(z, z_i)
 
         result = self._quad_integrate(
             integrand, self.z_lower_limit, self.z_upper_limit

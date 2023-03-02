@@ -53,7 +53,7 @@ jobs:
           pip install .
           pip install .\[nmt\]
 
-          # For coeralls
+          # For coveralls
           pip install -U pytest-cov coveralls
 
       - name: Test

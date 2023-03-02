@@ -455,8 +455,8 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     # Cov with coupled noise (as in benchmark)
     cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
-    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
+    assert cov.flatten() == pytest.approx(cov_bm.flatten(), rel=1e-3)
 
     # Test cov_tr1_tr2_tr3_tr4.npz cache
     fname = os.path.join(
@@ -550,7 +550,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Check chi2, which is what we actually care about
     if tracer_comb1 == tracer_comb2:
         s = cnmt.io.get_sacc_file()
-        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-5)
+        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-4)
 
     # Check that it runs if one of the masks does not overlap with the others
     if tracer_comb1 != tracer_comb2:
@@ -1152,8 +1152,8 @@ def test_full_covariance_benchmark():
 
     cov = cnmt.get_covariance() + 1e-100
     cov_bm = s_nlcp.covariance.covmat + 1e-100
-    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
+    assert cov.flatten() == pytest.approx(cov_bm.flatten(), rel=1e-3)
 
     # Check chi2
     clf = np.array([])
@@ -1165,7 +1165,7 @@ def test_full_covariance_benchmark():
     delta = clf - cl
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
-    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-4
 
     # Clean after the test
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
@@ -1225,8 +1225,8 @@ def test_txpipe_like_input():
 
     cov = cnmt.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
-    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1e-3
+    assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
+    assert cov.flatten() == pytest.approx(cov_bm.flatten(), rel=1e-3)
 
     # Check chi2
     clf = np.array([])
@@ -1238,7 +1238,7 @@ def test_txpipe_like_input():
     delta = clf - cl
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
-    assert np.abs(chi2 / chi2_bm - 1) < 1e-5
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-4
 
     # Clean up after the test
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")

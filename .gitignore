@@ -106,3 +106,6 @@ venv.bak/
 
 # VSCode
 .vscode/
+
+# Mutex lock object (auto generated)
+lockfile.lock

@@ -61,7 +61,7 @@ class WignerTransform:
         self.theta = theta
 
         # compute the wigner-d matrices.
-        for (s1, s2) in s1_s2:
+        for s1, s2 in s1_s2:
             self.wig_d[(s1, s2)] = wigner_d_parallel(
                 s1, s2, theta, self.ell, ncpu=ncpu
             )
@@ -230,7 +230,7 @@ class WignerTransform:
                 ell_cl=ell_cl,
                 s1_s2=s1_s2,
                 taper=taper,
-                **kwargs
+                **kwargs,
             )
         else:
             cl_cov2 = cl_cov
