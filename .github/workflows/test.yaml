@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: '3.7'
 
-      - name: Cache pip
+      - name: Cache python environment
         uses: actions/cache@v2
         id: cache
         with:
@@ -41,10 +41,7 @@ jobs:
           # packages and their python wrapper look for the source
           # files.
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          key: ${{ env.pythonLocation }}-pip-${{ hashFiles('requirements.txt') }}
 
       - name: Install dependencies	
         run: |
