@@ -41,7 +41,7 @@ jobs:
           # packages and their python wrapper look for the source
           # files.
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ env.pythonLocation }}-pip-${{ hashFiles('pyproject.toml') }}
 
       - name: Install dependencies	
         run: |
