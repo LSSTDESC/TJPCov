@@ -205,7 +205,9 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Check the blocks
     cov_ssc_zb = cov_ssc_zb.reshape((ell.size, ncell1, ell.size, ncell2))
     # Check the reshape has the correct ordering
-    assert np.allclose(cov_ssc_zb[:, 0, :, 0], cov_ssc, rtol=1e-4, atol=0)
+    assert cov_ssc_zb[:, 0, :, 0].flatten() == pytest.approx(
+        cov_ssc.flatten(), rel=1e-10
+    )
     assert np.all(cov_ssc_zb[:, 1::, :, 1::] == 0)
 
     # Check get_SSC_cov reads file
