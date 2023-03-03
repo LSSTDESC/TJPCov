@@ -289,7 +289,8 @@ class CovarianceClusters(CovarianceBuilder):
             m_integ_lower, m_integ_upper = self.min_mass, self.max_mass
         else:
             mass_richenss = lambda *args: 1.0
-            m_integ_lower, m_integ_upper = richness_bin, richness_bin_next
+            m_integ_lower = self.richness_bins[richness_i]
+            m_inget_upper = self.richness_bins[richness_i + 1]
 
         def integrand(ln_m):
             argument = 1 / np.log(10.0)
