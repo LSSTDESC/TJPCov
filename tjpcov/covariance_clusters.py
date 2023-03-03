@@ -324,8 +324,8 @@ class CovarianceClusters(CovarianceBuilder):
         than the survey size.
 
         Args:
-            z1 (float): redshift
-            bin_z_j (int): redshift bin i
+            z (float): redshift
+            bin_z_j (int): redshift bin j
             bin_lbd_j (int): richness bin j
             approx (bool, optional): Will only calculate the mass richness
             integral once and multiply at end. Defaults to True.
