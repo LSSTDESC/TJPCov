@@ -47,6 +47,10 @@ class CovarianceClusters(CovarianceBuilder):
             cosmo, self.z_lower_limit, self.z_upper_limit
         )
 
+
+        # Quick key to skip P(Richness|M)
+        self.has_mproxy = True
+
     def load_from_cosmology(self, cosmo):
         """Values used by the covariance calculation that come from a CCL
         cosmology object.  Derived attributes from the cosmology are set here.
@@ -281,6 +285,12 @@ class CovarianceClusters(CovarianceBuilder):
             float: The mass-richness weighed derivative of number density per
             fluctuation in background
         """
+        if self.has_mproxy:
+            mass_richness = lambda *args: self.mass_richness(*args)
+            m_integ_lower, m_integ_upper = self.min_mass, self.max_mass
+        else:
+            mass_richenss = lambda *args: 1.0
+            m_integ_lower, m_integ_upper = richness_bin, richness_bin_next
 
         def integrand(ln_m):
             argument = 1 / np.log(10.0)
@@ -302,12 +312,11 @@ class CovarianceClusters(CovarianceBuilder):
                 )
                 argument *= halo_bias
 
-            mass_richness = self.mass_richness(ln_m, richness_i)
-            argument *= mass_richness
+            argument *= mass_richness(ln_m, richness_i)
 
             return argument
 
-        return self._quad_integrate(integrand, self.min_mass, self.max_mass)
+        return self._quad_integrate(integrand, m_integ_lower, m_integ_upper)
 
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
         """Calculate part of the super sample covariance, or the non-diagonal
