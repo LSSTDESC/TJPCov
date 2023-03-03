@@ -47,7 +47,6 @@ class CovarianceClusters(CovarianceBuilder):
             cosmo, self.z_lower_limit, self.z_upper_limit
         )
 
-
         # Quick key to skip P(Richness|M)
         self.has_mproxy = True
 
