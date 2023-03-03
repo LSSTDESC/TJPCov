@@ -285,12 +285,16 @@ class CovarianceClusters(CovarianceBuilder):
             fluctuation in background
         """
         if self.has_mproxy:
+
             def mass_richness(*args):
                 return self.mass_richness(*args)
+
             m_integ_lower, m_integ_upper = self.min_mass, self.max_mass
         else:
+
             def mass_richness(*args):
                 return 1.0
+
             m_integ_lower = self.richness_bins[richness_i]
             m_integ_upper = self.richness_bins[richness_i + 1]
 
