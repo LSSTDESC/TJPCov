@@ -5,7 +5,7 @@ import numpy as np
 import pyccl as ccl
 import pymaster as nmt
 
-from .covariance_builder import CovarianceFourier
+from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 from tjpcov.tools import GlobalLock
 
 
@@ -152,6 +152,7 @@ class FourierGaussianNmt(CovarianceFourier):
         use_coupled_noise=True,
         coupled=False,
         cache=None,
+        for_real=False,
     ):
         """Compute a single covariance matrix for a given pair of C_ell.
 
@@ -180,9 +181,9 @@ class FourierGaussianNmt(CovarianceFourier):
             array: Gaussian covariance matrix for a pair of C_ell.
         """
         if coupled:
-            raise NotImplementedError(
-                "Computing coupled covariance matrix not implemented yet"
-            )
+            # raise NotImplementedError(
+            #     "Computing coupled covariance matrix not implemented yet"
+            # )
             fname = "covcp_{}_{}_{}_{}.npz".format(
                 *tracer_comb1, *tracer_comb2
             )
@@ -354,6 +355,12 @@ class FourierGaussianNmt(CovarianceFourier):
             cov = np.zeros((size1, size2))
 
         np.savez_compressed(fname, cov=cov)
+
+        # FIXME: As we probably need to remove B-mode correlations for the
+        #        Wigner transform, this is a nasty way to do it, fixing lmax
+        #        to 3 * nside. So should probably be done better.
+        if for_real:
+            cov = cov[: 3 * self.nside, : 3 * self.nside]
 
         return cov
 
@@ -821,3 +828,68 @@ class FourierGaussianNmt(CovarianceFourier):
                     w[i] = w_by_mask_name_s[k]
 
         return w
+
+
+class RealGaussianNmt(CovarianceProjectedReal):
+    """Class to compute the Real space Gaussian cov. with the Knox formula.
+
+    It projects the the Fourier space Gaussian covariance into the real space.
+    """
+
+    cov_type = "gauss"
+    # Set the fourier attribute to None and set it later in the __init__
+    fourier = None
+
+    def __init__(self, config):
+        """Initialize the class with a config file or dictionary.
+
+        Args:
+            config (dict or str): If dict, it returns the configuration
+                dictionary directly. If string, it asumes a YAML file and
+                parses it.
+        """
+        super().__init__(config)
+        # Note that the sacc file that the Fourier class will read is in real
+        # space and you cannot use the methods that depend on a Fourier space
+        # sacc file.
+        self.fourier = FourierGaussianNmt(config)
+
+        # For NaMaster you need to pass the masks
+        self.mask_files = self.fourier.mask_files
+        self.mask_names = self.fourier.mask_names
+
+        # Binning info is only needed if workspaces are not passed
+        # self.binning_info = self.fourier.binning_info
+
+        # nside is needed if mask_files is a hdf5 file
+        self.nside = self.fourier.nside
+
+        # Read NaMaster specific options
+        self.nmt_conf = self.fourier.nmt_conf
+
+        # Read cache from input file. It will update the cache passed as an
+        # argument of the different methods
+        self.cache = self.fourier.cache
+
+    def _get_fourier_block(self, tracer_comb1, tracer_comb2):
+        """Return the Fourier covariance block for two pair of tracers.
+
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+
+        Returns:
+            array: The Fourier space covariance matrix block
+        """
+        # For now we just use the EE block which should be dominant over the
+        # EB, BE and BB pieces when projecting to real space
+        cov = self.fourier.get_covariance_block(
+            tracer_comb1,
+            tracer_comb2,  # for_real=True, lmax=self.lmax
+            use_coupled_noise=True,
+            coupled=True,
+            cache=self.cache,
+            for_real=True,
+        )
+
+        return cov

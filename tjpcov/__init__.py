@@ -13,6 +13,8 @@ def covariance_from_name(name):
     # TODO: Make this automatic
     if name == "FourierGaussianNmt":
         from .covariance_fourier_gaussian_nmt import FourierGaussianNmt as Cov
+    elif name == "RealGaussianNmt":
+        from .covariance_fourier_gaussian_nmt import RealGaussianNmt as Cov
     elif name == "FourierSSCHaloModel":
         from .covariance_fourier_ssc import FourierSSCHaloModel as Cov
     elif name == "ClusterCountsSSC":
