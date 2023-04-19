@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
+  - python>=3.8
   # Installing TJPcov in two steps to avoid making NaMaster installation to
   # fail due to (https://github.com/LSSTDESC/NaMaster/issues/138)
   - tjpcov
