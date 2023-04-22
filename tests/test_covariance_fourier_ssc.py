@@ -13,7 +13,7 @@ from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 
 root = "./tests/benchmarks/32_DES_tjpcov_bm/"
 input_yml_ssc = "./tests/data/conf_covariance_ssc.yaml"
-outdir = "./tests/tmp/"
+outdir = "./tests/tmp/test_covariance_fourier_ssc/"
 
 input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
 nside = 32

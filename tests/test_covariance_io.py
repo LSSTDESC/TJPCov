@@ -9,7 +9,7 @@ from datetime import datetime
 from glob import glob
 
 ROOT_DIR = "./tests/benchmarks/32_DES_tjpcov_bm/"
-OUT_DIR = ROOT_DIR + "tjpcov_tmp/"
+OUT_DIR = ROOT_DIR + "tmp/test_covariance_io/"
 INPUT_YML = os.path.join(ROOT_DIR, "conf_covariance_gaussian_fourier_nmt.yaml")
 
 
