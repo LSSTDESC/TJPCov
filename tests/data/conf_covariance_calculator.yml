@@ -9,7 +9,7 @@ tjpcov:
 
   IA: 0.5
 
-  outdir: tests/tmp/
+  outdir: tests/tmp/test_cov_calc/
 
   mask_file:
     DESgc__0: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_DESgc__0.fits.gz
