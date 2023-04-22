@@ -9,28 +9,33 @@ import shutil
 
 from tjpcov.covariance_builder import CovarianceFourier
 
-root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-outdir = root + "tjpcov_tmp/"
-input_yml = os.path.join(root, "conf_covariance_gaussian_fourier_nmt.yaml")
-input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
+ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
+OUTDIR = "./tests/tmp/test_fourier_base/"
+INPUT_YML = os.path.join(ROOT, "conf_covariance_fourier_base.yaml")
 
 
-def clean_tmp():
-    if os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-        os.makedirs(outdir)
+@pytest.fixture
+def mock_sacc():
+    return sacc.Sacc.load_fits(ROOT + "cls_cov.fits")
 
 
-# Cleaning the tmp dir before running and after running the tests
-@pytest.fixture(autouse=True)
-def run_clean_tmp():
-    clean_tmp()
+def setup_module():
+    os.makedirs(OUTDIR)
+
+
+def teardown_module():
+    shutil.rmtree(OUTDIR)
 
 
 class CovarianceFourierTester(CovarianceFourier):
     # Based on https://stackoverflow.com/a/28299369
     def get_covariance_block(self, **kwargs):
         super().get_covariance_block(**kwargs)
+
+
+@pytest.fixture
+def mock_cov_fourier():
+    return CovarianceFourierTester(INPUT_YML)
 
 
 def get_dummy_sacc():
@@ -65,9 +70,9 @@ def test_build_matrix_from_blocks():
     class CFT(CovarianceFourierTester):
         def get_covariance_block(self, trs1, trs2):
             fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
-            return np.load(os.path.join(root + "cov", fname))["cov"]
+            return np.load(os.path.join(ROOT + "cov", fname))["cov"]
 
-    cb = CFT(input_yml)
+    cb = CFT(INPUT_YML)
     s = cb.io.get_sacc_file()
     cov = s.covariance.covmat + 1e-100
     trs_cov = cb.get_list_of_tracers_for_cov()
@@ -85,9 +90,9 @@ def test__get_covariance_block_for_sacc():
     class CFT(CovarianceFourierTester):
         def get_covariance_block(self, trs1, trs2):
             fname = "cov_{}_{}_{}_{}.npz".format(*trs1, *trs2)
-            return np.load(os.path.join(root + "cov", fname))["cov"]
+            return np.load(os.path.join(ROOT + "cov", fname))["cov"]
 
-    cb = CFT(input_yml)
+    cb = CFT(INPUT_YML)
     s = cb.io.get_sacc_file()
     cov = s.covariance.covmat + 1e-100
 
@@ -115,18 +120,16 @@ def test__get_covariance_block_for_sacc():
         assert np.max(np.abs(cov1 / cov2 - 1)) < 1e-10
 
 
-def test_get_datatypes_from_ncell():
-    cb = CovarianceFourierTester(input_yml)
+def test_get_datatypes_from_ncell(mock_cov_fourier):
+    with pytest.raises(ValueError):
+        mock_cov_fourier.get_datatypes_from_ncell(0)
 
     with pytest.raises(ValueError):
-        cb.get_datatypes_from_ncell(0)
+        mock_cov_fourier.get_datatypes_from_ncell(3)
 
-    with pytest.raises(ValueError):
-        cb.get_datatypes_from_ncell(3)
-
-    assert cb.get_datatypes_from_ncell(1) == ["cl_00"]
-    assert cb.get_datatypes_from_ncell(2) == ["cl_0e", "cl_0b"]
-    assert cb.get_datatypes_from_ncell(4) == [
+    assert mock_cov_fourier.get_datatypes_from_ncell(1) == ["cl_00"]
+    assert mock_cov_fourier.get_datatypes_from_ncell(2) == ["cl_0e", "cl_0b"]
+    assert mock_cov_fourier.get_datatypes_from_ncell(4) == [
         "cl_ee",
         "cl_eb",
         "cl_be",
@@ -134,19 +137,17 @@ def test_get_datatypes_from_ncell():
     ]
 
 
-def test_get_ell_eff():
-    cb = CovarianceFourierTester(input_yml)
-
+def test_get_ell_eff(mock_cov_fourier):
     # Using this because the data was generated with NaMaster. We could read
     # the sacc file but then we would be doing the same as in the code.
     bins = get_nmt_bin()
     ells = bins.get_effective_ells()
 
-    assert np.all(cb.get_ell_eff() == ells)
+    assert np.all(mock_cov_fourier.get_ell_eff() == ells)
 
 
-def test_get_sacc_with_concise_dtypes():
-    s = input_sacc.copy()
+def test_get_sacc_with_concise_dtypes(mock_sacc, mock_cov_fourier):
+    s = mock_sacc.copy()
     for dp in s.data:
         dt = dp.data_type
 
@@ -167,13 +168,12 @@ def test_get_sacc_with_concise_dtypes():
         else:
             raise ValueError("Something went wrong. Data type not recognized")
 
-    cb = CovarianceFourierTester(input_yml)
-    s2 = cb.get_sacc_with_concise_dtypes()
-    dtypes = input_sacc.get_data_types()
+    s2 = mock_cov_fourier.get_sacc_with_concise_dtypes()
+    dtypes = mock_sacc.get_data_types()
     dtypes2 = s2.get_data_types()
     assert dtypes == dtypes2
 
-    for dp, dp2 in zip(input_sacc.data, s2.data):
+    for dp, dp2 in zip(mock_sacc.data, s2.data):
         assert dp.data_type == dp2.data_type
         assert dp.value == dp2.value
         assert dp.tracers == dp2.tracers
@@ -184,30 +184,37 @@ def test_get_sacc_with_concise_dtypes():
             assert dp.tags[k] == dp2.tags[k]
 
 
-def test_get_tracer_comb_ncell():
-    cb = CovarianceFourierTester(input_yml)
-
+def test_get_tracer_comb_ncell(mock_cov_fourier):
     # Use dummy file to test for cmb_convergence too
-    cb.io.sacc_file = get_dummy_sacc()
+    mock_cov_fourier.io.sacc_file = get_dummy_sacc()
 
-    assert cb.get_tracer_comb_ncell(("PLAcv", "PLAcv")) == 1
-    assert cb.get_tracer_comb_ncell(("PLAcv", "DESgc__0")) == 1
-    assert cb.get_tracer_comb_ncell(("DESgc__0", "DESgc__0")) == 1
-    assert cb.get_tracer_comb_ncell(("PLAcv", "DESwl__0")) == 2
-    assert cb.get_tracer_comb_ncell(("DESgc__0", "DESwl__0")) == 2
-    assert cb.get_tracer_comb_ncell(("DESwl__0", "DESwl__0")) == 4
+    assert mock_cov_fourier.get_tracer_comb_ncell(("PLAcv", "PLAcv")) == 1
+    assert mock_cov_fourier.get_tracer_comb_ncell(("PLAcv", "DESgc__0")) == 1
     assert (
-        cb.get_tracer_comb_ncell(("DESwl__0", "DESwl__0"), independent=True)
+        mock_cov_fourier.get_tracer_comb_ncell(("DESgc__0", "DESgc__0")) == 1
+    )
+    assert mock_cov_fourier.get_tracer_comb_ncell(("PLAcv", "DESwl__0")) == 2
+    assert (
+        mock_cov_fourier.get_tracer_comb_ncell(("DESgc__0", "DESwl__0")) == 2
+    )
+    assert (
+        mock_cov_fourier.get_tracer_comb_ncell(("DESwl__0", "DESwl__0")) == 4
+    )
+    assert (
+        mock_cov_fourier.get_tracer_comb_ncell(
+            ("DESwl__0", "DESwl__0"), independent=True
+        )
         == 3
     )
 
 
-def test_get_tracer_info():
-    cb = CovarianceFourierTester(input_yml)
-    ccl_tracers1, tracer_noise1 = cb.get_tracer_info()
-    ccl_tracers, tracer_noise, tracer_noise_coupled = cb.get_tracer_info(
-        return_noise_coupled=True
-    )
+def test_get_tracer_info(mock_cov_fourier):
+    ccl_tracers1, tracer_noise1 = mock_cov_fourier.get_tracer_info()
+    (
+        ccl_tracers,
+        tracer_noise,
+        tracer_noise_coupled,
+    ) = mock_cov_fourier.get_tracer_info(return_noise_coupled=True)
 
     # Check that when returnig the coupled noise, the previous output is the
     # same and the tracer_noise_coupled is a dictionary with all values None,
@@ -239,7 +246,7 @@ def test_get_tracer_info():
 
     # Check tracer_noise_coupled. Modify the sacc file to add metadata
     # information for the tracer noise
-    cb = CovarianceFourierTester(input_yml)
+    cb = CovarianceFourierTester(INPUT_YML)
     cb.io.get_sacc_file()  # To have the sacc file stored it in cb.io.sacc_file
     coupled_noise = {}
     for i, tr in enumerate(cb.io.sacc_file.tracers.keys()):

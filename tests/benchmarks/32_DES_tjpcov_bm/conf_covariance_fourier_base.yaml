@@ -16,7 +16,7 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/tmp/test_covariance_io/
+  outdir: ./tests/tmp/test_fourier_base/
 
   # Ngal & sigma_e are not needed in nmt if the coupled noise is provided
   # through the cache or sacc file. These are here to test that one can also

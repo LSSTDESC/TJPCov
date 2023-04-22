@@ -10,7 +10,7 @@ import shutil
 
 
 INPUT_YML = "./tests/data/conf_covariance_calculator.yml"
-OUTDIR = "tests/tmp/test_cov_calc/"
+OUTDIR = "./tests/tmp/test_cov_calc/"
 
 
 def setup_module():
