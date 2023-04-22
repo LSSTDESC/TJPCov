@@ -11,14 +11,22 @@ import pymaster as nmt
 from tjpcov.covariance_builder import CovarianceBuilder
 from scipy.linalg import block_diag
 
-input_yml = "./tests/data/conf_covariance_builder_minimal.yaml"
-input_sacc = sacc.Sacc.load_fits(
-    "./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits"
-)
-outdir = "tests/tmp/"
+INPUT_YML = "./tests/data/conf_covariance_builder_minimal.yaml"
+OUTDIR = "tests/tmp/test_cov_builder/"
 
-# Create temporal folder
-os.makedirs(outdir, exist_ok=True)
+
+def setup_module():
+    os.makedirs(OUTDIR, exist_ok=True)
+
+
+def teardown_module():
+    shutil.rmtree(OUTDIR)
+
+
+def mock_sacc():
+    return sacc.Sacc.load_fits(
+        "./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits"
+    )
 
 
 def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
@@ -46,6 +54,11 @@ class CovarianceBuilderTester(CovarianceBuilder):
         )
 
 
+@pytest.fixture()
+def mock_builder():
+    return CovarianceBuilderTester(INPUT_YML)
+
+
 def get_nmt_bin(lmax=95):
     bpw_edges = np.array(
         [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
@@ -58,44 +71,34 @@ def get_nmt_bin(lmax=95):
     return nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
 
 
-def clean_tmp():
-    if os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-        os.makedirs(outdir)
-
-
-# Cleaning the tmp dir before running and after running the tests
-@pytest.fixture(autouse=True)
-def run_clean_tmp():
-    clean_tmp()
-
-
 def test_smoke():
-    CovarianceBuilderTester(input_yml)
+    CovarianceBuilderTester(INPUT_YML)
 
 
-def test_nuisance_config():
-    cb = CovarianceBuilderTester(input_yml)
-    assert cb.bias_lens == {"DESgc__0": 1.48}
-    assert cb.IA is None
+def test_nuisance_config(mock_builder):
+    assert mock_builder.bias_lens == {"DESgc__0": 1.48}
+    assert mock_builder.IA is None
     Ngal = 26 * 3600 / (np.pi / 180) ** 2
-    assert cb.Ngal == {"DESgc__0": Ngal, "DESwl__0": Ngal, "DESwl__1": Ngal}
-    assert cb.sigma_e == {"DESwl__0": 0.26, "DESwl__1": 0.26}
+    assert mock_builder.Ngal == {
+        "DESgc__0": Ngal,
+        "DESwl__0": Ngal,
+        "DESwl__1": Ngal,
+    }
+    assert mock_builder.sigma_e == {"DESwl__0": 0.26, "DESwl__1": 0.26}
 
 
 # Tested also in tests/test_mpi.py
-def test_split_tasks_by_rank():
-    cb = CovarianceBuilderTester(input_yml)
+def test_split_tasks_by_rank(mock_builder):
     tasks = list(range(100))
-    tasks_splitted = list(cb._split_tasks_by_rank(tasks))
+    tasks_splitted = list(mock_builder._split_tasks_by_rank(tasks))
 
     assert tasks == tasks_splitted
 
     # Fake a mpi process with size = 2 and rank = 2
-    cb.size = 2
-    cb.rank = 1
+    mock_builder.size = 2
+    mock_builder.rank = 1
 
-    tasks_splitted = list(cb._split_tasks_by_rank(tasks))
+    tasks_splitted = list(mock_builder._split_tasks_by_rank(tasks))
 
     assert tasks[1::2] == tasks_splitted
 
@@ -113,7 +116,7 @@ def test_compute_all_blocks():
         ):
             return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
-    cb = CovarianceBuilderTester(input_yml)
+    cb = CovarianceBuilderTester(INPUT_YML)
     blocks, tracers_blocks = cb._compute_all_blocks()
     nblocks = len(cb.get_list_of_tracers_for_cov())
     assert nblocks == len(blocks)
@@ -122,11 +125,10 @@ def test_compute_all_blocks():
         assert np.all(bi == get_covariance_block(trs[0], trs[1]))
 
 
-def test_get_cosmology():
+def test_get_cosmology(mock_builder):
     # Check that it reads the parameters from the yaml file
-    cb = CovarianceBuilderTester(input_yml)
-    config = cb.config.copy()
-    assert isinstance(cb.get_cosmology(), ccl.Cosmology)
+    config = mock_builder.config.copy()
+    assert isinstance(mock_builder.get_cosmology(), ccl.Cosmology)
 
     # Check that it uses the cosmology if given
     cosmo = ccl.CosmologyVanillaLCDM()
@@ -140,7 +142,7 @@ def test_get_cosmology():
     assert isinstance(cb.get_cosmology(), ccl.Cosmology)
 
     # Check it reads pickles too
-    fname = os.path.join(outdir, "cosmos_desy1.pkl")
+    fname = os.path.join(OUTDIR, "cosmos_desy1.pkl")
     with open(fname, "wb") as ff:
         pickle.dump(cosmo, ff)
 
@@ -156,10 +158,9 @@ def test_get_cosmology():
         cb.get_cosmology()
 
 
-def test_get_covariance_block_not_implemented():
+def test_get_covariance_block_not_implemented(mock_builder):
     with pytest.raises(NotImplementedError):
-        cb = CovarianceBuilderTester(input_yml)
-        cb.get_covariance_block([], [])
+        mock_builder.get_covariance_block([], [])
 
 
 def test_get_covariance():
@@ -186,7 +187,7 @@ def test_get_covariance():
         ):
             return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
-    cb = CovarianceBuilderTester(input_yml)
+    cb = CovarianceBuilderTester(INPUT_YML)
     blocks, tracers_blocks = cb._compute_all_blocks()
     cov = cb.get_covariance()
     cov2 = build_matrix_from_blocks(blocks[::-1], tracers_blocks[::-1])
@@ -214,7 +215,7 @@ def test_get_covariance_block_for_sacc():
             return get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
     # Test it return 0's when the data types are not those of the class
-    cb = CovarianceBuilderTester(input_yml)
+    cb = CovarianceBuilderTester(INPUT_YML)
     trs_cov = cb.get_list_of_tracers_for_cov()[0]
     cov = cb.get_covariance_block_for_sacc(*trs_cov)
     assert not np.any(cov)
@@ -251,19 +252,18 @@ def test_get_covariance_block_for_sacc():
             elif tracer_comb == trs_cov[1]:
                 return ["cl"]
 
-    cb = CovarianceBuilderTester(input_yml)
+    cb = CovarianceBuilderTester(INPUT_YML)
     cov = cb.get_covariance_block_for_sacc(*trs_cov)
     cov2 = get_covariance_block(*trs_cov)
     assert np.all(cov == cov2)
 
 
-def test_get_list_of_tracers_for_cov():
-    cb = CovarianceBuilderTester(input_yml)
-    trs_cov = cb.get_list_of_tracers_for_cov()
+def test_get_list_of_tracers_for_cov(mock_builder):
+    trs_cov = mock_builder.get_list_of_tracers_for_cov()
 
     # Test all tracers
     trs_cov2 = []
-    tracers = cb.io.get_sacc_file().get_tracer_combinations()
+    tracers = mock_builder.io.get_sacc_file().get_tracer_combinations()
     for i, trs1 in enumerate(tracers):
         for trs2 in tracers[i:]:
             trs_cov2.append((trs1, trs2))
@@ -271,73 +271,69 @@ def test_get_list_of_tracers_for_cov():
     assert trs_cov == trs_cov2
 
 
-def test_get_mask_names_dict():
+def test_get_mask_names_dict(mock_builder):
     tracer_names = {1: "DESwl__0", 2: "DESgc__0", 3: "DESwl__1", 4: "DESwl__1"}
-    cb = CovarianceBuilderTester(input_yml)
-    mn = cb.get_mask_names_dict(tracer_names)
+    mn = mock_builder.get_mask_names_dict(tracer_names)
 
     assert isinstance(mn, dict)
     for i, mni in mn.items():
         tni = tracer_names[i]
-        assert mni == cb.config["tjpcov"]["mask_names"][tni]
+        assert mni == mock_builder.config["tjpcov"]["mask_names"][tni]
 
 
-def test_get_masks_dict():
+def test_get_masks_dict(mock_builder):
     tracer_names = {1: "DESwl__0", 2: "DESgc__0", 3: "DESwl__1", 4: "DESwl__1"}
-    cb = CovarianceBuilderTester(input_yml)
-    m = cb.get_masks_dict(tracer_names)
+    m = mock_builder.get_masks_dict(tracer_names)
 
     assert isinstance(m, dict)
     for i, mni in m.items():
         tni = tracer_names[i]
         assert np.all(
-            mni == hp.read_map(cb.config["tjpcov"]["mask_file"][tni])
+            mni == hp.read_map(mock_builder.config["tjpcov"]["mask_file"][tni])
         )
 
     mi = np.arange(100)
     cache = {f"m{i+1}": mi + i for i in range(4)}
-    m = cb.get_masks_dict(tracer_names, cache)
+    m = mock_builder.get_masks_dict(tracer_names, cache)
     for i in range(4):
         assert np.all(m[i + 1] == mi + i)
 
 
-def test_get_nbpw():
-    cb = CovarianceBuilderTester(input_yml)
-    assert cb.get_nbpw() == 16
+def test_get_nbpw(mock_builder):
+    assert mock_builder.get_nbpw() == 16
 
 
-def test_get_tracers_spin_dict():
+def test_get_tracers_spin_dict(mock_builder):
     tracer_names = {1: "DESwl__0", 2: "DESgc__0", 3: "DESwl__1", 4: "DESwl__1"}
-    cb = CovarianceBuilderTester(input_yml)
-    s = cb.get_tracers_spin_dict(tracer_names)
+    s = mock_builder.get_tracers_spin_dict(tracer_names)
 
     assert s == {1: 2, 2: 0, 3: 2, 4: 2}
 
 
-def test_get_tracer_comb_spin():
+def test_get_tracer_comb_spin(mock_builder):
     tracer_comb = ["DESwl__0", "DESgc__0"]
-    cb = CovarianceBuilderTester(input_yml)
-    assert cb.get_tracer_comb_spin(tracer_comb) == (2, 0)
+    assert mock_builder.get_tracer_comb_spin(tracer_comb) == (2, 0)
 
 
-def test_get_tracer_comb_data_types():
-    cb = CovarianceBuilderTester(input_yml)
-
+def test_get_tracer_comb_data_types(mock_builder):
     tracer_comb = ["DESgc__0", "DESgc__0"]
-    assert cb.get_tracer_comb_data_types(tracer_comb) == ["cl_00"]
+    assert mock_builder.get_tracer_comb_data_types(tracer_comb) == ["cl_00"]
 
     tracer_comb = ["DESgc__0", "DESwl__0"]
-    assert cb.get_tracer_comb_data_types(tracer_comb) == ["cl_0e", "cl_0b"]
+    assert mock_builder.get_tracer_comb_data_types(tracer_comb) == [
+        "cl_0e",
+        "cl_0b",
+    ]
 
     tracer_comb = ["DESwl__0", "DESwl__0"]
-    assert cb.get_tracer_comb_data_types(tracer_comb) == [
+    assert mock_builder.get_tracer_comb_data_types(tracer_comb) == [
         "cl_ee",
         "cl_eb",
         "cl_bb",
     ]
 
     tracer_comb = ["DESwl__0", "DESwl__1"]
-    assert cb.get_tracer_comb_data_types(tracer_comb) == [
+    assert mock_builder.get_tracer_comb_data_types(tracer_comb) == [
         "cl_ee",
         "cl_eb",
         "cl_be",
@@ -346,7 +342,6 @@ def test_get_tracer_comb_data_types():
 
 
 @pytest.mark.parametrize("tr", ["DESwl__0", "DESgc__0"])
-def test_get_tracer_nmaps(tr):
-    cb = CovarianceBuilderTester(input_yml)
+def test_get_tracer_nmaps(tr, mock_builder):
     nmap = 2 if tr == "DESwl__0" else 1
-    assert cb.get_tracer_nmaps(tr) == nmap
+    assert mock_builder.get_tracer_nmaps(tr) == nmap
