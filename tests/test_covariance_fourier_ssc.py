@@ -233,6 +233,11 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
 
     assert np.all(covf["cov"] == cov_ssc_zb)
 
+    # Cleanup - other tests will load this data if we do not remove.
+    os.remove(
+        OUTDIR + "/ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
+    )
+
 
 def test_get_covariance_block_WL_benchmark(mock_cov):
     # Based on CCL benchmark test in benchmarks/test_covariances.py
