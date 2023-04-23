@@ -10,31 +10,22 @@ from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 from tjpcov.covariance_calculator import CovarianceCalculator
 
-root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-outdir = "./tests/tmp/test_mpi/"
-input_yml_mpi = root + "conf_covariance_gaussian_fourier_nmt_txpipe_mpi.yaml"
-
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-
-comm.Barrier()
-if rank == 0:
-    # Create temporal folder
-    os.makedirs(outdir, exist_ok=True)
+ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
+OUTDIR = "./tests/tmp/test_mpi/"
+INPUT_YML_MPI = "./tests/data/conf_test_mpi.yaml"
 
 
-def clean_tmp():
-    comm.Barrier()
-    if (rank == 0) and os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-        os.makedirs(outdir)
+def setup_module():
+    os.makedirs(OUTDIR, exist_ok=True)
 
 
-# Cleaning the tmp dir before running and after running the tests
-@pytest.fixture(autouse=True)
-def run_clean_tmp():
-    clean_tmp()
+def teardown_module():
+    shutil.rmtree(OUTDIR)
+
+
+@pytest.fixture
+def mock_cov():
+    return FourierGaussianNmt(INPUT_YML_MPI)
 
 
 # The _split_tasks_by_rank and _compute_all_blocks methods have been tested
@@ -52,7 +43,7 @@ def get_pair_folder_name(tracer_comb):
 
 def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
     bn = get_pair_folder_name((tr1, tr2))
-    fname = os.path.join(root, "fiducial", bn, f"cl_{tr1}_{tr2}.npz")
+    fname = os.path.join(ROOT, "fiducial", bn, f"cl_{tr1}_{tr2}.npz")
     cl = np.load(fname)["cl"]
     if binned:
         s = s.copy()
@@ -77,16 +68,15 @@ def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
     return cl
 
 
-def test_split_tasks_by_rank():
-    cnmt = FourierGaussianNmt(input_yml_mpi)
+def test_split_tasks_by_rank(mock_cov):
     tasks = list(range(100))
-    tasks_splitted = list(cnmt._split_tasks_by_rank(tasks))
+    tasks_splitted = list(mock_cov._split_tasks_by_rank(tasks))
 
-    assert tasks[cnmt.rank :: cnmt.size] == tasks_splitted
+    assert tasks[mock_cov.rank :: mock_cov.size] == tasks_splitted
 
 
 def test_compute_all_blocks():
-    cssc = FourierSSCHaloModel(input_yml_mpi)
+    cssc = FourierSSCHaloModel(INPUT_YML_MPI)
     blocks, tracers_blocks = cssc._compute_all_blocks()
     nblocks = len(
         list(cssc._split_tasks_by_rank(cssc.get_list_of_tracers_for_cov()))
@@ -98,29 +88,31 @@ def test_compute_all_blocks():
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
-def test_compute_all_blocks_nmt():
+def test_compute_all_blocks_nmt(mock_cov):
     # FourierGaussianNmt has its own _compute_all_blocks
-    cnmt = FourierGaussianNmt(input_yml_mpi)
-    blocks, tracers_blocks = cnmt._compute_all_blocks()
+    blocks, tracers_blocks = mock_cov._compute_all_blocks()
     nblocks = len(
-        list(cnmt._split_tasks_by_rank(cnmt.get_list_of_tracers_for_cov()))
+        list(
+            mock_cov._split_tasks_by_rank(
+                mock_cov.get_list_of_tracers_for_cov()
+            )
+        )
     )
     assert nblocks == len(blocks)
 
     for bi, trs in zip(blocks, tracers_blocks):
-        cov = cnmt._get_covariance_block_for_sacc(trs[0], trs[1])
+        cov = mock_cov._get_covariance_block_for_sacc(trs[0], trs[1])
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
-def test_get_covariance():
+def test_get_covariance(mock_cov):
     # This checks that there is no problem during the gathering of blocks
 
     # The coupled noise metadata information is in the sacc file and the
     # workspaces in the config file
-    cnmt = FourierGaussianNmt(input_yml_mpi)
-    s = cnmt.io.get_sacc_file()
+    s = mock_cov.io.get_sacc_file()
 
-    cov = cnmt.get_covariance() + 1e-100
+    cov = mock_cov.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
     assert np.max(np.abs(cov / cov_bm - 1)) < 1
@@ -139,10 +131,17 @@ def test_get_covariance():
 
 
 def test_CovarianceCalculator():
-    cc = CovarianceCalculator("./tests/data/conf_covariance_calculator.yml")
-    cc_mpi = CovarianceCalculator(
-        "./tests/data/conf_covariance_calculator_mpi.yml"
-    )
+    cc = CovarianceCalculator("./tests/data/conf_test_calc_mpi.yml")
+    cc_mpi = CovarianceCalculator("./tests/data/conf_test_calc_mpi2.yml")
+
+    cc.config["outdir"] = OUTDIR
+    cc_mpi.config["outdir"] = OUTDIR
+
+    cc.io.outdir = OUTDIR
+    cc_mpi.io.outdir = OUTDIR
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
     # Test get_covariance_terms
     cov = None
@@ -174,12 +173,12 @@ def test_CovarianceCalculator():
     cc_mpi.create_sacc_cov(output=fname, save_terms=True)
     keys = ["gauss", "SSC"]
     if rank == 0:
-        assert os.path.isfile(outdir + "cls_cov0.fits")
+        assert os.path.isfile(OUTDIR + "cls_cov0.fits")
         for k in keys:
-            assert os.path.isfile(outdir + f"cls_cov0_{k}.fits")
+            assert os.path.isfile(OUTDIR + f"cls_cov0_{k}.fits")
     else:
         fname = f"cls_cov{rank}_{k}.fits"
-        assert not os.path.isfile(outdir + fname)
+        assert not os.path.isfile(OUTDIR + fname)
         for k in keys:
-            assert not os.path.isfile(outdir + fname)
+            assert not os.path.isfile(OUTDIR + fname)
     comm.Barrier()
