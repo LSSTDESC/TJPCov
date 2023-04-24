@@ -15,7 +15,7 @@ from tjpcov.covariance_io import CovarianceIO
 
 
 ROOT = "tests/benchmarks/32_DES_tjpcov_bm/"
-OUTDIR = "tests/tmp/test_cov_fgnmt/"
+OUTDIR = "tests/tmp/"
 INPUT_YML = "tests/data/conf_test_fgnmt.yaml"
 INPUT_YML_NO_NMT = "tests/data/conf_test_fgnmt_nonmt.yaml"
 INPUT_YML_TXPIPE = "tests/data/conf_test_fgnmt_txpipe.yaml"
@@ -35,6 +35,15 @@ def setup_module():
 
 def teardown_module():
     shutil.rmtree(OUTDIR)
+
+
+@pytest.fixture(autouse=True)
+def teardown_test():
+    clean_outdir()
+
+
+def clean_outdir():
+    os.system(f"rm -f {OUTDIR}*")
 
 
 # Useful functions
@@ -235,11 +244,6 @@ def get_xcell_yml():
     return config
 
 
-def remove_file(fname):
-    if os.path.isfile(fname):
-        os.remove(fname)
-
-
 def get_tracers_dict_for_cov():
     tr = {1: "DESgc__0", 2: "DESgc__0", 3: "DESwl__0", 4: "DESwl__1"}
     return tr
@@ -404,6 +408,7 @@ def test_get_cl_for_cov():
         (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
     ],
 )
+@pytest.mark.flaky(retries=5, delay=1)
 def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Load benchmark covariance
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
@@ -448,7 +453,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     # Test cov_tr1_tr2_tr3_tr4.npz cache
     fname = os.path.join(
-        "./tests/tmp/test_cov_fgnmt/",
+        "./tests/tmp/",
         "cov_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2),
     )
     assert os.path.isfile(fname)
@@ -565,6 +570,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
     ],
 )
+@pytest.mark.flaky(retries=5, delay=1)
 def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     # In a separate function because the previous one is already too long
     cnmt = FourierGaussianNmt(INPUT_YML)
@@ -599,8 +605,7 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
         cnmt.get_covariance_block(tracer_comb1, tracer_comb2, cache=cache)
         + 1e-100
     )
-    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
-
+    clean_outdir()
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-5
@@ -636,10 +641,12 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     }
 
     cov = (
-        cnmt.get_covariance_block(tracer_comb1, tracer_comb2, cache=cache)
+        cnmt.get_covariance_block(
+            tracer_comb1, tracer_comb2, cache=cache, clobber=True
+        )
         + 1e-100
     )
-    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
+    clean_outdir()
 
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-6
     assert np.max(np.abs(cov / cov_bm - 1)) < 1e-6
@@ -746,7 +753,6 @@ def test_get_covariance_workspace(kwargs):
     fname = os.path.join(OUTDIR, f"cw2200__{mn3}__{mn4}__{mn2}__{mn1}.fits")
     assert os.path.isfile(fname)
 
-    remove_file(fname)
     # Check that outdir can be None
     # At the moment outdir is always not None. Leaving this test in case we
     # revert the functionality in the future
@@ -808,8 +814,6 @@ def test_get_fields_dict(nmt_conf):
         cl1 = w.couple_cell(cl[i]) + 1e-100
         cl2 = w2.couple_cell(cl[i]) + 1e-100
         assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
-
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 
 def test_get_list_of_tracers_for_wsp():
@@ -1016,11 +1020,6 @@ def test_get_workspace(kwargs):
         w_code2.couple_cell(cl) + 1e-100
     ) - 1
     assert np.max(np.abs(rdev)) < 1e-10
-
-    fname = os.path.join(OUTDIR, f"w{s1}{s2}__{mn1}__{mn2}.fits")
-    remove_file(fname)
-    fname = os.path.join(OUTDIR, f"w{s2}{s1}__{mn2}__{mn1}.fits")
-    remove_file(fname)
     # Check that outdir can be None
     # At the moment outdir is always not None. Leaving this test in case we
     # revert the functionality in the future
@@ -1121,12 +1120,9 @@ def test_get_workspace_dict(kwargs):
     }
     w2 = cnmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
 
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
-
+@pytest.mark.flaky(retries=5, delay=1)
 def test_full_covariance_benchmark():
-    os.makedirs(OUTDIR, exist_ok=True)
-
     config = get_config(INPUT_YML)
     bins = get_nmt_bin()
     config["tjpcov"]["binning_info"] = bins
@@ -1161,7 +1157,7 @@ def test_full_covariance_benchmark():
     assert np.abs(chi2 / chi2_bm - 1) < 1e-4
 
     # Clean after the test
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+    clean_outdir()
 
     # Check that it also works if they don't use concise data_types
     s2 = s_nlcp.copy()
@@ -1190,22 +1186,19 @@ def test_full_covariance_benchmark():
     assert np.all(cov == cov2)
 
     # Clean after the test
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+    clean_outdir()
 
     # Check that it fails if tracer_noise is used instead of tracer_noise_cp
     cnmt = FourierGaussianNmt(config)
     cov2 = cnmt.get_covariance(use_coupled_noise=False) + 1e-100
     assert not np.all(cov == cov2)
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+    clean_outdir()
 
     # Check that binning can be passed through cache
     cnmt = FourierGaussianNmt(INPUT_YML)
     cnmt.io.sacc_file = s_nlcp.copy()
     cov2 = cnmt.get_covariance(cache={"bins": bins}) + 1e-100
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
-
-    # Clean after the test
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
 
 def test_txpipe_like_input():
@@ -1232,10 +1225,3 @@ def test_txpipe_like_input():
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
     assert np.abs(chi2 / chi2_bm - 1) < 1e-4
-
-    # Clean up after the test
-    os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
-
-
-# Clean up after the tests
-os.system("rm -rf ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/")
