@@ -152,6 +152,7 @@ class FourierGaussianNmt(CovarianceFourier):
         use_coupled_noise=True,
         coupled=False,
         cache=None,
+        clobber=False,
     ):
         """Compute a single covariance matrix for a given pair of C_ell.
 
@@ -190,7 +191,7 @@ class FourierGaussianNmt(CovarianceFourier):
             fname = "cov_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
 
         fname = os.path.join(self.io.outdir, fname)
-        if os.path.isfile(fname):
+        if os.path.isfile(fname) and not clobber:
             print(f"Loading saved covariance {fname}")
             cov = np.load(fname)["cov"]
             return cov

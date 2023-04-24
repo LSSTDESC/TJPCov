@@ -14,35 +14,27 @@ from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_io import CovarianceIO
 
 
-root = "./tests/benchmarks/32_DES_tjpcov_bm/"
-root_new = "./tests/benchmarks/32_DES_tjpcov_bm/"
-outdir = root + "tjpcov_tmp/"
-input_yml = os.path.join(root, "conf_covariance_gaussian_fourier_nmt.yaml")
-input_yml_no_nmtc = os.path.join(
-    root, "conf_covariance_gaussian_fourier_nmt_no_nmtconf.yaml"
-)
-input_yml_txpipe = os.path.join(
-    root_new, "conf_covariance_gaussian_fourier_nmt_txpipe.yaml"
-)
-xcell_yml = os.path.join(root, "desy1_tjpcov_bm.yml")
+ROOT = "tests/benchmarks/32_DES_tjpcov_bm/"
+OUTDIR = "tests/tmp/test_cov_fgnmt/"
+INPUT_YML = "tests/data/conf_test_fgnmt.yaml"
+INPUT_YML_NO_NMT = "tests/data/conf_test_fgnmt_nonmt.yaml"
+INPUT_YML_TXPIPE = "tests/data/conf_test_fgnmt_txpipe.yaml"
 
-input_sacc = sacc.Sacc.load_fits(root + "cls_cov.fits")
-nside = 32
-
-# Create temporal folder
-os.makedirs(outdir, exist_ok=True)
+XCELL_YML = os.path.join(ROOT, "desy1_tjpcov_bm.yml")
+NSIDE = 32
 
 
-def clean_tmp():
-    if os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-        os.makedirs(outdir)
+@pytest.fixture
+def mock_sacc():
+    return sacc.Sacc.load_fits(ROOT + "cls_cov.fits")
 
 
-# Cleaning the tmp dir before running and after running the tests
-@pytest.fixture(autouse=True)
-def run_clean_tmp():
-    clean_tmp()
+def setup_module():
+    os.makedirs(OUTDIR, exist_ok=True)
+
+
+def teardown_module():
+    shutil.rmtree(OUTDIR)
 
 
 # Useful functions
@@ -74,11 +66,11 @@ def assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, threshold):
     assert np.abs(chi2 / chi2_bm - 1) < threshold
 
 
-def get_nmt_bin(lmax=3 * nside):
+def get_nmt_bin(lmax=3 * NSIDE):
     bpw_edges = np.array(
         [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
     )
-    if lmax != 3 * nside:
+    if lmax != 3 * NSIDE:
         # lmax + 1 because the last ell is not included
         bpw_edges = bpw_edges[bpw_edges < lmax + 1]
         bpw_edges[-1] = lmax + 1
@@ -100,15 +92,15 @@ def get_cl(dtype, fiducial=False):
 
     if dtype == "galaxy_clustering":
         fname = os.path.join(
-            root, subfolder, "DESgc_DESgc/cl_DESgc__0_DESgc__0.npz"
+            ROOT, subfolder, "DESgc_DESgc/cl_DESgc__0_DESgc__0.npz"
         )
     elif dtype == "galaxy_shear":
         fname = os.path.join(
-            root, subfolder, "DESwl_DESwl/cl_DESwl__0_DESwl__0.npz"
+            ROOT, subfolder, "DESwl_DESwl/cl_DESwl__0_DESwl__0.npz"
         )
     elif dtype == "cross":
         fname = os.path.join(
-            root, subfolder, "DESgc_DESwl/cl_DESgc__0_DESwl__0.npz"
+            ROOT, subfolder, "DESgc_DESwl/cl_DESgc__0_DESwl__0.npz"
         )
 
     return np.load(fname)
@@ -116,7 +108,7 @@ def get_cl(dtype, fiducial=False):
 
 def get_data_cl(tr1, tr2, remove_be=False):
     bn = get_pair_folder_name((tr1, tr2))
-    fname = os.path.join(root, bn, f"cl_{tr1}_{tr2}.npz")
+    fname = os.path.join(ROOT, bn, f"cl_{tr1}_{tr2}.npz")
     cl = np.load(fname)["cl"]
 
     # Remove redundant terms
@@ -143,7 +135,7 @@ def get_dummy_sacc():
 
 def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
     bn = get_pair_folder_name((tr1, tr2))
-    fname = os.path.join(root, "fiducial", bn, f"cl_{tr1}_{tr2}.npz")
+    fname = os.path.join(ROOT, "fiducial", bn, f"cl_{tr1}_{tr2}.npz")
     cl = np.load(fname)["cl"]
     if binned:
         s = s.copy()
@@ -170,10 +162,10 @@ def get_fiducial_cl(s, tr1, tr2, binned=True, remove_be=False):
 
 def get_mask_from_dtype(dtype):
     if dtype == "galaxy_clustering":
-        fname = os.path.join(root, "catalogs", "mask_DESgc__0.fits.gz")
+        fname = os.path.join(ROOT, "catalogs", "mask_DESgc__0.fits.gz")
     elif dtype == "galaxy_shear":
         fname = os.path.join(
-            root, "catalogs", "DESwlMETACAL_mask_zbin0_ns32.fits.gz"
+            ROOT, "catalogs", "DESwlMETACAL_mask_zbin0_ns32.fits.gz"
         )
 
     return hp.read_map(fname)
@@ -181,7 +173,7 @@ def get_mask_from_dtype(dtype):
 
 def get_tracer_noise(tr, cp=True):
     bn = get_pair_folder_name((tr, tr))
-    fname = os.path.join(root, bn, f"cl_{tr}_{tr}.npz")
+    fname = os.path.join(ROOT, bn, f"cl_{tr}_{tr}.npz")
     clfile = np.load(fname)
     if cp:
         return clfile["nl_cp"][0][-1]
@@ -191,7 +183,7 @@ def get_tracer_noise(tr, cp=True):
 
 def get_benchmark_cov(tracer_comb1, tracer_comb2):
     (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
-    fname = os.path.join(root, "cov", f"cov_{tr1}_{tr2}_{tr3}_{tr4}.npz")
+    fname = os.path.join(ROOT, "cov", f"cov_{tr1}_{tr2}_{tr3}_{tr4}.npz")
     return np.load(fname)["cov"]
 
 
@@ -201,7 +193,7 @@ def get_workspace_from_trs(tr1, tr2):
     bn = get_pair_folder_name((tr1, tr2))
     m1 = config["tracers"][tr1]["mask_name"]
     m2 = config["tracers"][tr2]["mask_name"]
-    fname = os.path.join(root, bn, f"w__{m1}__{m2}.fits")
+    fname = os.path.join(ROOT, bn, f"w__{m1}__{m2}.fits")
     w.read_from(fname)
     return w
 
@@ -210,15 +202,15 @@ def get_workspace_from_dtype(dtype):
     w = nmt.NmtWorkspace()
     if dtype == "galaxy_clustering":
         fname = os.path.join(
-            root, "DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits"
+            ROOT, "DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits"
         )
     elif dtype == "galaxy_shear":
         fname = os.path.join(
-            root, "DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits"
+            ROOT, "DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits"
         )
     elif dtype == "cross":
         fname = os.path.join(
-            root, "DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits"
+            ROOT, "DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits"
         )
     w.read_from(fname)
 
@@ -232,13 +224,13 @@ def get_covariance_workspace(tr1, tr2, tr3, tr4):
     m2 = config["tracers"][tr2]["mask_name"]
     m3 = config["tracers"][tr3]["mask_name"]
     m4 = config["tracers"][tr4]["mask_name"]
-    fname = os.path.join(root, "cov", f"cw__{m1}__{m2}__{m3}__{m4}.fits")
+    fname = os.path.join(ROOT, "cov", f"cw__{m1}__{m2}__{m3}__{m4}.fits")
     cw.read_from(fname)
     return cw
 
 
 def get_xcell_yml():
-    with open(xcell_yml) as f:
+    with open(XCELL_YML) as f:
         config = yaml.safe_load(f)
     return config
 
@@ -254,7 +246,7 @@ def get_tracers_dict_for_cov():
 
 
 def get_fields_dict_for_cov(**nmt_conf):
-    mask_fn = get_config(input_yml)["tjpcov"]["mask_file"]
+    mask_fn = get_config(INPUT_YML)["tjpcov"]["mask_file"]
     mask_DESgc = hp.read_map(mask_fn["DESgc__0"])
     mask_DESwl0 = hp.read_map(mask_fn["DESwl__0"])
     mask_DESwl1 = hp.read_map(mask_fn["DESwl__1"])
@@ -290,22 +282,22 @@ def get_workspaces_dict_for_cov(**kwargs):
 def get_cl_dict_for_cov(**kwargs):
     subfolder = "fiducial"
     fname = os.path.join(
-        root, subfolder, "DESgc_DESgc/cl_DESgc__0_DESgc__0.npz"
+        ROOT, subfolder, "DESgc_DESgc/cl_DESgc__0_DESgc__0.npz"
     )
     cl12 = np.load(fname)["cl"]
 
     fname = os.path.join(
-        root, subfolder, "DESwl_DESwl/cl_DESwl__0_DESwl__1.npz"
+        ROOT, subfolder, "DESwl_DESwl/cl_DESwl__0_DESwl__1.npz"
     )
     cl34 = np.load(fname)["cl"]
 
     fname = os.path.join(
-        root, subfolder, "DESgc_DESwl/cl_DESgc__0_DESwl__0.npz"
+        ROOT, subfolder, "DESgc_DESwl/cl_DESgc__0_DESwl__0.npz"
     )
     cl13 = cl23 = np.load(fname)["cl"]
 
     fname = os.path.join(
-        root, subfolder, "DESgc_DESwl/cl_DESgc__0_DESwl__1.npz"
+        ROOT, subfolder, "DESgc_DESwl/cl_DESgc__0_DESwl__1.npz"
     )
     cl14 = cl24 = np.load(fname)["cl"]
 
@@ -331,7 +323,7 @@ def test_compute_all_blocks():
                 s, tracer_comb1, tracer_comb2
             )
 
-    cnmt = CNMTTester(input_yml)
+    cnmt = CNMTTester(INPUT_YML)
     blocks, tracers_blocks = cnmt._compute_all_blocks()
     nblocks = len(cnmt.get_list_of_tracers_for_cov())
     assert nblocks == len(blocks)
@@ -348,7 +340,7 @@ def test_compute_all_blocks():
 def test_get_cl_for_cov():
     # We just need to test for one case as the function will complain if the
     # Cell inputted has the wrong shape
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     m = get_mask_from_dtype("galaxy_clustering")
     w = get_workspace_from_dtype("galaxy_clustering")
     wSh = get_workspace_from_dtype("galaxy_shear")
@@ -413,15 +405,11 @@ def test_get_cl_for_cov():
     ],
 )
 def test_get_covariance_block(tracer_comb1, tracer_comb2):
-    # TODO: Not sure why this is needed here, but otherwise it failed to save
-    # the workspaces
-    os.makedirs(outdir, exist_ok=True)
-
     # Load benchmark covariance
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
 
     # Pass the NmtBins through the config dictionary at initialization
-    config = get_config(input_yml)
+    config = get_config(INPUT_YML)
     bins = get_nmt_bin()
     config["tjpcov"]["binning_info"] = bins
     cnmt = FourierGaussianNmt(config)
@@ -460,7 +448,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     # Test cov_tr1_tr2_tr3_tr4.npz cache
     fname = os.path.join(
-        "./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/",
+        "./tests/tmp/test_cov_fgnmt/",
         "cov_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2),
     )
     assert os.path.isfile(fname)
@@ -474,22 +462,22 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         + 1e-100
     )
     assert np.all(cov2 == cov)
-    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     # Test error with 'bins' in cache different to that at initialization
     with pytest.raises(ValueError):
         cache2 = {"bins": nmt.NmtBin.from_nside_linear(32, bins.get_n_bands())}
         cov2 = cnmt.get_covariance_block(
-            tracer_comb1, tracer_comb2, cache=cache2
+            tracer_comb1, tracer_comb2, cache=cache2, clobber=True
         )
 
     # Test it runs with 'bins' in cache if they are the same
     cache2 = {"bins": bins}
     cov2 = (
-        cnmt.get_covariance_block(tracer_comb1, tracer_comb2, cache=cache2)
+        cnmt.get_covariance_block(
+            tracer_comb1, tracer_comb2, clobber=True, cache=cache2
+        )
         + 1e-100
     )
-    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     # Assert relative difference to an absurd precision because the equality
     # test fails now for some reason.
@@ -508,12 +496,15 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     cov2 = (
         cnmt.get_covariance_block(
-            tracer_comb1, tracer_comb2, use_coupled_noise=True, cache=cache
+            tracer_comb1,
+            tracer_comb2,
+            use_coupled_noise=True,
+            cache=cache,
+            clobber=True,
         )
         + 1e-100
     )
     assert np.max(np.abs(cov / cov2) - 1) < 1e-10
-    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
 
     # Cov with uncoupled noise cannot be used for benchmark as tracer_noise is
     # assumed to be flat but it is not when computed from the coupled due to
@@ -531,7 +522,11 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     cov2 = (
         cnmt.get_covariance_block(
-            tracer_comb1, tracer_comb2, use_coupled_noise=False, cache=cache
+            tracer_comb1,
+            tracer_comb2,
+            use_coupled_noise=False,
+            clobber=True,
+            cache=cache,
         )
         + 1e-100
     )
@@ -545,8 +540,6 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         # is not the case.
         assert_chi2(s, tracer_comb1, tracer_comb2, cov2, cov, 1e-2)
 
-    os.system("rm ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/cov*npz")
-
     # Check chi2, which is what we actually care about
     if tracer_comb1 == tracer_comb2:
         s = cnmt.io.get_sacc_file()
@@ -554,12 +547,12 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     # Check that it runs if one of the masks does not overlap with the others
     if tracer_comb1 != tracer_comb2:
-        os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
         cnmt.mask_files[
             tracer_comb1[0]
         ] = "./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz"  # noqa: E501
-        cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2)
-        os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
+        cov = cnmt.get_covariance_block(
+            tracer_comb1, tracer_comb2, clobber=True
+        )
 
 
 @pytest.mark.parametrize(
@@ -574,7 +567,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 )
 def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     # In a separate function because the previous one is already too long
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()
     for tr in s.tracers.keys():
@@ -659,7 +652,7 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
 def test_get_covariance_workspace(kwargs):
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     m1 = get_mask_from_dtype("galaxy_clustering")
     m3 = get_mask_from_dtype("galaxy_shear")
 
@@ -715,7 +708,7 @@ def test_get_covariance_workspace(kwargs):
             *fields, *masks_names, **kwargs
         )
         fname = os.path.join(
-            outdir,
+            OUTDIR,
             "cw{}{}{}{}__{}__{}__{}__{}.fits".format(*spins, *masks_names),
         )
         if masks_names == (mn1, mn2, mn3, mn4):
@@ -747,10 +740,10 @@ def test_get_covariance_workspace(kwargs):
         f3, f4, f2, f1, mn3, mn4, mn2, mn1, recompute=True, **kwargs
     )
 
-    fname = os.path.join(outdir, f"cw0022__{mn1}__{mn2}__{mn3}__{mn3}.fits")
+    fname = os.path.join(OUTDIR, f"cw0022__{mn1}__{mn2}__{mn3}__{mn3}.fits")
     assert not os.path.isfile(fname)
 
-    fname = os.path.join(outdir, f"cw2200__{mn3}__{mn4}__{mn2}__{mn1}.fits")
+    fname = os.path.join(OUTDIR, f"cw2200__{mn3}__{mn4}__{mn2}__{mn1}.fits")
     assert os.path.isfile(fname)
 
     remove_file(fname)
@@ -766,7 +759,7 @@ def test_get_covariance_workspace(kwargs):
 @pytest.mark.parametrize("nmt_conf", [{}, {"n_iter": 0}])
 def test_get_fields_dict(nmt_conf):
     tr = get_tracers_dict_for_cov()
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
 
     f = get_fields_dict_for_cov(**nmt_conf)
     f2 = cnmt.get_fields_dict(tr, **nmt_conf)
@@ -796,14 +789,14 @@ def test_get_fields_dict(nmt_conf):
         assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
 
     # Check that cache works
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     cache = {"f1": f[1], "f2": f[2], "f3": f[3], "f4": f[4]}
     f2 = cnmt.get_fields_dict(tr, cache=cache, **nmt_conf)
     for i in range(1, 5):
         assert f[i] is f2[i]
 
     # Check that it does not read the masks again if provided
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     m = cnmt.get_masks_dict(tr)
     cnmt.mask_files = None
     f2 = cnmt.get_fields_dict(tr, masks=m, **nmt_conf)
@@ -820,7 +813,7 @@ def test_get_fields_dict(nmt_conf):
 
 
 def test_get_list_of_tracers_for_wsp():
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     trs_wsp = cnmt.get_list_of_tracers_for_wsp()
 
     trs_wsp2 = [
@@ -836,7 +829,7 @@ def test_get_list_of_tracers_for_wsp():
 
 
 def test_get_list_of_tracers_for_cov_wsp():
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     trs_cwsp = cnmt.get_list_of_tracers_for_cov_wsp()
 
     trs_cwsp2 = [
@@ -874,7 +867,7 @@ def test_get_list_of_tracers_for_cov_wsp():
 
 
 def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     trs_cwsp = cnmt.get_list_of_tracers_for_cov_without_trs_wsp_cwsp()
 
     trs_cwsp2 = [
@@ -910,8 +903,8 @@ def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
 
 
 def test_get_nell():
-    cnmt = FourierGaussianNmt(input_yml)
-    nell = 3 * nside
+    cnmt = FourierGaussianNmt(INPUT_YML)
+    nell = 3 * NSIDE
     bins = get_nmt_bin()
     w = get_workspace_from_dtype("galaxy_clustering")
     cache = {"workspaces": {"00": {("mask_DESgc0", "mask_DESgc0"): w}}}
@@ -925,7 +918,7 @@ def test_get_nell():
     cnmt.io.sacc_file = s
 
     assert nell == cnmt.get_nell(bins=bins)
-    assert nell == cnmt.get_nell(nside=nside)
+    assert nell == cnmt.get_nell(nside=NSIDE)
     assert nell == cnmt.get_nell(cache=cache)
 
     # Force ValueError (as when window is wrong)
@@ -941,7 +934,7 @@ def test_get_nell():
     with pytest.raises(ValueError):
         assert nell == cnmt.get_nell()
     # But it works if you pass the nside
-    assert nell == cnmt.get_nell(nside=nside)
+    assert nell == cnmt.get_nell(nside=NSIDE)
 
     # Test lmax != 3*nside
     lmax = 50
@@ -951,7 +944,7 @@ def test_get_nell():
     # Test that if bins nor workspace is given, it tries to use the sacc file
     # and when fails (if "binnint/ell_max" is not present in the metadata),
     # it defaults to nell = 3*nside
-    assert 3 * nside == cnmt.get_nell(nside=nside)
+    assert 3 * NSIDE == cnmt.get_nell(nside=NSIDE)
 
     # Check metadata
     cnmt.io.sacc_file.metadata["binning/ell_max"] = lmax
@@ -962,8 +955,8 @@ def test_get_nell():
     # Check metadata
     cnmt.io.sacc_file = s()
     cnmt.io.sacc_file.metadata["binning/ell_max"] = 100
-    nell = 3 * nside
-    assert nell == cnmt.get_nell(nside=nside)
+    nell = 3 * NSIDE
+    assert nell == cnmt.get_nell(nside=NSIDE)
 
 
 @pytest.mark.parametrize(
@@ -971,7 +964,7 @@ def test_get_nell():
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
 def test_get_workspace(kwargs):
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
 
     # Compute NmtBins
     bins = get_nmt_bin()
@@ -994,13 +987,13 @@ def test_get_workspace(kwargs):
     w_code = cnmt.get_workspace(f1, f2, mn1, mn2, bins, **kwargs)
 
     # Check the file is created
-    fname = os.path.join(outdir, f"w{s1}{s2}__{mn1}__{mn2}.fits")
+    fname = os.path.join(OUTDIR, f"w{s1}{s2}__{mn1}__{mn2}.fits")
     assert os.path.isfile(fname)
 
     # Check that you will read the same workspace if input the other way round
     # and check the symmetric file is not created
     w_code2 = cnmt.get_workspace(f2, f1, mn2, mn1, bins, **kwargs)
-    fname = os.path.join(outdir, f"w{s2}{s1}__{mn2}__{mn1}.fits")
+    fname = os.path.join(OUTDIR, f"w{s2}{s1}__{mn2}__{mn1}.fits")
     assert not os.path.isfile(fname)
 
     # Check that with recompute the original file is removed and the symmetric
@@ -1008,9 +1001,9 @@ def test_get_workspace(kwargs):
     w_code2 = cnmt.get_workspace(
         f2, f1, mn2, mn1, bins, recompute=True, **kwargs
     )
-    fname = os.path.join(outdir, f"w{s1}{s2}__{mn1}__{mn2}.fits")
+    fname = os.path.join(OUTDIR, f"w{s1}{s2}__{mn1}__{mn2}.fits")
     assert not os.path.isfile(fname)
-    fname = os.path.join(outdir, f"w{s2}{s1}__{mn2}__{mn1}.fits")
+    fname = os.path.join(OUTDIR, f"w{s2}{s1}__{mn2}__{mn1}.fits")
     assert os.path.isfile(fname)
 
     # Load cl to apply the workspace on
@@ -1024,9 +1017,9 @@ def test_get_workspace(kwargs):
     ) - 1
     assert np.max(np.abs(rdev)) < 1e-10
 
-    fname = os.path.join(outdir, f"w{s1}{s2}__{mn1}__{mn2}.fits")
+    fname = os.path.join(OUTDIR, f"w{s1}{s2}__{mn1}__{mn2}.fits")
     remove_file(fname)
-    fname = os.path.join(outdir, f"w{s2}{s1}__{mn2}__{mn1}.fits")
+    fname = os.path.join(OUTDIR, f"w{s2}{s1}__{mn2}__{mn1}.fits")
     remove_file(fname)
     # Check that outdir can be None
     # At the moment outdir is always not None. Leaving this test in case we
@@ -1041,7 +1034,7 @@ def test_get_workspace(kwargs):
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
 def test_get_workspace_dict(kwargs):
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     tracers = get_tracers_dict_for_cov()
     bins = get_nmt_bin()
 
@@ -1094,12 +1087,12 @@ def test_get_workspace_dict(kwargs):
 
     # Check that 'workspaces' cache also works. In this case, one will pass
     # paths, not instances
-    gc0gc0 = os.path.join(root, "DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits")
-    gc0wl0 = os.path.join(root, "DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits")
-    gc0wl1 = os.path.join(root, "DESgc_DESwl/w__mask_DESgc__mask_DESwl1.fits")
-    wl0wl0 = os.path.join(root, "DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits")
-    wl0wl1 = os.path.join(root, "DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits")
-    wl1wl1 = os.path.join(root, "DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits")
+    gc0gc0 = os.path.join(ROOT, "DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits")
+    gc0wl0 = os.path.join(ROOT, "DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits")
+    gc0wl1 = os.path.join(ROOT, "DESgc_DESwl/w__mask_DESgc__mask_DESwl1.fits")
+    wl0wl0 = os.path.join(ROOT, "DESwl_DESwl/w__mask_DESwl0__mask_DESwl0.fits")
+    wl0wl1 = os.path.join(ROOT, "DESwl_DESwl/w__mask_DESwl0__mask_DESwl1.fits")
+    wl1wl1 = os.path.join(ROOT, "DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits")
     cache = {
         "workspaces": {
             "00": {("mask_DESgc0", "mask_DESgc0"): gc0gc0},
@@ -1132,9 +1125,9 @@ def test_get_workspace_dict(kwargs):
 
 
 def test_full_covariance_benchmark():
-    os.makedirs(outdir, exist_ok=True)
+    os.makedirs(OUTDIR, exist_ok=True)
 
-    config = get_config(input_yml)
+    config = get_config(INPUT_YML)
     bins = get_nmt_bin()
     config["tjpcov"]["binning_info"] = bins
     # Load the coupled noise that we need for the benchmark covariance
@@ -1206,7 +1199,7 @@ def test_full_covariance_benchmark():
     os.system("rm -f ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/*")
 
     # Check that binning can be passed through cache
-    cnmt = FourierGaussianNmt(input_yml)
+    cnmt = FourierGaussianNmt(INPUT_YML)
     cnmt.io.sacc_file = s_nlcp.copy()
     cov2 = cnmt.get_covariance(cache={"bins": bins}) + 1e-100
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
@@ -1218,7 +1211,7 @@ def test_full_covariance_benchmark():
 def test_txpipe_like_input():
     # We don't need to pass the bins because we have provided the workspaces
     # through the cache in the configuration file
-    cnmt = FourierGaussianNmt(input_yml_txpipe)
+    cnmt = FourierGaussianNmt(INPUT_YML_TXPIPE)
 
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()
