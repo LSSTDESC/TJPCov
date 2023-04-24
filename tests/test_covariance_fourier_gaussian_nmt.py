@@ -16,11 +16,7 @@ from tjpcov.covariance_io import CovarianceIO
 
 ROOT = "tests/benchmarks/32_DES_tjpcov_bm/"
 OUTDIR = "tests/tmp/"
-INPUT_YML = "tests/data/conf_test_fgnmt.yaml"
-INPUT_YML_NO_NMT = "tests/data/conf_test_fgnmt_nonmt.yaml"
-INPUT_YML_TXPIPE = "tests/data/conf_test_fgnmt_txpipe.yaml"
-
-XCELL_YML = os.path.join(ROOT, "desy1_tjpcov_bm.yml")
+INPUT_YML = "tests/data/conf_covariance_gaussian_fourier_nmt.yaml"
 NSIDE = 32
 
 
@@ -44,6 +40,11 @@ def teardown_test():
 
 def clean_outdir():
     os.system(f"rm -f {OUTDIR}*")
+
+
+@pytest.fixture
+def cov_fg_nmt():
+    return FourierGaussianNmt(INPUT_YML)
 
 
 # Useful functions
@@ -239,7 +240,8 @@ def get_covariance_workspace(tr1, tr2, tr3, tr4):
 
 
 def get_xcell_yml():
-    with open(XCELL_YML) as f:
+    fname = os.path.join(ROOT, "desy1_tjpcov_bm.yml")
+    with open(fname) as f:
         config = yaml.safe_load(f)
     return config
 
@@ -341,10 +343,9 @@ def test_compute_all_blocks():
         )
 
 
-def test_get_cl_for_cov():
+def test_get_cl_for_cov(cov_fg_nmt):
     # We just need to test for one case as the function will complain if the
     # Cell inputted has the wrong shape
-    cnmt = FourierGaussianNmt(INPUT_YML)
     m = get_mask_from_dtype("galaxy_clustering")
     w = get_workspace_from_dtype("galaxy_clustering")
     wSh = get_workspace_from_dtype("galaxy_shear")
@@ -354,27 +355,27 @@ def test_get_cl_for_cov():
     cl_fid_Sh = get_cl("galaxy_shear", fiducial=True)
 
     cl_cp = (w.couple_cell(cl_fid["cl"]) + cl["nl_cp"]) / np.mean(m**2)
-    cl_cp_code = cnmt.get_cl_for_cov(
+    cl_cp_code = cov_fg_nmt.get_cl_for_cov(
         cl_fid["cl"], cl["nl_cp"], m, m, w, nl_is_cp=True
     )
     assert np.abs(cl_cp / cl_cp_code - 1).max() < 1e-10
 
     # Inputting uncoupled noise.
     nlfill = np.ones_like(cl_fid["ell"]) * cl["nl"][0, 0]
-    cl_cp_code = cnmt.get_cl_for_cov(
+    cl_cp_code = cov_fg_nmt.get_cl_for_cov(
         cl_fid["cl"], nlfill, m, m, w, nl_is_cp=False
     )
     assert np.abs(cl_cp[0] / cl_cp_code[0] - 1).max() < 1e-2
 
     # Check that if I input the coupled but nl_is_cp is False, we don't recover
     # cl_cp
-    cl_cp_code = cnmt.get_cl_for_cov(
+    cl_cp_code = cov_fg_nmt.get_cl_for_cov(
         cl_fid["cl"], cl["nl_cp"], m, m, w, nl_is_cp=False
     )
     assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.4
 
     # Check that if I input the uncoupled but nl_is_cp is True, assert fails
-    cl_cp_code = cnmt.get_cl_for_cov(
+    cl_cp_code = cov_fg_nmt.get_cl_for_cov(
         cl_fid["cl"], nlfill, m, m, w, nl_is_cp=True
     )
     assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.5
@@ -383,18 +384,22 @@ def test_get_cl_for_cov():
     m2 = np.ones_like(m)
     m2[m != 0] = 0
     assert not np.all(
-        cnmt.get_cl_for_cov(cl, cl["nl_cp"], m, m2, w, nl_is_cp=True)
+        cov_fg_nmt.get_cl_for_cov(cl, cl["nl_cp"], m, m2, w, nl_is_cp=True)
     )
 
     with pytest.raises(ValueError):
-        cnmt.get_cl_for_cov(cl_fid_Sh, cl["nl_cp"], m, m, w, nl_is_cp=True)
+        cov_fg_nmt.get_cl_for_cov(
+            cl_fid_Sh, cl["nl_cp"], m, m, w, nl_is_cp=True
+        )
 
     with pytest.raises(ValueError):
         # Uncoupled binned noise
-        cnmt.get_cl_for_cov(cl_fid, cl["nl"], m, m, w, nl_is_cp=True)
+        cov_fg_nmt.get_cl_for_cov(cl_fid, cl["nl"], m, m, w, nl_is_cp=True)
 
     with pytest.raises(ValueError):
-        cnmt.get_cl_for_cov(cl_fid, cl["nl_cp"], m, m, wSh, nl_is_cp=True)
+        cov_fg_nmt.get_cl_for_cov(
+            cl_fid, cl["nl_cp"], m, m, wSh, nl_is_cp=True
+        )
 
 
 @pytest.mark.parametrize(
@@ -571,11 +576,10 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     ],
 )
 @pytest.mark.flaky(retries=5, delay=1)
-def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
+def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
     # In a separate function because the previous one is already too long
-    cnmt = FourierGaussianNmt(INPUT_YML)
     # Add the coupled noise metadata information to the sacc file
-    s = cnmt.io.get_sacc_file()
+    s = cov_fg_nmt.io.get_sacc_file()
     for tr in s.tracers.keys():
         nl_cp = get_tracer_noise(tr, cp=True)
         s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
@@ -602,7 +606,9 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     }
 
     cov = (
-        cnmt.get_covariance_block(tracer_comb1, tracer_comb2, cache=cache)
+        cov_fg_nmt.get_covariance_block(
+            tracer_comb1, tracer_comb2, cache=cache
+        )
         + 1e-100
     )
     clean_outdir()
@@ -641,7 +647,7 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     }
 
     cov = (
-        cnmt.get_covariance_block(
+        cov_fg_nmt.get_covariance_block(
             tracer_comb1, tracer_comb2, cache=cache, clobber=True
         )
         + 1e-100
@@ -658,8 +664,7 @@ def test_get_covariance_block_cache(tracer_comb1, tracer_comb2):
     "kwargs",
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
-def test_get_covariance_workspace(kwargs):
-    cnmt = FourierGaussianNmt(INPUT_YML)
+def test_get_covariance_workspace(cov_fg_nmt, kwargs):
     m1 = get_mask_from_dtype("galaxy_clustering")
     m3 = get_mask_from_dtype("galaxy_shear")
 
@@ -672,7 +677,7 @@ def test_get_covariance_workspace(kwargs):
     cl = get_cl("cross", fiducial=False)
     cl_fid = get_cl("cross", fiducial=True)
     w13 = get_workspace_from_dtype("cross")
-    cl_cov = cnmt.get_cl_for_cov(
+    cl_cov = cov_fg_nmt.get_cl_for_cov(
         cl_fid["cl"], cl["nl_cp"], m1, m3, w13, nl_is_cp=True
     )
     cl13 = cl14 = cl23 = cl24 = cl_cov
@@ -711,7 +716,7 @@ def test_get_covariance_workspace(kwargs):
 
     for fields, masks_names in zip(combinations, combinations_names):
         spins = [fi.fl.spin for fi in fields]
-        cw_code = cnmt.get_covariance_workspace(
+        cw_code = cov_fg_nmt.get_covariance_workspace(
             *fields, *masks_names, **kwargs
         )
         fname = os.path.join(
@@ -743,7 +748,7 @@ def test_get_covariance_workspace(kwargs):
     # Check that with recompute it deletes the existing file and creates a new
     # one
 
-    cw_code = cnmt.get_covariance_workspace(
+    cw_code = cov_fg_nmt.get_covariance_workspace(
         f3, f4, f2, f1, mn3, mn4, mn2, mn1, recompute=True, **kwargs
     )
 
@@ -763,20 +768,19 @@ def test_get_covariance_workspace(kwargs):
 
 
 @pytest.mark.parametrize("nmt_conf", [{}, {"n_iter": 0}])
-def test_get_fields_dict(nmt_conf):
+def test_get_fields_dict(cov_fg_nmt, nmt_conf):
     tr = get_tracers_dict_for_cov()
-    cnmt = FourierGaussianNmt(INPUT_YML)
 
     f = get_fields_dict_for_cov(**nmt_conf)
-    f2 = cnmt.get_fields_dict(tr, **nmt_conf)
+    f2 = cov_fg_nmt.get_fields_dict(tr, **nmt_conf)
 
     # Check that the DESgc fields are exactly the same (not generated twice)
     assert f2[1] is f2[2]
 
     # Check that if the mask of DESwl has the same name as that of DESgc, they
     # do not get messed up
-    cnmt.mask_names["DESwl__0"] = cnmt.mask_names["DESgc__0"]
-    f2 = cnmt.get_fields_dict(tr, **nmt_conf)
+    cov_fg_nmt.mask_names["DESwl__0"] = cov_fg_nmt.mask_names["DESgc__0"]
+    f2 = cov_fg_nmt.get_fields_dict(tr, **nmt_conf)
     assert f2[1] is not f2[3]
 
     # Check fields are the same by computing the workspace and coupling a
@@ -787,8 +791,8 @@ def test_get_fields_dict(nmt_conf):
 
     bins = get_nmt_bin()
     for i in range(1, 5):
-        w = cnmt.get_workspace(f[i], f[i], str(i), str(i), bins)
-        w2 = cnmt.get_workspace(f2[i], f2[i], str(i), str(i), bins)
+        w = cov_fg_nmt.get_workspace(f[i], f[i], str(i), str(i), bins)
+        w2 = cov_fg_nmt.get_workspace(f2[i], f2[i], str(i), str(i), bins)
 
         cl1 = w.couple_cell(cl[i]) + 1e-100
         cl2 = w2.couple_cell(cl[i]) + 1e-100
@@ -816,9 +820,8 @@ def test_get_fields_dict(nmt_conf):
         assert np.max(np.abs(cl1 / cl2 - 1)) < 1e-10
 
 
-def test_get_list_of_tracers_for_wsp():
-    cnmt = FourierGaussianNmt(INPUT_YML)
-    trs_wsp = cnmt.get_list_of_tracers_for_wsp()
+def test_get_list_of_tracers_for_wsp(cov_fg_nmt):
+    trs_wsp = cov_fg_nmt.get_list_of_tracers_for_wsp()
 
     trs_wsp2 = [
         (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
@@ -832,9 +835,8 @@ def test_get_list_of_tracers_for_wsp():
     assert sorted(trs_wsp) == sorted(trs_wsp2)
 
 
-def test_get_list_of_tracers_for_cov_wsp():
-    cnmt = FourierGaussianNmt(INPUT_YML)
-    trs_cwsp = cnmt.get_list_of_tracers_for_cov_wsp()
+def test_get_list_of_tracers_for_cov_wsp(cov_fg_nmt):
+    trs_cwsp = cov_fg_nmt.get_list_of_tracers_for_cov_wsp()
 
     trs_cwsp2 = [
         (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
@@ -862,17 +864,16 @@ def test_get_list_of_tracers_for_cov_wsp():
 
     assert sorted(trs_cwsp) == sorted(trs_cwsp2)
 
-    trs_cwsp = cnmt.get_list_of_tracers_for_cov_wsp(remove_trs_wsp=True)
+    trs_cwsp = cov_fg_nmt.get_list_of_tracers_for_cov_wsp(remove_trs_wsp=True)
 
-    for trs in cnmt.get_list_of_tracers_for_wsp():
+    for trs in cov_fg_nmt.get_list_of_tracers_for_wsp():
         trs_cwsp2.remove(trs)
 
     assert trs_cwsp == trs_cwsp2
 
 
-def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
-    cnmt = FourierGaussianNmt(INPUT_YML)
-    trs_cwsp = cnmt.get_list_of_tracers_for_cov_without_trs_wsp_cwsp()
+def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp(cov_fg_nmt):
+    trs_cwsp = cov_fg_nmt.get_list_of_tracers_for_cov_without_trs_wsp_cwsp()
 
     trs_cwsp2 = [
         (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
@@ -898,32 +899,33 @@ def test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp():
         (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
     ]
 
-    trs_toremove = cnmt.get_list_of_tracers_for_wsp()
-    trs_toremove += cnmt.get_list_of_tracers_for_cov_wsp(remove_trs_wsp=True)
+    trs_toremove = cov_fg_nmt.get_list_of_tracers_for_wsp()
+    trs_toremove += cov_fg_nmt.get_list_of_tracers_for_cov_wsp(
+        remove_trs_wsp=True
+    )
     for trs in trs_toremove:
         trs_cwsp2.remove(trs)
 
     assert trs_cwsp == trs_cwsp2
 
 
-def test_get_nell():
-    cnmt = FourierGaussianNmt(INPUT_YML)
+def test_get_nell(cov_fg_nmt):
     nell = 3 * NSIDE
     bins = get_nmt_bin()
     w = get_workspace_from_dtype("galaxy_clustering")
     cache = {"workspaces": {"00": {("mask_DESgc0", "mask_DESgc0"): w}}}
 
-    assert nell == cnmt.get_nell()
+    assert nell == cov_fg_nmt.get_nell()
 
     # Now with a sacc file without bandpower windows
     s = get_dummy_sacc()
     clf = get_cl("cross")
     s.add_ell_cl("cl_0e", "DESgc__0", "DESwl__0", clf["ell"], clf["cl"][0])
-    cnmt.io.sacc_file = s
+    cov_fg_nmt.io.sacc_file = s
 
-    assert nell == cnmt.get_nell(bins=bins)
-    assert nell == cnmt.get_nell(nside=NSIDE)
-    assert nell == cnmt.get_nell(cache=cache)
+    assert nell == cov_fg_nmt.get_nell(bins=bins)
+    assert nell == cov_fg_nmt.get_nell(nside=NSIDE)
+    assert nell == cov_fg_nmt.get_nell(cache=cache)
 
     # Force ValueError (as when window is wrong)
     class s:
@@ -934,42 +936,40 @@ def test_get_nell():
         def get_data_types(self):
             raise ValueError
 
-    cnmt.io.sacc_file = s()
+    cov_fg_nmt.io.sacc_file = s()
     with pytest.raises(ValueError):
-        assert nell == cnmt.get_nell()
+        assert nell == cov_fg_nmt.get_nell()
     # But it works if you pass the nside
-    assert nell == cnmt.get_nell(nside=NSIDE)
+    assert nell == cov_fg_nmt.get_nell(nside=NSIDE)
 
     # Test lmax != 3*nside
     lmax = 50
     bins = get_nmt_bin(50)
     nell = 51
-    assert nell == cnmt.get_nell(bins=bins)
+    assert nell == cov_fg_nmt.get_nell(bins=bins)
     # Test that if bins nor workspace is given, it tries to use the sacc file
     # and when fails (if "binnint/ell_max" is not present in the metadata),
     # it defaults to nell = 3*nside
-    assert 3 * NSIDE == cnmt.get_nell(nside=NSIDE)
+    assert 3 * NSIDE == cov_fg_nmt.get_nell(nside=NSIDE)
 
     # Check metadata
-    cnmt.io.sacc_file.metadata["binning/ell_max"] = lmax
-    assert nell == cnmt.get_nell()
+    cov_fg_nmt.io.sacc_file.metadata["binning/ell_max"] = lmax
+    assert nell == cov_fg_nmt.get_nell()
 
     # Check that if ell_max > 3*nside-1 in metadata, (and nside given) we cut
     # nell = 3*nside
     # Check metadata
-    cnmt.io.sacc_file = s()
-    cnmt.io.sacc_file.metadata["binning/ell_max"] = 100
+    cov_fg_nmt.io.sacc_file = s()
+    cov_fg_nmt.io.sacc_file.metadata["binning/ell_max"] = 100
     nell = 3 * NSIDE
-    assert nell == cnmt.get_nell(nside=NSIDE)
+    assert nell == cov_fg_nmt.get_nell(nside=NSIDE)
 
 
 @pytest.mark.parametrize(
     "kwargs",
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
-def test_get_workspace(kwargs):
-    cnmt = FourierGaussianNmt(INPUT_YML)
-
+def test_get_workspace(cov_fg_nmt, kwargs):
     # Compute NmtBins
     bins = get_nmt_bin()
 
@@ -983,12 +983,12 @@ def test_get_workspace(kwargs):
     w = nmt.NmtWorkspace()
     w.compute_coupling_matrix(f1, f2, bins, **kwargs)
 
-    # Compute workspace with cnmt
+    # Compute workspace with cov_fg_nmt
     s1 = 0
     s2 = 2
     mn1 = "mask_DESgc0"
     mn2 = "mask_DESwl0"
-    w_code = cnmt.get_workspace(f1, f2, mn1, mn2, bins, **kwargs)
+    w_code = cov_fg_nmt.get_workspace(f1, f2, mn1, mn2, bins, **kwargs)
 
     # Check the file is created
     fname = os.path.join(OUTDIR, f"w{s1}{s2}__{mn1}__{mn2}.fits")
@@ -996,13 +996,13 @@ def test_get_workspace(kwargs):
 
     # Check that you will read the same workspace if input the other way round
     # and check the symmetric file is not created
-    w_code2 = cnmt.get_workspace(f2, f1, mn2, mn1, bins, **kwargs)
+    w_code2 = cov_fg_nmt.get_workspace(f2, f1, mn2, mn1, bins, **kwargs)
     fname = os.path.join(OUTDIR, f"w{s2}{s1}__{mn2}__{mn1}.fits")
     assert not os.path.isfile(fname)
 
     # Check that with recompute the original file is removed and the symmetric
     # remains
-    w_code2 = cnmt.get_workspace(
+    w_code2 = cov_fg_nmt.get_workspace(
         f2, f1, mn2, mn1, bins, recompute=True, **kwargs
     )
     fname = os.path.join(OUTDIR, f"w{s1}{s2}__{mn1}__{mn2}.fits")
@@ -1032,13 +1032,12 @@ def test_get_workspace(kwargs):
     "kwargs",
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
 )
-def test_get_workspace_dict(kwargs):
-    cnmt = FourierGaussianNmt(INPUT_YML)
+def test_get_workspace_dict(cov_fg_nmt, kwargs):
     tracers = get_tracers_dict_for_cov()
     bins = get_nmt_bin()
 
     w = get_workspaces_dict_for_cov(**kwargs)
-    w2 = cnmt.get_workspaces_dict(tracers, bins, **kwargs)
+    w2 = cov_fg_nmt.get_workspaces_dict(tracers, bins, **kwargs)
 
     # Check workspaces by comparing the coupled cells
     cl = get_cl_dict_for_cov()
@@ -1061,20 +1060,20 @@ def test_get_workspace_dict(kwargs):
         "w12": w[12],
         "w34": w[34],
     }
-    w2 = cnmt.get_workspaces_dict(tracers, bins, cache=cache, **kwargs)
+    w2 = cov_fg_nmt.get_workspaces_dict(tracers, bins, cache=cache, **kwargs)
     for i in [13, 23, 14, 24, 12, 34]:
         assert w[i] is w2[i]
 
     # Check that for non overlapping fields, the workspace is not computed (and
     # is None)
     # Create a non overlapping mask:
-    m = cnmt.get_masks_dict(tracers)
+    m = cov_fg_nmt.get_masks_dict(tracers)
     m[1] = np.zeros_like(m[2])
     m[1][:1000] = 1
     m[3] = np.zeros_like(m[4])
     m[3][1000:2000] = 1
 
-    w2 = cnmt.get_workspaces_dict(tracers, bins, masks=m, **kwargs)
+    w2 = cov_fg_nmt.get_workspaces_dict(tracers, bins, masks=m, **kwargs)
     # w12, w34 should not be None as they are needed in nmt.gaussian_covariance
     assert w2[12] is not None
     assert w2[34] is not None
@@ -1107,18 +1106,18 @@ def test_get_workspace_dict(kwargs):
         }
     }
     # bins to None to force it fail if it does not uses the cache
-    w2 = cnmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
+    w2 = cov_fg_nmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
 
     # Check that it will compute the workspaces if one is missing
     del cache["workspaces"]["02"][("mask_DESgc0", "mask_DESwl1")]
-    w2 = cnmt.get_workspaces_dict(tracers, bins, cache=cache, **kwargs)
+    w2 = cov_fg_nmt.get_workspaces_dict(tracers, bins, cache=cache, **kwargs)
     # Check that '20' is also understood
     del cache["workspaces"]["02"]
     cache["workspaces"]["20"] = {
         ("mask_DESgc0", "mask_DESwl0"): gc0wl0,
         ("mask_DESgc0", "mask_DESwl1"): gc0wl1,
     }
-    w2 = cnmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
+    w2 = cov_fg_nmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
 
 
 @pytest.mark.flaky(retries=5, delay=1)
@@ -1204,7 +1203,8 @@ def test_full_covariance_benchmark():
 def test_txpipe_like_input():
     # We don't need to pass the bins because we have provided the workspaces
     # through the cache in the configuration file
-    cnmt = FourierGaussianNmt(INPUT_YML_TXPIPE)
+    fname = "./tests/data/conf_covariance_gaussian_fourier_nmt_no_nmtconf.yaml"
+    cnmt = FourierGaussianNmt(fname)
 
     # Add the coupled noise metadata information to the sacc file
     s = cnmt.io.get_sacc_file()
