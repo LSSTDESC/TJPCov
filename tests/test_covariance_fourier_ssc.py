@@ -13,7 +13,7 @@ from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
 
 ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
 INPUT_YML_SSC = "./tests/data/conf_covariance_ssc.yaml"
-OUTDIR = "./tests/tmp/test_covariance_fourier_ssc"
+OUTDIR = "./tests/tmp/"
 NSIDE = 32
 
 
@@ -25,13 +25,22 @@ def teardown_module():
     shutil.rmtree(OUTDIR)
 
 
+@pytest.fixture(autouse=True)
+def teardown_test():
+    clean_outdir()
+
+
+def clean_outdir():
+    os.system(f"rm -f {OUTDIR}*")
+
+
 @pytest.fixture
-def mock_sacc():
+def sacc_file():
     return sacc.Sacc.load_fits(ROOT + "cls_cov.fits")
 
 
 @pytest.fixture
-def mock_cov():
+def cov_fssc():
     return FourierSSCHaloModel(INPUT_YML_SSC)
 
 
@@ -95,13 +104,13 @@ def test_smoke():
         (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
     ],
 )
-def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
+def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     # TJPCov covariance
-    cosmo = mock_cov.get_cosmology()
-    s = mock_cov.io.get_sacc_file()
+    cosmo = cov_fssc.get_cosmology()
+    s = cov_fssc.io.get_sacc_file()
     ell, _ = s.get_ell_cl("cl_00", "DESgc__0", "DESgc__0")
 
-    cov_ssc = mock_cov.get_covariance_block(
+    cov_ssc = cov_fssc.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
@@ -109,7 +118,7 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
 
     # Check saved file
     covf = np.load(
-        OUTDIR + "/ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
+        OUTDIR + "ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
     )
     assert (
         np.max(np.abs((covf["cov_nob"] + 1e-100) / (cov_ssc + 1e-100) - 1))
@@ -123,25 +132,25 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
     bias1 = 1
     is_nc1 = False
     if "gc" in tracer_comb1[0]:
-        bias1 = mock_cov.bias_lens[tracer_comb1[0]]
+        bias1 = cov_fssc.bias_lens[tracer_comb1[0]]
         is_nc1 = True
 
     bias2 = 1
     is_nc2 = False
     if "gc" in tracer_comb1[1]:
-        bias2 = mock_cov.bias_lens[tracer_comb1[1]]
+        bias2 = cov_fssc.bias_lens[tracer_comb1[1]]
         is_nc2 = True
 
     bias3 = 1
     is_nc3 = False
     if "gc" in tracer_comb2[0]:
-        bias3 = mock_cov.bias_lens[tracer_comb2[0]]
+        bias3 = cov_fssc.bias_lens[tracer_comb2[0]]
         is_nc3 = True
 
     bias4 = 1
     is_nc4 = False
     if "gc" in tracer_comb2[0]:
-        bias4 = mock_cov.bias_lens[tracer_comb2[1]]
+        bias4 = cov_fssc.bias_lens[tracer_comb2[1]]
         is_nc4 = True
 
     hmc = get_halo_model(cosmo)
@@ -163,7 +172,7 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
     cl_mask = get_cl_footprint(*tracer_comb1, *tracer_comb2)
     sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a_arr, mask_wl=cl_mask)
 
-    ccl_tracers, _ = mock_cov.get_tracer_info()
+    ccl_tracers, _ = cov_fssc.get_tracer_info()
     tr1 = ccl_tracers[tracer_comb1[0]]
     tr2 = ccl_tracers[tracer_comb1[1]]
     tr3 = ccl_tracers[tracer_comb2[0]]
@@ -183,7 +192,7 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
     assert np.max(np.fabs(cov_ssc / cov_ccl - 1)) < 1e-3
 
     # Check you get zeroed B-modes
-    cov_ssc_zb = mock_cov.get_covariance_block(
+    cov_ssc_zb = cov_fssc.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=True,
@@ -216,16 +225,16 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
 
     # Check get_SSC_cov reads file
     covf = np.load(
-        OUTDIR + "/ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
+        OUTDIR + "ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
     )
-    cov_ssc = mock_cov.get_covariance_block(
+    cov_ssc = cov_fssc.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
     )
     assert np.all(covf["cov_nob"] == cov_ssc)
 
-    cov_ssc_zb = mock_cov.get_covariance_block(
+    cov_ssc_zb = cov_fssc.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=True,
@@ -233,13 +242,8 @@ def test_get_covariance_block(mock_cov, tracer_comb1, tracer_comb2):
 
     assert np.all(covf["cov"] == cov_ssc_zb)
 
-    # Cleanup - other tests will load this data if we do not remove.
-    os.remove(
-        OUTDIR + "/ssc_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
-    )
 
-
-def test_get_covariance_block_WL_benchmark(mock_cov):
+def test_get_covariance_block_WL_benchmark(cov_fssc):
     # Based on CCL benchmark test in benchmarks/test_covariances.py
     #
     # Compare against Benjamin Joachimi's code. An overview of the methodology
@@ -266,7 +270,7 @@ def test_get_covariance_block_WL_benchmark(mock_cov):
 
     # Trick TJPCov to use the ells we want instead the ones in the file
     s = sacc.Sacc()
-    s.tracers = mock_cov.io.get_sacc_file().tracers.copy()
+    s.tracers = cov_fssc.io.get_sacc_file().tracers.copy()
     for dt in ["cl_ee", "cl_eb", "cl_be", "cl_bb"]:
         s.add_ell_cl(dt, "DESwl__0", "DESwl__0", ell, np.ones_like(ell))
 
@@ -279,14 +283,14 @@ def test_get_covariance_block_WL_benchmark(mock_cov):
     mask[ix] = 10  # Use 10 to check the normalization of the masks
 
     # Modify tjpcov instance
-    mock_cov.io.sacc_file = s
-    mock_cov.mask_files["DESwl__0"] = mask
-    mock_cov.cosmo = cosmo
+    cov_fssc.io.sacc_file = s
+    cov_fssc.mask_files["DESwl__0"] = mask
+    cov_fssc.cosmo = cosmo
 
     trs = ("DESwl__0", "DESwl__0")
-    mock_cov.get_tracer_info()
-    mock_cov.ccl_tracers.update({"DESwl__0": WL_tracer})
-    cov_ssc = mock_cov.get_covariance_block(trs, trs, include_b_modes=False)
+    cov_fssc.get_tracer_info()
+    cov_fssc.ccl_tracers.update({"DESwl__0": WL_tracer})
+    cov_ssc = cov_fssc.get_covariance_block(trs, trs, include_b_modes=False)
 
     # Tests
     var_ssc_ccl = np.diag(cov_ssc)

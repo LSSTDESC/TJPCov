@@ -9,8 +9,8 @@ from datetime import datetime
 from glob import glob
 
 ROOT_DIR = "./tests/benchmarks/32_DES_tjpcov_bm/"
-OUT_DIR = "./tests/tmp/test_covariance_io/"
-INPUT_YML = os.path.join(ROOT_DIR, "conf_covariance_io.yaml")
+OUT_DIR = "./tests/tmp/"
+INPUT_YML = "./tests/data/conf_covariance_gaussian_fourier_nmt.yaml"
 
 
 def teardown_module():
@@ -23,13 +23,13 @@ def setup_module():
 
 
 @pytest.fixture
-def mock_sacc():
+def sacc_file():
     input_sacc = sacc.Sacc.load_fits(ROOT_DIR + "cls_cov.fits")
     return input_sacc
 
 
 @pytest.fixture
-def mock_covariance_io():
+def cov_io():
     return CovarianceIO(INPUT_YML)
 
 
@@ -53,23 +53,23 @@ def test_smoke_input():
     assert os.path.isdir(OUT_DIR)
 
 
-def test_create_sacc_cov(mock_covariance_io, mock_sacc):
-    cov = get_diag_covariance(mock_sacc)
-    s = mock_covariance_io.create_sacc_cov(cov)
+def test_create_sacc_cov(cov_io, sacc_file):
+    cov = get_diag_covariance(sacc_file)
+    s = cov_io.create_sacc_cov(cov)
     s2 = sacc.Sacc.load_fits(OUT_DIR + "cls_cov.fits")
 
-    assert np.all(s.mean == mock_sacc.mean)
-    assert np.all(s.covariance.covmat == get_diag_covariance(mock_sacc))
+    assert np.all(s.mean == sacc_file.mean)
+    assert np.all(s.covariance.covmat == get_diag_covariance(sacc_file))
     assert np.all(s.mean == s2.mean)
     assert np.all(s.covariance.covmat == s2.covariance.covmat)
 
     # Check that it also writes the file with a different name
-    s2 = mock_covariance_io.create_sacc_cov(cov, "cls_cov2.fits")
+    s2 = cov_io.create_sacc_cov(cov, "cls_cov2.fits")
     s2 = sacc.Sacc.load_fits(OUT_DIR + "cls_cov2.fits")
 
     # Check that it will not overwrite a file but create a new one with the utc
     # time stamped
-    s = mock_covariance_io.create_sacc_cov(cov)
+    s = cov_io.create_sacc_cov(cov)
     date = datetime.utcnow()
     # Timestamp without the seconds since there can be a delay between this
     # timestamp and the one when creating the sacc file.
@@ -78,16 +78,16 @@ def test_create_sacc_cov(mock_covariance_io, mock_sacc):
     assert len(files) == 1
 
     # Check that it will overwrite if overwrite is True
-    mock_covariance_io.create_sacc_cov(0 * cov, overwrite=True)
+    cov_io.create_sacc_cov(0 * cov, overwrite=True)
     s2 = sacc.Sacc.load_fits(OUT_DIR + "cls_cov.fits")
     assert np.all(s2.covariance.covmat == 0)
 
 
-def test_get_outdir(mock_covariance_io):
-    assert os.path.samefile(mock_covariance_io.get_outdir(), OUT_DIR)
+def test_get_outdir(cov_io):
+    assert os.path.samefile(cov_io.get_outdir(), OUT_DIR)
 
 
-def test_get_sacc_file(mock_covariance_io, mock_sacc):
-    s = mock_covariance_io.get_sacc_file()
+def test_get_sacc_file(cov_io, sacc_file):
+    s = cov_io.get_sacc_file()
 
-    assert np.all(s.mean == mock_sacc.mean)
+    assert np.all(s.mean == sacc_file.mean)

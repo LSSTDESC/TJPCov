@@ -15,7 +15,7 @@ from tjpcov.covariance_gaussian_fsky import (
 from tjpcov.covariance_io import CovarianceIO
 
 # INPUT
-OUTDIR = "tests/tmp/test_gaussian_fsky/"
+OUTDIR = "tests/tmp/"
 COSMO_FILENAME = "tests/data/cosmo_desy1.yaml"
 INPUT_YML = "tests/data/conf_covariance_gaussian_fsky_fourier.yaml"
 INPUT_YML_REAL = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
@@ -39,12 +39,12 @@ def mock_cosmo():
 
 
 @pytest.fixture
-def mock_cfsky():
+def cov_fg_fsky():
     return FourierGaussianFsky(INPUT_YML)
 
 
 @pytest.fixture
-def mock_cfsky_real():
+def cov_rg_fsky():
     return RealGaussianFsky(INPUT_YML_REAL)
 
 
@@ -63,33 +63,33 @@ def test_smoke():
         FourierGaussianFsky(config)
 
 
-def test_Fourier_get_binning_info(mock_cfsky):
-    ell, ell_eff, ell_edges = mock_cfsky.get_binning_info()
+def test_Fourier_get_binning_info(cov_fg_fsky):
+    ell, ell_eff, ell_edges = cov_fg_fsky.get_binning_info()
 
-    assert np.all(ell_eff == mock_cfsky.get_ell_eff())
+    assert np.all(ell_eff == cov_fg_fsky.get_ell_eff())
     assert np.allclose((ell_edges[1:] + ell_edges[:-1]) / 2, ell_eff)
 
     with pytest.raises(NotImplementedError):
-        mock_cfsky.get_binning_info("log")
+        cov_fg_fsky.get_binning_info("log")
 
 
-def test_Fourier_get_covariance_block(mock_cfsky, mock_cosmo):
+def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
     # Test made independent of pickled objects
     tracer_comb1 = ("lens0", "lens0")
     tracer_comb2 = ("lens0", "lens0")
 
-    ell, _, ell_edges = mock_cfsky.get_binning_info()
-    ccl_tracers, tracer_noise = mock_cfsky.get_tracer_info()
+    ell, _, ell_edges = cov_fg_fsky.get_binning_info()
+    ccl_tracers, tracer_noise = cov_fg_fsky.get_tracer_info()
 
     ccltr = ccl_tracers["lens0"]
     cl = ccl.angular_cl(mock_cosmo, ccltr, ccltr, ell) + tracer_noise["lens0"]
 
-    fsky = mock_cfsky.fsky
+    fsky = cov_fg_fsky.fsky
     dl = np.gradient(ell)
     cov = np.diag(2 * cl**2 / ((2 * ell + 1) * fsky * dl))
     lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
-    cov2 = mock_cfsky.get_covariance_block(
+    cov2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
@@ -98,10 +98,10 @@ def test_Fourier_get_covariance_block(mock_cfsky, mock_cosmo):
 
     # Check B-modes
     trs = ("src0", "src0")
-    cov2 = mock_cfsky.get_covariance_block(
+    cov2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, include_b_modes=False
     )
-    cov2b = mock_cfsky.get_covariance_block(
+    cov2b = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, include_b_modes=True
     )
 
@@ -114,11 +114,11 @@ def test_Fourier_get_covariance_block(mock_cfsky, mock_cosmo):
     # Check for_real
     # 1. Check that it request lmax
     with pytest.raises(ValueError):
-        mock_cfsky.get_covariance_block(
+        cov_fg_fsky.get_covariance_block(
             tracer_comb1=trs, tracer_comb2=trs, for_real=True
         )
     # 2. Check block
-    cov2 = mock_cfsky.get_covariance_block(
+    cov2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, for_real=True, lmax=30
     )
     ell = np.arange(30 + 1)
@@ -148,18 +148,18 @@ def test_Fourier_get_covariance_block(mock_cfsky, mock_cosmo):
     ],
 )
 def test_Real_get_fourier_block(
-    mock_cfsky_real, mock_cfsky, tracer_comb1, tracer_comb2
+    cov_rg_fsky, cov_fg_fsky, tracer_comb1, tracer_comb2
 ):
-    cov = mock_cfsky_real._get_fourier_block(tracer_comb1, tracer_comb2)
-    cov2 = mock_cfsky.get_covariance_block(
-        tracer_comb1, tracer_comb2, for_real=True, lmax=mock_cfsky_real.lmax
+    cov = cov_rg_fsky._get_fourier_block(tracer_comb1, tracer_comb2)
+    cov2 = cov_fg_fsky.get_covariance_block(
+        tracer_comb1, tracer_comb2, for_real=True, lmax=cov_rg_fsky.lmax
     )
 
-    norm = np.pi * 4 * mock_cfsky_real.fsky
+    norm = np.pi * 4 * cov_rg_fsky.fsky
     assert np.all(cov == cov2 / norm)
 
 
-def test_smoke_get_covariance(mock_cfsky, mock_cfsky_real):
+def test_smoke_get_covariance(cov_fg_fsky, cov_rg_fsky):
     # Check that we can get the full covariance
-    mock_cfsky.get_covariance()
-    mock_cfsky_real.get_covariance()
+    cov_fg_fsky.get_covariance()
+    cov_rg_fsky.get_covariance()

@@ -16,7 +16,7 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/tmp/test_covariance_fourier_ssc
+  outdir: ./tests/tmp/
 
   # Survey params:
   # 5 lens bins
