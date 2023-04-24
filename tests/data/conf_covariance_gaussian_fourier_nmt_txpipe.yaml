@@ -13,7 +13,7 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+  outdir: ./tests/tmp/
 
   # linear bias for lenses constant for redshift bin (example notebook)
   bias_DESgc__0: 1.48

@@ -10,8 +10,8 @@ import shutil
 from tjpcov.covariance_builder import CovarianceFourier
 
 ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
-OUTDIR = "./tests/tmp/test_fourier_base/"
-INPUT_YML = os.path.join(ROOT, "conf_covariance_fourier_base.yaml")
+OUTDIR = "./tests/tmp/"
+INPUT_YML = os.path.join(OUTDIR, "conf_covariance_fourier_base.yaml")
 
 
 @pytest.fixture

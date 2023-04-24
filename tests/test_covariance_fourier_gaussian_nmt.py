@@ -1203,7 +1203,7 @@ def test_full_covariance_benchmark():
 def test_txpipe_like_input():
     # We don't need to pass the bins because we have provided the workspaces
     # through the cache in the configuration file
-    fname = "./tests/data/conf_covariance_gaussian_fourier_nmt_no_nmtconf.yaml"
+    fname = "./tests/data/conf_covariance_gaussian_fourier_nmt_txpipe.yaml"
     cnmt = FourierGaussianNmt(fname)
 
     # Add the coupled noise metadata information to the sacc file
