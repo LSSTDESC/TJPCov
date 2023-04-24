@@ -10,7 +10,7 @@ import shutil
 
 
 INPUT_YML = "./tests/data/conf_covariance_calculator.yml"
-OUTDIR = "./tests/tmp/test_cov_calc/"
+OUTDIR = "./tests/tmp/"
 
 
 def setup_module():
@@ -108,9 +108,3 @@ def test_create_sacc_cov(mock_cov_calc):
     # Test the different terms are not saved
     assert not os.path.isfile(OUTDIR + "test_gauss.fits")
     assert not os.path.isfile(OUTDIR + "test_SSC.fits")
-
-    # Cleanup
-    os.remove(OUTDIR + "cls_cov.fits")
-    os.remove(OUTDIR + "cls_cov_gauss.fits")
-    os.remove(OUTDIR + "cls_cov_SSC.fits")
-    os.remove(OUTDIR + "test.fits")

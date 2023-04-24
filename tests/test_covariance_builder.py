@@ -12,7 +12,7 @@ from tjpcov.covariance_builder import CovarianceBuilder
 from scipy.linalg import block_diag
 
 INPUT_YML = "./tests/data/conf_covariance_builder_minimal.yaml"
-OUTDIR = "tests/tmp/test_cov_builder/"
+OUTDIR = "tests/tmp/"
 
 
 def setup_module():
