@@ -13,7 +13,7 @@ authors = [
 ]
 description = "Covariances for LSST DESC"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.7"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -28,7 +28,7 @@ dependencies = [
     "Jinja2",
     "pyyaml",
     "pytest",
-    "pytest-retry",
+    "pytest-rerunfailures",
     "pyccl>=2.5.0",
     "sacc>=0.7",
     "camb",

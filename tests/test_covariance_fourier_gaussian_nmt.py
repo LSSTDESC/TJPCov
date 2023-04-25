@@ -413,7 +413,7 @@ def test_get_cl_for_cov(cov_fg_nmt):
         (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
     ],
 )
-@pytest.mark.flaky(retries=5, delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Load benchmark covariance
     cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
@@ -575,7 +575,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
     ],
 )
-@pytest.mark.flaky(retries=5, delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
     # In a separate function because the previous one is already too long
     # Add the coupled noise metadata information to the sacc file
@@ -1120,7 +1120,7 @@ def test_get_workspace_dict(cov_fg_nmt, kwargs):
     w2 = cov_fg_nmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
 
 
-@pytest.mark.flaky(retries=5, delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_full_covariance_benchmark():
     config = get_config(INPUT_YML)
     bins = get_nmt_bin()
