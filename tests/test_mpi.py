@@ -13,13 +13,18 @@ from tjpcov.covariance_calculator import CovarianceCalculator
 ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
 OUTDIR = "./tests/tmp/"
 
+COMM = MPI.COMM_WORLD
+RANK = COMM.Get_rank()
+
 
 def setup_module():
-    os.makedirs(OUTDIR, exist_ok=True)
+    if RANK == 0:
+        os.makedirs(OUTDIR, exist_ok=True)
 
 
 def teardown_module():
-    shutil.rmtree(OUTDIR)
+    if RANK == 0:
+        shutil.rmtree(OUTDIR)
 
 
 @pytest.fixture
@@ -156,45 +161,42 @@ def test_get_covariance(fg_nmt_cov):
 
 
 def test_covariance_calculator(cov_calc, cov_calc_mpi):
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-
     # Test get_covariance_terms
     cov = None
     cov_mpi = cov_calc_mpi.get_covariance_terms()
-    if rank == 0:
+    if RANK == 0:
         # Avoid computing serially the covariance terms multiple times.
         # Broadcast it later
         cov = cov_calc.get_covariance_terms()
-    cov = comm.bcast(cov, root=0)
+    cov = COMM.bcast(cov, root=0)
     for k in cov.keys():
         assert (
             np.max(np.abs((cov[k] + 1e-100) / (cov_mpi[k] + 1e-100) - 1))
             < 1e-5
         )
-    comm.Barrier()
+    COMM.Barrier()
 
     # Test get_covariance
     cov_mpi = cov_calc_mpi.get_covariance()
-    if rank == 0:
+    if RANK == 0:
         # Avoid computing serially the covariance multiple times. Broadcast it
         # later
         cov = cov_calc.get_covariance()
-    cov = comm.bcast(cov, root=0)
+    cov = COMM.bcast(cov, root=0)
     assert np.max(np.abs((cov + 1e-100) / (cov_mpi + 1e-100) - 1)) < 1e-5
-    comm.Barrier()
+    COMM.Barrier()
 
     # Test create_sacc_cov
-    fname = f"cls_cov{rank}.fits"
+    fname = f"cls_cov{RANK}.fits"
     cov_calc_mpi.create_sacc_cov(output=fname, save_terms=True)
     keys = ["gauss", "SSC"]
-    if rank == 0:
+    if RANK == 0:
         assert os.path.isfile(OUTDIR + "cls_cov0.fits")
         for k in keys:
             assert os.path.isfile(OUTDIR + f"cls_cov0_{k}.fits")
     else:
-        fname = f"cls_cov{rank}_{k}.fits"
+        fname = f"cls_cov{RANK}_{k}.fits"
         assert not os.path.isfile(OUTDIR + fname)
         for k in keys:
             assert not os.path.isfile(OUTDIR + fname)
-    comm.Barrier()
+    COMM.Barrier()
