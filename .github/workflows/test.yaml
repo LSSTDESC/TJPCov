@@ -56,9 +56,9 @@ jobs:
           # For coveralls
           pip install -U pytest-cov coveralls
 
-      # - name: Test
-      #   run: |
-      #     python3 -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+      - name: Test
+        run: |
+          python3 -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
               
       - name: Test mpi (openmpi)
         run: |
