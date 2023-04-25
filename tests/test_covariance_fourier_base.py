@@ -11,7 +11,7 @@ from tjpcov.covariance_builder import CovarianceFourier
 
 ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
 OUTDIR = "./tests/tmp/"
-INPUT_YML = os.path.join(OUTDIR, "conf_covariance_fourier_base.yaml")
+INPUT_YML = "./tests/data/conf_covariance_gaussian_fourier_nmt.yaml"
 
 
 @pytest.fixture
