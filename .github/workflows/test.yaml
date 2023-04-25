@@ -82,7 +82,7 @@ jobs:
           pip install -U mpi4py --no-binary :all:
 
           # Run MPI tests
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append -s --full-trace
+          mpiexec.mpich2 -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append -s --full-trace
           
           # Uninstall mpich
           sudo apt remove -y mpich libmpich-dev
