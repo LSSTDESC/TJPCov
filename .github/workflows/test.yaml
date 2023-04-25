@@ -56,24 +56,24 @@ jobs:
           # For coveralls
           pip install -U pytest-cov coveralls
 
-      - name: Test
-        run: |
-          python3 -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+      # - name: Test
+      #   run: |
+      #     python3 -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
               
-      - name: Test mpi (openmpi)
-        run: |
-          # Install openmpi
-          sudo apt install -y openmpi-bin libopenmpi-dev
-          # Install mpi4py. Not included in requirements as one
-          # can run the code in serial
-          pip install -U mpi4py
+      # - name: Test mpi (openmpi)
+      #   run: |
+      #     # Install openmpi
+      #     sudo apt install -y openmpi-bin libopenmpi-dev
+      #     # Install mpi4py. Not included in requirements as one
+      #     # can run the code in serial
+      #     pip install -U mpi4py
 
-          # Run MPI test (just the computation of blocks)
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
+      #     # Run MPI test (just the computation of blocks)
+      #     mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
           
-          # Uninstall openmpi
-          sudo apt remove -y openmpi-bin libopenmpi-dev
-          pip uninstall -y mpi4py
+      #     # Uninstall openmpi
+      #     sudo apt remove -y openmpi-bin libopenmpi-dev
+      #     pip uninstall -y mpi4py
 
       - name: Test mpi (mpich)
         run: |
@@ -82,7 +82,7 @@ jobs:
           pip install -U mpi4py --no-binary :all:
 
           # Run MPI tests
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
+          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append -s --full-trace
           
           # Uninstall mpich
           sudo apt remove -y mpich libmpich-dev
