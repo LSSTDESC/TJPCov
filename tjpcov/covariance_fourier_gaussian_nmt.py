@@ -177,7 +177,8 @@ class FourierGaussianNmt(CovarianceFourier):
                 the covariance workspace (key: 'cw') and a NmtBin (key:
                 'bins').
             clobber (bool, optional): True to recalculate covariance and
-                overwrite cached covariance (default False)
+                overwrite cached covariance (default False).  Note this does
+                not erase the cache, or ignore the provided cache.
 
         Returns:
             array: Gaussian covariance matrix for a pair of C_ell.
