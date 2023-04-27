@@ -16,7 +16,7 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+  outdir: ./tests/tmp/
 
   # Survey params:
   # 5 lens bins

@@ -15,41 +15,46 @@ from tjpcov.covariance_gaussian_fsky import (
 from tjpcov.covariance_io import CovarianceIO
 
 # INPUT
-# CCL and sacc input:
-outdir = "tests/tmp/"
-os.makedirs(outdir, exist_ok=True)
-cosmo_filename = "tests/data/cosmo_desy1.yaml"
-cosmo = ccl.Cosmology.read_yaml(cosmo_filename)
-with open(outdir + "cosmos_desy1_v2p1p0.pkl", "wb") as ff:
-    pickle.dump(cosmo, ff)
-
-# SETUP
-input_yml = "tests/data/conf_covariance_gaussian_fsky_fourier.yaml"
-input_yml_real = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
-cfsky = FourierGaussianFsky(input_yml)
-cfsky_real = RealGaussianFsky(input_yml_real)
-ccl_tracers, tracer_Noise = cfsky.get_tracer_info()
+OUTDIR = "tests/tmp/"
+COSMO_FILENAME = "tests/data/cosmo_desy1.yaml"
+INPUT_YML = "tests/data/conf_covariance_gaussian_fsky_fourier.yaml"
+INPUT_YML_REAL = "tests/data/conf_covariance_gaussian_fsky_real.yaml"
 
 
-def clean_tmp():
-    if os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-        os.makedirs(outdir)
+def setup_module():
+    os.makedirs(OUTDIR, exist_ok=True)
+    # CCL and sacc input:
+    cosmo = ccl.Cosmology.read_yaml(COSMO_FILENAME)
+    with open(OUTDIR + "cosmos_desy1_v2p1p0.pkl", "wb") as ff:
+        pickle.dump(cosmo, ff)
 
 
-# Cleaning the tmp dir before running and after running the tests
-@pytest.fixture(autouse=True)
-def run_clean_tmp():
-    clean_tmp()
+def teardown_module():
+    shutil.rmtree(OUTDIR)
+
+
+@pytest.fixture
+def mock_cosmo():
+    return ccl.Cosmology.read_yaml(COSMO_FILENAME)
+
+
+@pytest.fixture
+def cov_fg_fsky():
+    return FourierGaussianFsky(INPUT_YML)
+
+
+@pytest.fixture
+def cov_rg_fsky():
+    return RealGaussianFsky(INPUT_YML_REAL)
 
 
 def get_config():
-    return CovarianceIO(input_yml).config
+    return CovarianceIO(INPUT_YML).config
 
 
 def test_smoke():
-    FourierGaussianFsky(input_yml)
-    RealGaussianFsky(input_yml_real)
+    FourierGaussianFsky(INPUT_YML)
+    RealGaussianFsky(INPUT_YML_REAL)
 
     # Check it raises an error if fsky is not given
     config = get_config()
@@ -58,32 +63,33 @@ def test_smoke():
         FourierGaussianFsky(config)
 
 
-def test_Fourier_get_binning_info():
-    cfsky = FourierGaussianFsky(input_yml)
-    ell, ell_eff, ell_edges = cfsky.get_binning_info()
+def test_Fourier_get_binning_info(cov_fg_fsky):
+    ell, ell_eff, ell_edges = cov_fg_fsky.get_binning_info()
 
-    assert np.all(ell_eff == cfsky.get_ell_eff())
+    assert np.all(ell_eff == cov_fg_fsky.get_ell_eff())
     assert np.allclose((ell_edges[1:] + ell_edges[:-1]) / 2, ell_eff)
 
     with pytest.raises(NotImplementedError):
-        cfsky.get_binning_info("log")
+        cov_fg_fsky.get_binning_info("log")
 
 
-def test_Fourier_get_covariance_block():
+def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
     # Test made independent of pickled objects
     tracer_comb1 = ("lens0", "lens0")
     tracer_comb2 = ("lens0", "lens0")
 
-    ell, ell_bins, ell_edges = cfsky.get_binning_info()
-    ccltr = ccl_tracers["lens0"]
-    cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise["lens0"]
+    ell, _, ell_edges = cov_fg_fsky.get_binning_info()
+    ccl_tracers, tracer_noise = cov_fg_fsky.get_tracer_info()
 
-    fsky = cfsky.fsky
+    ccltr = ccl_tracers["lens0"]
+    cl = ccl.angular_cl(mock_cosmo, ccltr, ccltr, ell) + tracer_noise["lens0"]
+
+    fsky = cov_fg_fsky.fsky
     dl = np.gradient(ell)
     cov = np.diag(2 * cl**2 / ((2 * ell + 1) * fsky * dl))
     lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
-    cov2 = cfsky.get_covariance_block(
+    cov2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
@@ -92,10 +98,10 @@ def test_Fourier_get_covariance_block():
 
     # Check B-modes
     trs = ("src0", "src0")
-    cov2 = cfsky.get_covariance_block(
+    cov2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, include_b_modes=False
     )
-    cov2b = cfsky.get_covariance_block(
+    cov2b = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, include_b_modes=True
     )
 
@@ -108,16 +114,16 @@ def test_Fourier_get_covariance_block():
     # Check for_real
     # 1. Check that it request lmax
     with pytest.raises(ValueError):
-        cfsky.get_covariance_block(
+        cov_fg_fsky.get_covariance_block(
             tracer_comb1=trs, tracer_comb2=trs, for_real=True
         )
     # 2. Check block
-    cov2 = cfsky.get_covariance_block(
+    cov2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, for_real=True, lmax=30
     )
     ell = np.arange(30 + 1)
     ccltr = ccl_tracers["src0"]
-    cl = ccl.angular_cl(cosmo, ccltr, ccltr, ell) + tracer_Noise["src0"]
+    cl = ccl.angular_cl(mock_cosmo, ccltr, ccltr, ell) + tracer_noise["src0"]
     cov = np.diag(2 * cl**2)
     assert cov2.shape == (ell.size, ell.size)
     np.testing.assert_allclose(cov2, cov)
@@ -141,19 +147,19 @@ def test_Fourier_get_covariance_block():
         ("src0", "src0"),
     ],
 )
-def test_Real_get_fourier_block(tracer_comb1, tracer_comb2):
-    cov = cfsky_real._get_fourier_block(tracer_comb1, tracer_comb2)
-    cov2 = cfsky.get_covariance_block(
-        tracer_comb1, tracer_comb2, for_real=True, lmax=cfsky_real.lmax
+def test_Real_get_fourier_block(
+    cov_rg_fsky, cov_fg_fsky, tracer_comb1, tracer_comb2
+):
+    cov = cov_rg_fsky._get_fourier_block(tracer_comb1, tracer_comb2)
+    cov2 = cov_fg_fsky.get_covariance_block(
+        tracer_comb1, tracer_comb2, for_real=True, lmax=cov_rg_fsky.lmax
     )
 
-    norm = np.pi * 4 * cfsky_real.fsky
+    norm = np.pi * 4 * cov_rg_fsky.fsky
     assert np.all(cov == cov2 / norm)
 
 
-def test_smoke_get_covariance():
+def test_smoke_get_covariance(cov_fg_fsky, cov_rg_fsky):
     # Check that we can get the full covariance
-    cfsky.get_covariance()
-    # Real test commented out because we don't have a method to build the full
-    # covariance atm
-    cfsky_real.get_covariance()
+    cov_fg_fsky.get_covariance()
+    cov_rg_fsky.get_covariance()
