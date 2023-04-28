@@ -105,9 +105,9 @@ class FourierSSCHaloModel(CovarianceFourier):
         na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
         a, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
         # Cut the array for efficiency
-        sel = 1/a < z_max+1
+        sel = 1 / a < z_max + 1
         # Include the next node so that z_max is in the range
-        sel[np.sum(~sel)-1] = True
+        sel[np.sum(~sel) - 1] = True
         a = a[sel]
 
         bias1 = self.bias_lens.get(tr[1], 1)
