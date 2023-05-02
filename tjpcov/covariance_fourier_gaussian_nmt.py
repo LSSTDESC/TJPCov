@@ -152,6 +152,7 @@ class FourierGaussianNmt(CovarianceFourier):
         use_coupled_noise=True,
         coupled=False,
         cache=None,
+        clobber=False,
     ):
         """Compute a single covariance matrix for a given pair of C_ell.
 
@@ -175,6 +176,9 @@ class FourierGaussianNmt(CovarianceFourier):
                 workspaces (keys: 'w13', 'w23', 'w14', 'w24', 'w12', 'w34'),
                 the covariance workspace (key: 'cw') and a NmtBin (key:
                 'bins').
+            clobber (bool, optional): True to recalculate covariance and
+                overwrite cached covariance (default False).  Note this does
+                not erase the cache, or ignore the provided cache.
 
         Returns:
             array: Gaussian covariance matrix for a pair of C_ell.
@@ -190,7 +194,7 @@ class FourierGaussianNmt(CovarianceFourier):
             fname = "cov_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
 
         fname = os.path.join(self.io.outdir, fname)
-        if os.path.isfile(fname):
+        if os.path.isfile(fname) and not clobber:
             print(f"Loading saved covariance {fname}")
             cov = np.load(fname)["cov"]
             return cov

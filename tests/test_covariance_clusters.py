@@ -9,10 +9,7 @@ from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
 import pytest
 
-cosmo = ccl.Cosmology.read_yaml("./tests/data/cosmo_desy1.yaml")
-input_yml = "./tests/data/conf_covariance_clusters.yaml"
-
-# Test Fixtures
+INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 
 
 @pytest.fixture
@@ -69,7 +66,7 @@ def mock_sacc():
 
 @pytest.fixture
 def mock_covariance_gauss(mock_sacc, mock_cosmo):
-    cc_cov = ClusterCountsGaussian(input_yml)
+    cc_cov = ClusterCountsGaussian(INPUT_YML)
     cc_cov.load_from_sacc(mock_sacc)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
@@ -82,7 +79,7 @@ def mock_covariance_gauss(mock_sacc, mock_cosmo):
 
 @pytest.fixture
 def mock_covariance_ssc(mock_sacc, mock_cosmo):
-    cc_cov = ClusterCountsSSC(input_yml)
+    cc_cov = ClusterCountsSSC(INPUT_YML)
     cc_cov.load_from_sacc(mock_sacc)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
@@ -97,11 +94,11 @@ def mock_covariance_ssc(mock_sacc, mock_cosmo):
 
 
 def test_is_not_null():
-    cc_cov = ClusterCountsSSC(input_yml)
+    cc_cov = ClusterCountsSSC(INPUT_YML)
     assert cc_cov is not None
     cc_cov = None
 
-    cc_cov = ClusterCountsGaussian(input_yml)
+    cc_cov = ClusterCountsGaussian(INPUT_YML)
     assert cc_cov is not None
 
 
