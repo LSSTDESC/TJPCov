@@ -7,6 +7,8 @@ dependencies:
   - mpi4py
   - pip
   - numpy
+  - wheel
+  - namaster
   # tjpcov is only available at the moment through PyPi
   - pip:
     # Installing TJPcov in two steps to avoid making NaMaster installation to
