@@ -138,7 +138,7 @@ def get_dummy_sacc():
     s.add_tracer(
         "NZ", "DESwl__0", quantity="galaxy_shear", spin=2, nz=None, z=None
     )
-    s.add_tracer("misc", "ForError", quantity="generic")
+    s.add_tracer("Misc", "ForError", quantity="generic")
 
     return s
 
