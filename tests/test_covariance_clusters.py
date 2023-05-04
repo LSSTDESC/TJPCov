@@ -49,7 +49,7 @@ def mock_sacc():
     # hacks the class to work without building
     # an entire sacc file for this test.
     s.add_tracer(
-        "misc",
+        "Misc",
         "clusters_0_0",
         metadata={
             "Mproxy_name": "richness",
