@@ -158,10 +158,11 @@ def test_integral_mass(
     test = mock_covariance_gauss.mass_richness_integral(z, 0)
     assert test == pytest.approx(reference_val, rel=1e-4)
 
+
 @pytest.mark.parametrize(
     "z, reference_val",
     [
-        (0.5, 3.8e-05), # a proper value must be added here
+        (0.5, 3.8e-05),  # a proper value must be added here
     ],
 )
 def test_integral_mass_no_mproxy(
@@ -171,6 +172,7 @@ def test_integral_mass_no_mproxy(
     mock_covariance_gauss.has_mproxy = False
     test = mock_covariance_gauss.mass_richness_integral(z, 0)
     assert test == pytest.approx(reference_val, rel=1e-1)
+
 
 def test_mass_richness(mock_covariance_gauss: CovarianceClusters):
     reference_min = 0.0009528852621284171
