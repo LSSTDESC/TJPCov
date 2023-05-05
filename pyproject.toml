@@ -28,6 +28,7 @@ dependencies = [
     "Jinja2",
     "pyyaml",
     "pytest",
+    "pytest-rerunfailures",
     "pyccl>=2.5.0",
     "sacc>=0.7",
     "camb",

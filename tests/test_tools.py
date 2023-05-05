@@ -6,34 +6,38 @@ import pytest
 
 from tjpcov import tools
 
-mask_hdf5_fname = "./tests/data/mask.hdf5"
-mask_fname = "./tests/data/mask.fits.gz"
-mask_hp = hp.read_map(mask_fname)
-nside = 32
+MASK_HDF5_FNAME = "./tests/data/mask.hdf5"
+MASK_FNAME = "./tests/data/mask.fits.gz"
+NSIDE = 32
 
 
-def test_read_map_from_hdf5():
-    mask = tools.read_map_from_hdf5(mask_hdf5_fname, "mask", nside)
-    assert np.all(mask_hp == mask)
+@pytest.fixture
+def mock_hp_mask():
+    return hp.read_map(MASK_FNAME)
 
 
-def test_read_map():
-    mask = tools.read_map(mask_fname)
-    assert np.all(mask_hp == mask)
+def test_read_map_from_hdf5(mock_hp_mask):
+    mask = tools.read_map_from_hdf5(MASK_HDF5_FNAME, "mask", NSIDE)
+    assert np.all(mock_hp_mask == mask)
+
+
+def test_read_map(mock_hp_mask):
+    mask = tools.read_map(MASK_FNAME)
+    assert np.all(mock_hp_mask == mask)
 
     # hdf5 extension
-    mask = tools.read_map(mask_hdf5_fname, name="mask", nside=nside)
-    assert np.all(mask_hp == mask)
+    mask = tools.read_map(MASK_HDF5_FNAME, name="mask", nside=NSIDE)
+    assert np.all(mock_hp_mask == mask)
 
     # Test errors for hdf5 call
     with pytest.raises(ValueError):
-        mask = tools.read_map(mask_hdf5_fname, name="mask")
+        mask = tools.read_map(MASK_HDF5_FNAME, name="mask")
 
     with pytest.raises(ValueError):
-        mask = tools.read_map(mask_hdf5_fname, nside=nside)
+        mask = tools.read_map(MASK_HDF5_FNAME, nside=NSIDE)
 
     with pytest.raises(ValueError):
-        mask = tools.read_map(mask_hdf5_fname)
+        mask = tools.read_map(MASK_HDF5_FNAME)
 
 
 def test_global_lock():
