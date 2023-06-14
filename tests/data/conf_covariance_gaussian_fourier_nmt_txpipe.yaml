@@ -1,11 +1,9 @@
 tjpcov:
-  use_mpi: True
-   
-  # harmonic space sacc input
+  # input sacc file
   sacc_file: ./tests/benchmarks/32_DES_tjpcov_bm/cls_cov_as_txpipe.fits
 
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
-  cosmo: 'set' 
+  cosmo: 'set'
 
   # Setting mask OR fsky approximation
   mask_file: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DES_mask_ns32.hdf5
@@ -15,10 +13,12 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+  outdir: ./tests/tmp/
 
   # linear bias for lenses constant for redshift bin (example notebook)
   bias_DESgc__0: 1.48
+
+  # IA: 0.5
 
   nside: 32
 

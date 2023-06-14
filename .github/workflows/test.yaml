@@ -15,10 +15,10 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
-      - name: Set up Python 3.7
+      - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: '3.8'
 
       # TODO: Fix cache
       # Commented out because cache makes the actions to fail
@@ -53,7 +53,7 @@ jobs:
           pip install .
           pip install .\[nmt\]
 
-          # For coeralls
+          # For coveralls
           pip install -U pytest-cov coveralls
 
       - name: Test
@@ -79,7 +79,7 @@ jobs:
         run: |
           # Install mpich
           sudo apt install -y mpich libmpich-dev
-          pip install -U mpi4py --no-binary :all:
+          pip install -U mpi4py --no-cache-dir
 
           # Run MPI tests
           mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append

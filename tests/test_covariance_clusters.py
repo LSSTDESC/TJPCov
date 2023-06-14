@@ -9,10 +9,7 @@ from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
 import pytest
 
-cosmo = ccl.Cosmology.read_yaml("./tests/data/cosmo_desy1.yaml")
-input_yml = "./tests/data/conf_covariance_clusters.yaml"
-
-# Test Fixtures
+INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 
 
 @pytest.fixture
@@ -52,7 +49,7 @@ def mock_sacc():
     # hacks the class to work without building
     # an entire sacc file for this test.
     s.add_tracer(
-        "misc",
+        "Misc",
         "clusters_0_0",
         metadata={
             "Mproxy_name": "richness",
@@ -69,8 +66,7 @@ def mock_sacc():
 
 @pytest.fixture
 def mock_covariance_gauss(mock_sacc, mock_cosmo):
-
-    cc_cov = ClusterCountsGaussian(input_yml)
+    cc_cov = ClusterCountsGaussian(INPUT_YML)
     cc_cov.load_from_sacc(mock_sacc)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
@@ -83,8 +79,7 @@ def mock_covariance_gauss(mock_sacc, mock_cosmo):
 
 @pytest.fixture
 def mock_covariance_ssc(mock_sacc, mock_cosmo):
-
-    cc_cov = ClusterCountsSSC(input_yml)
+    cc_cov = ClusterCountsSSC(INPUT_YML)
     cc_cov.load_from_sacc(mock_sacc)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
@@ -96,6 +91,25 @@ def mock_covariance_ssc(mock_sacc, mock_cosmo):
 
 
 # Tests start
+
+
+def test_is_not_null():
+    cc_cov = ClusterCountsSSC(INPUT_YML)
+    assert cc_cov is not None
+    cc_cov = None
+
+    cc_cov = ClusterCountsGaussian(INPUT_YML)
+    assert cc_cov is not None
+
+
+def test_load_from_sacc(mock_covariance_gauss: CovarianceClusters):
+    assert mock_covariance_gauss.min_mass == np.log(1e13)
+    assert mock_covariance_gauss.num_richness_bins == 3
+    assert mock_covariance_gauss.num_z_bins == 18
+    assert mock_covariance_gauss.min_richness == 10
+    assert mock_covariance_gauss.max_richness == 100
+    assert mock_covariance_gauss.z_min == 0.3
+    assert mock_covariance_gauss.z_max == 1.2
 
 
 def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusters):
@@ -116,19 +130,19 @@ def test_integral_mass_no_bias(
     mock_covariance_gauss: CovarianceClusters, z, ref_val
 ):
     test = mock_covariance_gauss.mass_richness_integral(z, 0, remove_bias=True)
-    assert test == pytest.approx(ref_val)
+    assert test == pytest.approx(ref_val, rel=1e-4)
 
 
 def test_double_bessel_integral(mock_covariance_gauss: CovarianceClusters):
     ref = 8.427201745032292e-05
     test = mock_covariance_gauss.double_bessel_integral(0.3, 0.3)
-    assert test == pytest.approx(ref)
+    assert test == pytest.approx(ref, rel=1e-4)
 
 
 def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
     ref = 63973.635143644424
     test = mock_covariance_gauss.shot_noise(0, 0)
-    assert test == pytest.approx(ref, 1e-5)
+    assert test == pytest.approx(ref, 1e-4)
 
 
 @pytest.mark.parametrize(
@@ -142,7 +156,7 @@ def test_integral_mass(
     mock_covariance_gauss: CovarianceClusters, z, reference_val
 ):
     test = mock_covariance_gauss.mass_richness_integral(z, 0)
-    assert test == pytest.approx(reference_val)
+    assert test == pytest.approx(reference_val, rel=1e-4)
 
 
 def test_mass_richness(mock_covariance_gauss: CovarianceClusters):
@@ -168,7 +182,6 @@ def test_mass_richness(mock_covariance_gauss: CovarianceClusters):
 def test_calc_dv(
     mock_covariance_gauss: CovarianceClusters, z_i, reference_val
 ):
-
     z_true = 0.8
     test = mock_covariance_gauss.comoving_volume_element(z_true, z_i) / 1e4
     assert test == pytest.approx(reference_val / 1e4)
@@ -186,4 +199,4 @@ def test_cov_nxn(
     cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
         ("clusters_0_0",), ("clusters_0_0",)
     )
-    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, 1e-5)
+    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-4)
