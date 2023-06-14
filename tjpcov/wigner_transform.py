@@ -60,7 +60,9 @@ class WignerTransform:
         self.theta = {}
         self.theta = theta
 
-        # compute the wigner-d matrices.
+        # compute the wigner-d matrices. 
+        # fao: the way this is called in covariance builder, it is computing
+        # all the terms without asking for it 
         for (s1, s2) in s1_s2:
             self.wig_d[(s1, s2)] = wigner_d_parallel(
                 s1, s2, theta, self.ell, ncpu=ncpu

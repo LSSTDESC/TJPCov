@@ -1005,12 +1005,13 @@ class CovarianceProjectedReal(CovarianceReal):
                 )
         return WT_factors[tuple(tracers)]
 
-    def get_Wigner_transform(self):
+    def get_Wigner_transform(self): 
         """Return an instance of the wigner_transform class.
 
         Returns:
             :obj:`~tjpcov.wigner_transform.WignerTransform` instance
         """
+        #fao: check if this is starting all the different spins 
         if self.WT is None:
             # Removing ell <= 1 (following original implementation)
             ell = np.arange(2, self.lmax + 1)
