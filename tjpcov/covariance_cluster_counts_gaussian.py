@@ -5,12 +5,9 @@ import numpy as np
 class ClusterCountsGaussian(CovarianceClusters):
     """Implementation of cluster covariance that calculates the gaussian
     (shot-noise) contribution to the autocorrelation of cluster counts (NxN).
-    This class is able to compute the covariance for
-    `_tracers_types = ("cluster", "cluster")`
     """
 
     cov_type = "gauss"
-    _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
         """Concrete implementation of covariance of cluster counts,
@@ -30,8 +27,10 @@ class ClusterCountsGaussian(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_1')
+            tracer_comb2 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_0')
 
         Returns:
             array_like: Covariance for a single block
@@ -42,16 +41,20 @@ class ClusterCountsGaussian(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_1')
+            tracer_comb2 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_0')
 
         Returns:
             float: Covariance for a single block
         """
 
-        z_i, richness_i, z_j, richness_j = self._get_redshift_richness_bins(
-            tracer_comb1, tracer_comb2
-        )
+        z_i = int(tracer_comb1[1].split("_")[-1])
+        richness_i = int(tracer_comb1[2].split("_")[-1])
+
+        z_j = int(tracer_comb2[1].split("_")[-1])
+        richness_j = int(tracer_comb2[2].split("_")[-1])
 
         if richness_i != richness_j or z_i != z_j:
             return np.array(0)

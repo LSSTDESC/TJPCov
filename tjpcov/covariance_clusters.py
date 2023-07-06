@@ -3,16 +3,22 @@ from .clusters_helpers import MassRichnessRelation, FFTHelper
 import numpy as np
 import pyccl as ccl
 from scipy.integrate import quad, romb
+from sacc import standard_types
 
 
 class CovarianceClusters(CovarianceBuilder):
     """The base class for calculating covariance that includes galaxy cluster
-    number counts.
+    number counts. This class is able to compute the covariance for
+    `_tracers_types = ("cluster_counts", "cluster_counts")`
     """
 
     space_type = "Fourier"
+    _tracer_types = (
+        standard_types.cluster_counts,
+        standard_types.cluster_counts,
+    )
 
-    def __init__(self, config, survey_area=4 * np.pi):
+    def __init__(self, config, min_halo_mass=1e13):
         """Constructor for the base class, used to pass through config options
         for covariance calculation.
 
@@ -20,14 +26,12 @@ class CovarianceClusters(CovarianceBuilder):
             config (dict or str): If dict, it returns the configuration
                 dictionary directly. If string, it asumes a YAML file and
                 parses it.
-            survey_area (float): The area of the survey on the sky.
-                This will bepulled from the sacc file eventually.
-                Defaults to 4*np.pi.
+            min_halo_mass (float, optional): Minimum halo mass.
         """
         super().__init__(config)
 
         sacc_file = self.io.get_sacc_file()
-        if "clusters" not in str(sacc_file.tracers.keys()):
+        if "cluster_counts" not in sacc_file.get_data_types():
             print(
                 "Clusters are not within the SACC file tracers."
                 + "Not performing cluster covariances."
@@ -36,10 +40,7 @@ class CovarianceClusters(CovarianceBuilder):
 
         self.overdensity_delta = 200
         self.h0 = float(self.config["parameters"].get("h"))
-        self.load_from_sacc(sacc_file)
-
-        # NOTE Survey area should be pulled from SACC file but is currently not
-        self.survey_area = survey_area
+        self.load_from_sacc(sacc_file, min_halo_mass)
 
         cosmo = self.get_cosmology()
         self.load_from_cosmology(cosmo)
@@ -62,7 +63,7 @@ class CovarianceClusters(CovarianceBuilder):
         self.c = ccl.physical_constants.CLIGHT / 1000
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
 
-    def load_from_sacc(self, sacc_file):
+    def load_from_sacc(self, sacc_file, min_halo_mass):
         """Cluster covariance has special parameters set in the SACC file. This
         informs the code that the data to calculate the cluster covariance is
         there.  We set extract those values from the sacc file here, and set
@@ -72,63 +73,62 @@ class CovarianceClusters(CovarianceBuilder):
             sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already
             loaded.
         """
-        # Read from SACC file relevant quantities
-        self.num_z_bins = sacc_file.metadata["nbins_cluster_redshift"]
-        self.num_richness_bins = sacc_file.metadata["nbins_cluster_richness"]
-        min_mass = sacc_file.metadata["min_mass"]
-        # survey_area = sacc_file.metadata['survey_area']
 
-        min_redshifts = [
-            sacc_file.tracers[x].metadata["z_min"]
-            for x in sacc_file.tracers
-            if x.__contains__("clusters")
-        ]
-        max_redshifts = [
-            sacc_file.tracers[x].metadata["z_max"]
-            for x in sacc_file.tracers
-            if x.__contains__("clusters")
-        ]
-        min_richness = [
-            sacc_file.tracers[x].metadata["Mproxy_min"]
-            for x in sacc_file.tracers
-            if x.__contains__("clusters")
-        ]
-        max_richness = [
-            sacc_file.tracers[x].metadata["Mproxy_max"]
-            for x in sacc_file.tracers
-            if x.__contains__("clusters")
-        ]
+        z_tracer_type = "bin_z"
+        survey_tracer_type = "survey"
+        richness_tracer_type = "bin_richness"
 
-        # Setup Richness Bins
-        self.min_richness = min(min_richness)
-        if self.min_richness == 0:
-            self.min_richness = 1.0
-        self.max_richness = max(max_richness)
+        survey_tracer = [
+            x
+            for x in sacc_file.tracers.values()
+            if x.tracer_type == survey_tracer_type
+        ]
+        if len(survey_tracer) == 0:
+            self.survey_tracer_nm = ""
+            self.survey_area = 4 * np.pi
+            print(
+                "Survey tracer not provided in sacc file.\n"
+                + "We will use the default value."
+            )
+        self.survey_area = survey_tracer[0].sky_area
+        self.survey_tracer_nm = survey_tracer[0].name
+
+        # Setup redshift bins
+        z_bins = [
+            v
+            for v in sacc_file.tracers.values()
+            if v.tracer_type == z_tracer_type
+        ]
+        self.num_z_bins = len(z_bins)
+        self.z_min = z_bins[0].lower
+        self.z_max = z_bins[-1].upper
+        self.z_bins = np.round(
+            np.linspace(self.z_min, self.z_max, self.num_z_bins + 1), 2
+        )
+        self.z_bin_spacing = (self.z_max - self.z_min) / self.num_z_bins
+        self.z_lower_limit = max(0.02, self.z_bins[0] - 4 * self.z_bin_spacing)
+        # Set upper limit to be 40% higher than max redshift
+        self.z_upper_limit = self.z_bins[-1] + 0.4 * self.z_bins[-1]
+
+        # Setup richness bins
+        richness_bins = [
+            v
+            for v in sacc_file.tracers.values()
+            if v.tracer_type == richness_tracer_type
+        ]
+        self.num_richness_bins = len(richness_bins)
+        self.min_richness = richness_bins[0].lower
+        self.max_richness = richness_bins[-1].upper
         self.richness_bins = np.round(
-            np.logspace(
-                np.log10(self.min_richness),
-                np.log10(self.max_richness),
+            np.linspace(
+                self.min_richness,
+                self.max_richness,
                 self.num_richness_bins + 1,
             ),
             2,
         )
 
-        # Define arrays for bins for Photometric z and z grid
-        self.z_max = max(max_redshifts)
-        self.z_min = min(min_redshifts)
-        if self.z_min == 0:
-            self.z_min = 0.01
-
-        self.z_bins = np.round(
-            np.linspace(self.z_min, self.z_max, self.num_z_bins + 1), 2
-        )
-        self.z_bin_spacing = (self.z_max - self.z_min) / self.num_z_bins
-        # Min redshift is 0.02
-        self.z_lower_limit = max(0.02, self.z_bins[0] - 4 * self.z_bin_spacing)
-        # Set upper limit to be 40% higher than max redshift
-        self.z_upper_limit = self.z_bins[-1] + 0.4 * self.z_bins[-1]
-
-        self.min_mass = np.log(min_mass)
+        self.min_mass = np.log(min_halo_mass)
         self.max_mass = np.log(1e16)
 
     def _quad_integrate(self, argument, from_lim, to_lim):
@@ -159,30 +159,6 @@ class CovarianceClusters(CovarianceBuilder):
             float: Value of the integral
         """
         return romb(kernel, dx=spacing)
-
-    def _get_redshift_richness_bins(self, tracer_comb1, tracer_comb2):
-        """Tracers for clusters don't sort correctly in the SACC file, so for
-        now we do a "hack" and pad the numbers with 0's to the left.  This
-        helper function converts those padded numbers into regular numbers and
-        returns them to the caller.
-
-        Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
-
-        Returns:
-            `tuple` of int: redshift bin i, richness bin i, redshift bin j,
-            richness bin j.
-        """
-        tracer_split1 = tracer_comb1[0].split("_")
-        tracer_split2 = tracer_comb2[0].split("_")
-
-        z_i = int(tracer_split1[1].lstrip("0") or 0)
-        richness_i = int(tracer_split1[2].lstrip("0") or 0)
-        z_j = int(tracer_split2[1].lstrip("0") or 0)
-        richness_j = int(tracer_split2[2].lstrip("0") or 0)
-
-        return z_i, richness_i, z_j, richness_j
 
     def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
         """We don't assume that redshift can be measured exactly, so we include
@@ -383,3 +359,21 @@ class CovarianceClusters(CovarianceBuilder):
             float: Numerical approximation of integral.
         """
         return self.fft_helper.two_fast_algorithm(z1, z2)
+
+    def get_list_of_tracers_for_cov(self):
+        """Return the covariance independent tracers combinations.
+            This is custom for the clusters covariance to remove some
+            tracers.
+
+        Returns:
+            list of str: List of independent tracers combinations.
+        """
+        sacc_file = self.io.get_sacc_file()
+        tracers = sacc_file.get_tracer_combinations()
+
+        tracers_out = []
+        for i, trs1 in enumerate(tracers):
+            for trs2 in tracers[i:]:
+                tracers_out.append((trs1[1:], trs2[1:]))
+
+        return tracers_out
