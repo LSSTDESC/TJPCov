@@ -3,7 +3,7 @@ tjpcov:
   do_xi: False
   cov_type: [ClusterCounts]
   # sacc input file 
-  sacc_file: ./tests/data/clusters/mock_clusters.sacc
+  sacc_file: ./tests/data/clusters/cluster_redshift_richness.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
   outdir: ./

@@ -7,12 +7,10 @@ from scipy.integrate import romb
 class ClusterCountsSSC(CovarianceClusters):
     """Implementation of cluster covariance that calculates the SSC
     contribution to the autocorrelation of cluster counts (NxN) following
-    N. Ferreira 2019.  This class is able to compute the covariance for
-    `_tracers_types = ("cluster", "cluster")`
+    N. Ferreira 2019.
     """
 
     cov_type = "SSC"
-    _tracer_types = ("cluster", "cluster")
 
     def __init__(self, config):
         """Concrete implementation of covariance of cluster counts,
@@ -32,9 +30,10 @@ class ClusterCountsSSC(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
-
+            tracer_comb1 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_1')
+            tracer_comb2 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_0')
         Returns:
             float: Covariance for a single block
         """
@@ -44,16 +43,20 @@ class ClusterCountsSSC(CovarianceClusters):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_1')
+            tracer_comb2 (`tuple` of str): e.g.
+                ('survey', 'bin_z_0', 'bin_richness_0')
 
         Returns:
             array_like: Covariance for a single block
         """
 
-        z_i, richness_i, z_j, richness_j = self._get_redshift_richness_bins(
-            tracer_comb1, tracer_comb2
-        )
+        z_i = int(tracer_comb1[1].split("_")[-1])
+        richness_i = int(tracer_comb1[2].split("_")[-1])
+
+        z_j = int(tracer_comb2[1].split("_")[-1])
+        richness_j = int(tracer_comb2[2].split("_")[-1])
 
         # Create a redshift range grid
         z_low_limit = max(
