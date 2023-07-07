@@ -87,9 +87,8 @@ class CovarianceClusters(CovarianceBuilder):
                 "Survey tracer not provided in sacc file.\n"
                 + "We will use the default value."
             )
-
-        self.survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
-        self.survey_tracer_nm = survey_tracer[0].name
+        else:
+            self.survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
 
         # Setup redshift bins
         z_bins = [
