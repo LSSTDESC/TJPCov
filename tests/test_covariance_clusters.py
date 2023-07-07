@@ -8,6 +8,7 @@ from tjpcov.covariance_cluster_counts_ssc import ClusterCountsSSC
 from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
 import pytest
+import itertools
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 
@@ -41,25 +42,41 @@ def mock_sacc():
     # /blob/master/Full%20covariance%20N_N%20part%20vfinal.ipynb
     # As reference.
     s = sacc.Sacc()
-    s.metadata["nbins_cluster_redshift"] = 18
-    s.metadata["nbins_cluster_richness"] = 3
-    s.metadata["min_mass"] = 1e13
+    z_min, z_max = 0.3, 1.2
+    richness_min, richness_max = 10, 100
 
-    # This isnt how tracers actually look, but sort of
-    # hacks the class to work without building
-    # an entire sacc file for this test.
-    s.add_tracer(
-        "Misc",
-        "clusters_0_0",
-        metadata={
-            "Mproxy_name": "richness",
-            "Mproxy_min": 10,
-            "Mproxy_max": 100,
-            "z_name": "redshift",
-            "z_min": 0.3,
-            "z_max": 1.2,
-        },
-    )
+    z_tracers = []
+    z_edges = np.linspace(z_min, z_max, 19)
+    for i, zbin in enumerate(zip(z_edges[:-1], z_edges[1:])):
+        bin_z_label = f"bin_z_{i}"
+        s.add_tracer("bin_z", bin_z_label, zbin[0], zbin[1])
+        z_tracers.append(bin_z_label)
+
+    richness_tracers = []
+    richness_edges = np.linspace(richness_min, richness_max, 4)
+    for i, richness_bin in enumerate(
+        zip(richness_edges[:-1], richness_edges[1:])
+    ):
+        bin_richness_label = f"bin_richness_{i}"
+        s.add_tracer(
+            "bin_richness",
+            bin_richness_label,
+            richness_bin[0],
+            richness_bin[1],
+        )
+        richness_tracers.append(bin_richness_label)
+
+    tracer_combos = list(itertools.product(z_tracers, richness_tracers))
+    cluster_counts = np.linspace(1, 1e4, len(tracer_combos))
+
+    counts_and_edges = zip(cluster_counts.flatten(), tracer_combos)
+
+    for counts, (z_tracers, richness_tracers) in counts_and_edges:
+        s.add_data_point(
+            sacc.standard_types.cluster_counts,
+            (bin_z_label, bin_richness_label),
+            int(counts),
+        )
 
     return s
 
@@ -67,7 +84,7 @@ def mock_sacc():
 @pytest.fixture
 def mock_covariance_gauss(mock_sacc, mock_cosmo):
     cc_cov = ClusterCountsGaussian(INPUT_YML)
-    cc_cov.load_from_sacc(mock_sacc)
+    cc_cov.load_from_sacc(mock_sacc, min_halo_mass=1e13)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
         mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
@@ -80,7 +97,7 @@ def mock_covariance_gauss(mock_sacc, mock_cosmo):
 @pytest.fixture
 def mock_covariance_ssc(mock_sacc, mock_cosmo):
     cc_cov = ClusterCountsSSC(INPUT_YML)
-    cc_cov.load_from_sacc(mock_sacc)
+    cc_cov.load_from_sacc(mock_sacc, min_halo_mass=1e13)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
         mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
