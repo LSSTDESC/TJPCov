@@ -43,7 +43,7 @@ def mock_sacc():
     # As reference.
     s = sacc.Sacc()
     z_min, z_max = 0.3, 1.2
-    richness_min, richness_max = 10, 100
+    richness_min, richness_max = np.log10(10), np.log10(100)
 
     z_tracers = []
     z_edges = np.linspace(z_min, z_max, 19)
@@ -57,7 +57,7 @@ def mock_sacc():
     for i, richness_bin in enumerate(
         zip(richness_edges[:-1], richness_edges[1:])
     ):
-        bin_richness_label = f"bin_richness_{i}"
+        bin_richness_label = f"bin_rich_{i}"
         s.add_tracer(
             "bin_richness",
             bin_richness_label,
@@ -209,11 +209,14 @@ def test_cov_nxn(
     mock_covariance_ssc: ClusterCountsSSC,
 ):
     ref_sum = 130462.91921818888
-
+    # Need to include survey name from mock file here to ensure correct data
+    # types are found
     cov_00_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("clusters_0_0",), ("clusters_0_0",)
+        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
+        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
     )
     cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
-        ("clusters_0_0",), ("clusters_0_0",)
+        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
+        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-4)

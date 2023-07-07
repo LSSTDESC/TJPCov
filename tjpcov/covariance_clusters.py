@@ -114,12 +114,12 @@ class CovarianceClusters(CovarianceBuilder):
             if v.tracer_type == richness_tracer_type
         ]
         self.num_richness_bins = len(richness_bins)
-        self.min_richness = richness_bins[0].lower
-        self.max_richness = richness_bins[-1].upper
+        self.min_richness = 10 ** richness_bins[0].lower
+        self.max_richness = 10 ** richness_bins[-1].upper
         self.richness_bins = np.round(
-            np.linspace(
-                self.min_richness,
-                self.max_richness,
+            np.logspace(
+                np.log10(self.min_richness),
+                np.log10(self.max_richness),
                 self.num_richness_bins + 1,
             ),
             2,
