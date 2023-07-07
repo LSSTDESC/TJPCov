@@ -87,7 +87,8 @@ class CovarianceClusters(CovarianceBuilder):
                 "Survey tracer not provided in sacc file.\n"
                 + "We will use the default value."
             )
-        self.survey_area = survey_tracer[0].sky_area
+
+        self.survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
         self.survey_tracer_nm = survey_tracer[0].name
 
         # Setup redshift bins
@@ -351,20 +352,40 @@ class CovarianceClusters(CovarianceBuilder):
         """
         return self.fft_helper.two_fast_algorithm(z1, z2)
 
-    def get_list_of_tracers_for_cov(self):
-        """Return the covariance independent tracers combinations.
-            This is custom for the clusters covariance to remove some
-            tracers.
+    def _build_matrix_from_blocks(self, blocks, tracers_cov):
+        """Build full matrix from blocks.  Cluster covariance overrides this
+        because our tracer combinations are not unique per data type.
+
+        Args:
+            blocks (list): List of blocks
+            tracers_cov (list): List of tracer combinations corresponding to
+                each block in blocks. They must have the same order
 
         Returns:
-            list of str: List of independent tracers combinations.
+            array: Covariance matrix for all combinations in the sacc file.
         """
-        sacc_file = self.io.get_sacc_file()
-        tracers = sacc_file.get_tracer_combinations()
+        blocks = iter(blocks)
 
-        tracers_out = []
-        for i, trs1 in enumerate(tracers):
-            for trs2 in tracers[i:]:
-                tracers_out.append((trs1[1:], trs2[1:]))
+        s = self.io.get_sacc_file()
+        ndim = s.mean.size
 
-        return tracers_out
+        cov_full = np.nan * np.ones((ndim, ndim))
+
+        print("Building the covariance: placing blocks in their place")
+        for tracer_comb1, tracer_comb2 in tracers_cov:
+            # We do not need to do the reshape here because the blocks have
+            # been build looping over the data types present in the sacc file
+            print(tracer_comb1, tracer_comb2)
+
+            cov_ij = next(blocks)
+            ix1 = s.indices(
+                data_type=standard_types.cluster_counts, tracers=tracer_comb1
+            )
+            ix2 = s.indices(
+                data_type=standard_types.cluster_counts, tracers=tracer_comb2
+            )
+
+            cov_full[np.ix_(ix1, ix2)] = cov_ij
+            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
+
+        return cov_full
