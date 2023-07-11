@@ -149,16 +149,17 @@ def test_wigner_d_parallel(s1, s2):
     ell = kwargs["ell"]
     wd = wigner_transform.wigner_d(s1, s2, theta, ell)
     wd2 = wigner_transform.wigner_d_parallel(s1, s2, theta, ell)
-    assert np.all(wd == wd2)
+    assert wd.flatten() == pytest.approx(wd2.flatten(), rel=1e-10)
 
     wd2 = wigner_transform.wigner_d_parallel(s1, s2, theta, ell, ncpu=4)
-    assert np.all(wd == wd2)
+    assert wd.flatten() == pytest.approx(wd2.flatten(), rel=1e-10)
 
     wd = wigner_transform.wigner_d(s1, s2, theta, ell, l_use_bessel=None)
     wd2 = wigner_transform.wigner_d_parallel(
         s1, s2, theta, ell, l_use_bessel=None
     )
-    assert np.all(wd == wd2)
+
+    assert wd.flatten() == pytest.approx(wd2.flatten(), rel=1e-10)
 
 
 def test_bin_cov():

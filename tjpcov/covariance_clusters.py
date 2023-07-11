@@ -295,8 +295,8 @@ class CovarianceClusters(CovarianceBuilder):
             def mass_richness(*args):
                 return 1.0
 
-            m_integ_lower = self.richness_bins[richness_i]
-            m_integ_upper = self.richness_bins[richness_i + 1]
+            m_integ_lower = np.log(10) * self.richness_bins[richness_i]
+            m_integ_upper = np.log(10) * self.richness_bins[richness_i + 1]
 
         def integrand(ln_m):
             argument = 1 / np.log(10.0)

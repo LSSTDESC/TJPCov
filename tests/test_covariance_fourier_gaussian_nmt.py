@@ -130,7 +130,7 @@ def get_data_cl(tr1, tr2, remove_be=False):
 def get_dummy_sacc():
     s = sacc.Sacc()
     s.add_tracer(
-        "map", "PLAcv", quantity="cmb_convergence", spin=0, ell=None, beam=None
+        "Map", "PLAcv", quantity="cmb_convergence", spin=0, ell=None, beam=None
     )
     s.add_tracer(
         "NZ", "DESgc__0", quantity="galaxy_density", spin=0, nz=None, z=None
@@ -138,7 +138,7 @@ def get_dummy_sacc():
     s.add_tracer(
         "NZ", "DESwl__0", quantity="galaxy_shear", spin=2, nz=None, z=None
     )
-    s.add_tracer("misc", "ForError", quantity="generic")
+    s.add_tracer("Misc", "ForError", quantity="generic")
 
     return s
 
