@@ -1,10 +1,10 @@
-from .covariance_clusters import CovarianceClusters
+from .covariance_cluster_counts import CovarianceClusterCounts
 import numpy as np
 import pyccl as ccl
 from scipy.integrate import romb
 
 
-class ClusterCountsSSC(CovarianceClusters):
+class ClusterCountsSSC(CovarianceClusterCounts):
     """Implementation of cluster covariance that calculates the SSC
     contribution to the autocorrelation of cluster counts (NxN) following
     N. Ferreira 2019.
