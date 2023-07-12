@@ -7,40 +7,17 @@ from tjpcov.covariance_cluster_counts_gaussian import ClusterCountsGaussian
 from tjpcov.covariance_cluster_counts_ssc import ClusterCountsSSC
 from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
-import pytest
-import itertools
+import pytest, os, shutil, itertools
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
+OUTDIR = "./tests/tmp/"
 
 
-@pytest.fixture
-def mock_cosmo():
-    Omg_c = 0.26
-    Omg_b = 0.04
-    h0 = 0.67  # so H0 = 100h0 will be in km/s/Mpc
-    A_s_value = 2.1e-9
-    n_s_value = 0.96
-    w_0 = -1.0
-    w_a = 0.0
-
-    cosmo = ccl.Cosmology(
-        Omega_c=Omg_c,
-        Omega_b=Omg_b,
-        h=h0,
-        A_s=A_s_value,
-        n_s=n_s_value,
-        w0=w_0,
-        wa=w_a,
-    )
-    return cosmo
+def teardown_module():
+    shutil.rmtree(OUTDIR)
 
 
-@pytest.fixture
-def mock_sacc():
-    # Using values from
-    # https://github.com/nrussofer/Cosmological-Covariance-matrices
-    # /blob/master/Full%20covariance%20N_N%20part%20vfinal.ipynb
-    # As reference.
+def setup_module():
     s = sacc.Sacc()
     z_min, z_max = 0.3, 1.2
     richness_min, richness_max = np.log10(10), np.log10(100)
@@ -66,6 +43,10 @@ def mock_sacc():
         )
         richness_tracers.append(bin_richness_label)
 
+    survey_area = 4 * np.pi * (180 / np.pi) ** 2
+    survey_name = "mock_survey"
+    s.add_tracer("survey", survey_name, survey_area)
+
     tracer_combos = list(itertools.product(z_tracers, richness_tracers))
     cluster_counts = np.linspace(1, 1e4, len(tracer_combos))
 
@@ -74,17 +55,40 @@ def mock_sacc():
     for counts, (z_tracers, richness_tracers) in counts_and_edges:
         s.add_data_point(
             sacc.standard_types.cluster_counts,
-            (bin_z_label, bin_richness_label),
+            (survey_name, z_tracers, richness_tracers),
             int(counts),
         )
 
-    return s
+    s.to_canonical_order()
+    os.makedirs(OUTDIR, exist_ok=True)
+    s.save_fits(os.path.join(OUTDIR, "test_cl_sacc.fits"), overwrite=True)
 
 
 @pytest.fixture
-def mock_covariance_gauss(mock_sacc, mock_cosmo):
+def mock_cosmo():
+    Omg_c = 0.26
+    Omg_b = 0.04
+    h0 = 0.67  # so H0 = 100h0 will be in km/s/Mpc
+    A_s_value = 2.1e-9
+    n_s_value = 0.96
+    w_0 = -1.0
+    w_a = 0.0
+
+    cosmo = ccl.Cosmology(
+        Omega_c=Omg_c,
+        Omega_b=Omg_b,
+        h=h0,
+        A_s=A_s_value,
+        n_s=n_s_value,
+        w0=w_0,
+        wa=w_a,
+    )
+    return cosmo
+
+
+@pytest.fixture
+def mock_covariance_gauss(mock_cosmo):
     cc_cov = ClusterCountsGaussian(INPUT_YML)
-    cc_cov.load_from_sacc(mock_sacc, min_halo_mass=1e13)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
         mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
@@ -95,9 +99,8 @@ def mock_covariance_gauss(mock_sacc, mock_cosmo):
 
 
 @pytest.fixture
-def mock_covariance_ssc(mock_sacc, mock_cosmo):
+def mock_covariance_ssc(mock_cosmo):
     cc_cov = ClusterCountsSSC(INPUT_YML)
-    cc_cov.load_from_sacc(mock_sacc, min_halo_mass=1e13)
     cc_cov.load_from_cosmology(mock_cosmo)
     cc_cov.fft_helper = FFTHelper(
         mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
@@ -227,11 +230,11 @@ def test_cov_nxn(
     # Need to include survey name from mock file here to ensure correct data
     # types are found
     cov_00_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
-        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
+        ("mock_survey", "bin_z_0", "bin_rich_0"),
+        ("mock_survey", "bin_z_0", "bin_rich_0"),
     )
     cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
-        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
-        ("NC_mock_redshift_richness", "bin_z_0", "bin_rich_0"),
+        ("mock_survey", "bin_z_0", "bin_rich_0"),
+        ("mock_survey", "bin_z_0", "bin_rich_0"),
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-4)

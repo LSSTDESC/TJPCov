@@ -361,8 +361,8 @@ class CovarianceClusters(CovarianceBuilder):
         return self.fft_helper.two_fast_algorithm(z1, z2)
 
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """Build full matrix from blocks.  Cluster covariance overrides this
-        because our tracer combinations are not unique per data type.
+        """Build full matrix from blocks.  Uses a combination data type and
+        tracer combinations to place data blocks in the covariance matrix.
 
         Args:
             blocks (list): List of blocks
