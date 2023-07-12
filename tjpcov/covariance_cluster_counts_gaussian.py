@@ -1,8 +1,8 @@
-from .covariance_clusters import CovarianceClusters
+from .covariance_cluster_counts import CovarianceClusterCounts
 import numpy as np
 
 
-class ClusterCountsGaussian(CovarianceClusters):
+class ClusterCountsGaussian(CovarianceClusterCounts):
     """Implementation of cluster covariance that calculates the gaussian
     (shot-noise) contribution to the autocorrelation of cluster counts (NxN).
     """

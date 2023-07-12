@@ -6,7 +6,7 @@ from scipy.integrate import quad, romb
 from sacc import standard_types
 
 
-class CovarianceClusters(CovarianceBuilder):
+class CovarianceClusterCounts(CovarianceBuilder):
     """The base class for calculating covariance that includes galaxy cluster
     number counts. This class is able to compute the covariance for
     `_tracers_types = ("cluster_counts", "cluster_counts")`
