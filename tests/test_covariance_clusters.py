@@ -7,7 +7,10 @@ from tjpcov.covariance_cluster_counts_gaussian import ClusterCountsGaussian
 from tjpcov.covariance_cluster_counts_ssc import ClusterCountsSSC
 from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
-import pytest, os, shutil, itertools
+import pytest
+import os
+import shutil
+import itertools
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 OUTDIR = "./tests/tmp/"
