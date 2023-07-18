@@ -303,9 +303,14 @@ class CovarianceBuilder(ABC):
         s = self.io.get_sacc_file()
 
         # Check in the given order
-        correct_dtypes = (self._tracer_types[0] in dtypes1) and (
-            self._tracer_types[1] in dtypes2
+        correct_dtype1 = any(
+            self._tracer_types[0] in dtype for dtype in dtypes1
         )
+        correct_dtype2 = any(
+            self._tracer_types[1] in dtype for dtype in dtypes2
+        )
+        correct_dtypes = correct_dtype1 and correct_dtype2
+
         if not correct_dtypes:
             # Check in the opposite order
             correct_dtypes = (self._tracer_types[1] in dtypes1) and (
