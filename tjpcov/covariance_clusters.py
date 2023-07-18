@@ -48,7 +48,7 @@ class CovarianceClusters(CovarianceBuilder):
         )
 
         # Quick key to skip P(Richness|M)
-        self.has_mproxy = True
+        self.has_mproxy = self.config.get("has_mproxy", True)
 
     def load_from_cosmology(self, cosmo):
         """Values used by the covariance calculation that come from a CCL
