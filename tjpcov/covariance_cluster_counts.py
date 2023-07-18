@@ -32,11 +32,10 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         sacc_file = self.io.get_sacc_file()
         if "cluster_counts" not in sacc_file.get_data_types():
-            print(
-                "Clusters are not within the SACC file tracers."
-                + "Not performing cluster covariances."
+            raise ValueError(
+                "Cluster count covariance was requested but cluster count data"
+                + " points was not included in the sacc file."
             )
-            return
 
         self.overdensity_delta = 200
         self.h0 = float(self.config["parameters"].get("h"))
