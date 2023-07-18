@@ -250,6 +250,32 @@ def test_calc_dv(
     assert test == pytest.approx(reference_val / 1e4)
 
 
+def test_cov_gaussian_zero_offdiagonal(
+    mock_covariance_gauss: ClusterCountsGaussian,
+):
+    cov_0111_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
+        ("mock_survey", "bin_z_0", "bin_rich_1"),
+        ("mock_survey", "bin_z_1", "bin_rich_1"),
+    )
+    cov_1011_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
+        ("mock_survey", "bin_z_1", "bin_rich_0"),
+        ("mock_survey", "bin_z_1", "bin_rich_1"),
+    )
+    cov_1001_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
+        ("mock_survey", "bin_z_1", "bin_rich_0"),
+        ("mock_survey", "bin_z_0", "bin_rich_1"),
+    )
+    assert cov_0111_gauss == 0
+    assert cov_1011_gauss == 0
+    assert cov_1001_gauss == 0
+
+    cov_10_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
+        ("mock_survey", "bin_z_1", "bin_rich_0"),
+        ("mock_survey", "bin_z_1", "bin_rich_1"),
+    )
+    assert cov_10_gauss == 0
+
+
 def test_cov_nxn(
     mock_covariance_gauss: ClusterCountsGaussian,
     mock_covariance_ssc: ClusterCountsSSC,
