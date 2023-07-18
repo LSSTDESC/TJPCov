@@ -34,7 +34,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         if "cluster_counts" not in sacc_file.get_data_types():
             raise ValueError(
                 "Cluster count covariance was requested but cluster count data"
-                + " points was not included in the sacc file."
+                + " points were not included in the sacc file."
             )
 
         self.overdensity_delta = 200

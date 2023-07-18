@@ -5,7 +5,7 @@ import pyccl as ccl
 from sacc import standard_types
 
 
-class CovarianceClusterMass(CovarianceBuilder):
+class ClusterMass(CovarianceBuilder):
     """Implementation of cluster covariance that calculates the covriance
     of cluster weak lensing mass measurements.
     This class is able to compute the covariance for
@@ -36,11 +36,10 @@ class CovarianceClusterMass(CovarianceBuilder):
             standard_types.cluster_mean_log_mass
             not in sacc_file.get_data_types()
         ):
-            print(
-                "Cluster mass is not within the SACC file tracers."
-                + "Not performing cluster mass covariance."
+            raise ValueError(
+                "Cluster mass covariance was requested but cluster mass data"
+                + " points were not included in the sacc file."
             )
-            return
 
         self.overdensity_delta = 200
         self.h0 = float(self.config["parameters"].get("h"))
