@@ -368,7 +368,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         s = self.io.get_sacc_file()
         ndim = s.mean.size
 
-        cov_full = np.nan * np.ones((ndim, ndim))
+        cov_full = np.zeros((ndim, ndim))
 
         print("Building the covariance: placing blocks in their place")
         for tracer_comb1, tracer_comb2 in tracers_cov:
