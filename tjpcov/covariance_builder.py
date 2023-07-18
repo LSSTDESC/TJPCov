@@ -297,8 +297,8 @@ class CovarianceBuilder(ABC):
 
         # Let's use only one of the data types since all of them will have to
         # be e.g. cl, xi for the same tracer combination
-        dtypes1 = self.get_tracer_comb_data_types(tracer_comb1)[0]
-        dtypes2 = self.get_tracer_comb_data_types(tracer_comb2)[0]
+        dtypes1 = self.get_tracer_comb_data_types(tracer_comb1)
+        dtypes2 = self.get_tracer_comb_data_types(tracer_comb2)
 
         s = self.io.get_sacc_file()
 
