@@ -47,6 +47,9 @@ class CovarianceClusters(CovarianceBuilder):
             cosmo, self.z_lower_limit, self.z_upper_limit
         )
 
+        # Quick key to skip P(Richness|M)
+        self.has_mproxy = self.config.get("has_mproxy", True)
+
     def load_from_cosmology(self, cosmo):
         """Values used by the covariance calculation that come from a CCL
         cosmology object.  Derived attributes from the cosmology are set here.
@@ -302,12 +305,18 @@ class CovarianceClusters(CovarianceBuilder):
                 )
                 argument *= halo_bias
 
-            mass_richness = self.mass_richness(ln_m, richness_i)
-            argument *= mass_richness
+            if self.has_mproxy:
+                argument *= self.mass_richness(ln_m, richness_i)
 
             return argument
 
-        return self._quad_integrate(integrand, self.min_mass, self.max_mass)
+        if self.has_mproxy:
+            m_integ_lower, m_integ_upper = self.min_mass, self.max_mass
+        else:
+            m_integ_lower = np.log(10) * self.richness_bins[richness_i]
+            m_integ_upper = np.log(10) * self.richness_bins[richness_i + 1]
+
+        return self._quad_integrate(integrand, m_integ_lower, m_integ_upper)
 
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
         """Calculate part of the super sample covariance, or the non-diagonal
@@ -315,8 +324,8 @@ class CovarianceClusters(CovarianceBuilder):
         than the survey size.
 
         Args:
-            z1 (float): redshift
-            bin_z_j (int): redshift bin i
+            z (float): redshift
+            bin_z_j (int): redshift bin j
             bin_lbd_j (int): richness bin j
             approx (bool, optional): Will only calculate the mass richness
             integral once and multiply at end. Defaults to True.
