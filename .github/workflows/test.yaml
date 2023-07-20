@@ -69,7 +69,7 @@ jobs:
           pip install -U mpi4py
 
           # Run MPI test (just the computation of blocks)
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov
+          mpiexec -n 2 coverage run --rcfile=.coveragerc -m pytest -vv tests/test_mpi.py
           coverage combine
 
           # Uninstall openmpi
@@ -83,7 +83,7 @@ jobs:
           pip install -U mpi4py --no-cache-dir
 
           # Run MPI tests
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov
+          mpiexec -n 2 coverage run --rcfile=.coveragerc -m pytest -vv tests/test_mpi.py
           coverage combine
 
           # Uninstall mpich
