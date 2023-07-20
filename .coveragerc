@@ -1,4 +1,0 @@
-[run]
-parallel = true
-source = tjpcov
-omit = */__init__.py
