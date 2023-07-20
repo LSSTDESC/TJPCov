@@ -65,7 +65,3 @@ full = [
 "Homepage" = "https://github.com/LSSTDESC/TJPCov"
 "Bug Tracker" = "https://github.com/LSSTDESC/TJPCov/issues"
 "Documentation" = "https://tjpcov.readthedocs.io"
-
-[tool.coverage]
-    [tool.coverage.run]
-    omit = ['__init__.py']

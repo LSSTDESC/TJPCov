@@ -56,9 +56,9 @@ jobs:
           # For coveralls
           pip install -U pytest-cov coveralls
 
-      - name: Test
-        run: |
-          python3 -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+      # - name: Test
+      #   run: |
+      #     python3 -m pytest -vv --ignore=tests/test_mpi.py
               
       - name: Test mpi (openmpi)
         run: |
@@ -69,8 +69,9 @@ jobs:
           pip install -U mpi4py
 
           # Run MPI test (just the computation of blocks)
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
-          
+          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py
+          coverage combine
+
           # Uninstall openmpi
           sudo apt remove -y openmpi-bin libopenmpi-dev
           pip uninstall -y mpi4py
@@ -82,8 +83,9 @@ jobs:
           pip install -U mpi4py --no-cache-dir
 
           # Run MPI tests
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
-          
+          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py
+          coverage combine
+
           # Uninstall mpich
           sudo apt remove -y mpich libmpich-dev
           pip uninstall -y mpi4py
@@ -92,4 +94,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run:
+          coverage report -m
           coveralls --service=github
