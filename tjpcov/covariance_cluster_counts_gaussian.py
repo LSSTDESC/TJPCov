@@ -50,11 +50,11 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
             float: Covariance for a single block
         """
 
-        z_i = int(tracer_comb1[1].split("_")[-1])
-        richness_i = int(tracer_comb1[2].split("_")[-1])
+        richness_i = int(tracer_comb1[1].split("_")[-1])
+        z_i = int(tracer_comb1[2].split("_")[-1])
 
-        z_j = int(tracer_comb2[1].split("_")[-1])
-        richness_j = int(tracer_comb2[2].split("_")[-1])
+        richness_j = int(tracer_comb2[1].split("_")[-1])
+        z_j = int(tracer_comb2[2].split("_")[-1])
 
         if richness_i != richness_j or z_i != z_j:
             return np.array(0)

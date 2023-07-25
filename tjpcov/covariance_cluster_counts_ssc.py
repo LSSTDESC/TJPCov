@@ -52,11 +52,11 @@ class ClusterCountsSSC(CovarianceClusterCounts):
             array_like: Covariance for a single block
         """
 
-        z_i = int(tracer_comb1[1].split("_")[-1])
-        richness_i = int(tracer_comb1[2].split("_")[-1])
+        richness_i = int(tracer_comb1[1].split("_")[-1])
+        z_i = int(tracer_comb1[2].split("_")[-1])
 
-        z_j = int(tracer_comb2[1].split("_")[-1])
-        richness_j = int(tracer_comb2[2].split("_")[-1])
+        richness_j = int(tracer_comb2[1].split("_")[-1])
+        z_j = int(tracer_comb2[2].split("_")[-1])
 
         # Create a redshift range grid
         z_low_limit = max(
