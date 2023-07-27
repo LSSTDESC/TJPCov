@@ -87,7 +87,8 @@ class CovarianceClusterCounts(CovarianceBuilder):
             self.survey_area = 4 * np.pi
             print(
                 "Survey tracer not provided in sacc file.\n"
-                + "We will use the default value."
+                + "We will use the default value.",
+                flush=True,
             )
         else:
             self.survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
@@ -378,11 +379,14 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         cov_full = np.zeros((ndim, ndim))
 
-        print("Building the covariance: placing blocks in their place")
+        print(
+            "Building the covariance: placing blocks in their place",
+            flush=True,
+        )
         for tracer_comb1, tracer_comb2 in tracers_cov:
             # We do not need to do the reshape here because the blocks have
             # been build looping over the data types present in the sacc file
-            print(tracer_comb1, tracer_comb2)
+            print(tracer_comb1, tracer_comb2, flush=True)
 
             cov_ij = next(blocks)
             ix1 = s.indices(

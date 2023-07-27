@@ -133,11 +133,14 @@ class CovarianceBuilder(ABC):
 
         cov_full = -1 * np.ones((ndim, ndim))
 
-        print("Building the covariance: placing blocks in their place")
+        print(
+            "Building the covariance: placing blocks in their place",
+            flush=True,
+        )
         for tracer_comb1, tracer_comb2 in tracers_cov:
             # We do not need to do the reshape here because the blocks have
             # been build looping over the data types present in the sacc file
-            print(tracer_comb1, tracer_comb2)
+            print(tracer_comb1, tracer_comb2, flush=True)
 
             cov_ij = next(blocks)
             ix1 = s.indices(tracers=tracer_comb1)
@@ -174,10 +177,12 @@ class CovarianceBuilder(ABC):
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
-        print("Computing independent covariance blocks")
+        print("Computing independent covariance blocks", flush=True)
         tasks_per_rank = self._split_tasks_by_rank(tracers_cov)
         for tracer_comb1, tracer_comb2 in tasks_per_rank:
-            print(f"Rank {self.rank}: {tracer_comb1}, {tracer_comb2}")
+            print(
+                f"Rank {self.rank}: {tracer_comb1}, {tracer_comb2}", flush=True
+            )
             # TODO: Options to compute the covariance block should be defined
             # at initialization and/or through kwargs?
             cov = self.get_covariance_block_for_sacc(
