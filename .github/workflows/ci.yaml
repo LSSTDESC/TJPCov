@@ -43,7 +43,7 @@ jobs:
 
       - name: Install TJPCov
         run: |
-          pythom -m pip install -U pip
+          python -m pip install -U pip
           python -m pip install .[test]
       
       - name: Install NaMaster TJPCov
