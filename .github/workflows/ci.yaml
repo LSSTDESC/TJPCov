@@ -1,0 +1,88 @@
+name: Tests
+on:
+   push:
+     branches: [ master ]
+   pull_request:
+     branches: [ master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 3
+  
+jobs:
+  build:
+
+    name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.11"]
+        runs-on: [ubuntu-latest, macos-latest]
+
+    steps:
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@v2
+      - uses: psf/black@stable
+      - name: Lint codebase
+        run: |
+          pip install -U flake8
+          flake8 tjpcov tests
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install TJPCov
+        run: |
+          pythom -m pip install -U pip
+          python -m pip install .[test]
+      
+      - name: Install NaMaster TJPCov
+        run: |
+          # This needs to be done second
+          # see (https://github.com/LSSTDESC/NaMaster/issues/138)
+          sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
+          python -m pip install .[nmt]
+
+      - name: Test
+        run: |
+          python -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+              
+      - name: Install OpenMPI
+        run: |
+          sudo apt install -y openmpi-bin libopenmpi-dev
+          python -m pip install -U mpi4py
+          
+      - name: Test OpenMPI
+        run: |
+          # Run MPI test (just the computation of blocks)
+          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
+          
+      - name: Uninstall OpenMPI
+        run: |
+          sudo apt remove -y openmpi-bin libopenmpi-dev
+          python -m pip uninstall -y mpi4py
+
+      - name: Install mpich
+        run: |
+          sudo apt install -y mpich libmpich-dev
+          python -m pip install -U mpi4py --no-cache-dir
+
+      - name: Test mpich
+        run: |
+          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
+
+      - name: coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run:
+          coveralls --service=github

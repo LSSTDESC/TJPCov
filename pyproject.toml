@@ -27,8 +27,6 @@ dependencies = [
     "numpy",
     "Jinja2",
     "pyyaml",
-    "pytest",
-    "pytest-rerunfailures",
     "pyccl>=2.5.0,<2.8.0",
     "sacc>=0.8",
     "camb",
@@ -42,6 +40,12 @@ dynamic = ["version"]
 [tool.setuptools_scm]
 
 [project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-rerunfailures",
+    "pytest-cov",
+    "coveralls",
+]
 doc = [
     "sphinx",
     "sphinx-autoapi",
