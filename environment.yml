@@ -1,16 +1,18 @@
-name: tjpcov  # minimum environment for tjpcov development
-channels: 
+name: tjpcov
+channels:
   - conda-forge
   - defaults
 dependencies:
   - python>=3.8
-  - mpi4py
-  - pip
   - numpy
-  - wheel
+  - scipy
+  - healpy
+  - jinja2
+  - h5py
+  - mpi4py
   - namaster
-  # tjpcov is only available at the moment through PyPi
+  - pytest
+  - pytest-rerunfailures
+  - pip
   - pip:
-    # Installing TJPcov in two steps to avoid making NaMaster installation to
-    # fail due to (https://github.com/LSSTDESC/NaMaster/issues/138)
-    - tjpcov[full]
+    - camb
