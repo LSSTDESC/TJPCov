@@ -29,21 +29,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/checkout@v2
-      - uses: psf/black@stable
-      - name: Lint codebase
-        run: |
-          pip install -U flake8
-          flake8 tjpcov tests
-
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
+      - uses: actions/checkout@v2
+      - uses: psf/black@stable
+      - name: Lint codebase
+        run: |
+          python -m pip install -U flake8
+          flake8 tjpcov tests
+
       - name: Install TJPCov
         run: |
-          python -m pip install -U pip
           python -m pip install .[test]
       
       - name: Install NaMaster TJPCov
