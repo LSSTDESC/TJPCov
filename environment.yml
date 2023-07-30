@@ -8,7 +8,7 @@ dependencies:
   - gsl
   - pip
   - namaster
-  - openmpi
+  - openmpi-mpicc
   - pip:
     # The rest of the dependencies are in pyproject.toml
     - tjpcov[full]
