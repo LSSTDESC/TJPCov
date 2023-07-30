@@ -10,6 +10,5 @@ dependencies:
   - pip
   - namaster
   - openmpi-mpicc
-  - numpy # Install numpy first here before pip to make sure pymaster installs
   - pip:
     - .[full]
