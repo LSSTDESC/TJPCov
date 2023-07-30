@@ -73,8 +73,7 @@ jobs:
             
       - name: Install TJPCov
         run: |
-          python -m pip install .[test]
-          python -m pip install .[nmt]
+          python -m pip install .[full]
 
       - name: Run Tests
         run: |
