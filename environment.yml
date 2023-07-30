@@ -10,6 +10,6 @@ dependencies:
   - pip
   - namaster
   - openmpi-mpicc
+  - numpy # Install numpy first here before pip to make sure pymaster installs
   - pip:
-    # The rest of the dependencies are in pyproject.toml
     - .[full]

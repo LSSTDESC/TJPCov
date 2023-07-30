@@ -73,11 +73,7 @@ jobs:
             
       - name: Install TJPCov
         run: |
-          python -m pip install .[test]
-          # Need to install tjpcov without namaster first, to make sure
-          # Numpy is installed.  See
-          # (https://github.com/LSSTDESC/NaMaster/issues/138)
-          python -m pip install .[nmt]
+          python -m pip install .[full]
 
       - name: Run Tests
         run: |
@@ -85,7 +81,6 @@ jobs:
                  
       - name: Run Tests (OpenMPI)
         run: |
-          python -m pip install .[mpi]
           # Run MPI test (just the computation of blocks)
           mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
 
