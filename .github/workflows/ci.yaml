@@ -79,12 +79,7 @@ jobs:
       - name: Run Tests
         run: |
           python -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
-              
-      - name: Install OpenMPI
-        run: |
-          sudo apt install -y openmpi-bin libopenmpi-dev
-          python -m pip install -U mpi4py
-          
+                 
       - name: Run Tests (OpenMPI)
         run: |
           # Run MPI test (just the computation of blocks)
