@@ -11,7 +11,7 @@ concurrency:
 
 env:
   FORCE_COLOR: 3
-  CONDA_ENV: .github/environment.yml
+  CONDA_ENV: ./environment.yml
   
 jobs:
   build:
