@@ -4,13 +4,10 @@ channels:
   - defaults
 dependencies:
   - python>=3.8
-  - mpi4py
+  - cmake
+  - gsl
   - pip
-  - numpy
-  - wheel
   - namaster
-  # tjpcov is only available at the moment through PyPi
   - pip:
-    # Installing TJPcov in two steps to avoid making NaMaster installation to
-    # fail due to (https://github.com/LSSTDESC/NaMaster/issues/138)
+    # The rest of the dependencies are in pyproject.toml
     - tjpcov[full]
