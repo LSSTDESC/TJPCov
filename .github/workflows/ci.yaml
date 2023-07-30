@@ -35,8 +35,17 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
           cache-dependency-path: pyproject.toml
+          
       - run: echo '${{ steps.cachepip.outputs.cache-hit }}'
 
+      - name: Install macOS Dependencies
+        if: runner.os == 'macOS'
+        run: brew install libgsl-dev libfftw3-dev libcfitsio-dev
+
+      - name: Install Ubuntu Dependencies
+        if: runner.os == 'Linux'
+        run: sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
+        
       - uses: psf/black@stable
 
       - name: Run flake8
@@ -53,7 +62,6 @@ jobs:
         run: |
           # This needs to be done second
           # see (https://github.com/LSSTDESC/NaMaster/issues/138)
-          sudo -H apt-get install libgsl-dev libfftw3-dev libcfitsio-dev
           python -m pip install .[nmt]
 
       - name: Run Tests
