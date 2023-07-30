@@ -27,7 +27,7 @@ dependencies = [
     "numpy",
     "Jinja2",
     "pyyaml",
-    "pyccl>=2.5.0,<2.8.0",
+    "pyccl >= 2.5.0, < 2.8.0",
     "sacc>=0.8",
     "camb",
     "healpy",
@@ -63,6 +63,10 @@ full = [
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
+    "pytest",
+    "pytest-rerunfailures",
+    "pytest-cov",
+    "coveralls",
 ]
 
 [project.urls]

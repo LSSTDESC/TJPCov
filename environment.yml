@@ -11,4 +11,4 @@ dependencies:
   - openmpi-mpicc
   - pip:
     # The rest of the dependencies are in pyproject.toml
-    - tjpcov[full]
+    - .[full]
