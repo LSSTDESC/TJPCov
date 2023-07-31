@@ -23,14 +23,6 @@ jobs:
       matrix:
         python-version: ["3.8", "3.11"]
         runs-on: [ubuntu-latest, macos-latest]
-        include:
-          - os: macos-latest
-            label: osx-64
-            prefix: /Users/runner/miniconda3
-
-          - os: ubuntu-latest
-            label: linux-64
-            prefix: /usr/share/miniconda3
 
     steps:
 
@@ -50,9 +42,15 @@ jobs:
           activate-environment: tjpcov
           miniforge-version: latest
           miniforge-variant: Mambaforge
-
-      - name: Activate mamba
-        run: source activate tjpcov
+      
+      - name: Check for cached environment
+        uses: actions/cache@v3
+        id: cache
+        with:
+          path: ${{ env.CONDA }}/envs
+          key:
+            ${{runner.os}}.conda-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}
+  
 
       # - name: "macOS: set env variables"
       #   if: runner.os == 'macOS'
@@ -62,20 +60,17 @@ jobs:
       #     export CFLAGS="-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
       #     export LDFLAGS="-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
-      - name: Check for cached environment
-        uses: actions/cache@v3
-        id: cache
-        with:
-          path: ${{ matrix.prefix }}
-          key:
-            ${{matrix.os}}.conda-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}
-  
+
       - name: Install environment packages
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           export MAMBA_NO_BANNER=1
           mamba env update --file ${{ env.CONDA_ENV }} --prune
-          
+        
+      - name: Activate TJPCov environment
+        shell: bash -l {0}
+        run: mamba activate tjpcov
+  
       - uses: psf/black@stable
 
       - name: Run flake8
