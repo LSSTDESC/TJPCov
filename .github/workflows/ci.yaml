@@ -46,6 +46,7 @@ jobs:
           channel-priority: strict
           show-channel-urls: true
           auto-update-conda: true
+          activate-environment: tjpcov
           miniforge-version: latest
           miniforge-variant: Mambaforge
 
@@ -75,35 +76,35 @@ jobs:
 
       - name: Run flake8
         run: |
-          python -m pip install -U pip
-          python -m pip install -U flake8
+          pip install -U pip
+          pip install -U flake8
           flake8 tjpcov tests
             
       - name: Install TJPCov
         run: |
           # We need to explicitly instally numpy first for namaster.
-          python -m pip install numpy 
-          python -m pip install .[full]
+          pip install numpy 
+          pip install .[full]
 
       - name: Run Tests
         run: |
-          python -m pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+          pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
                  
       - name: Run Tests (OpenMPI)
         run: |
-          python -m pip install .[mpi]
+          pip install .[mpi]
           # Run MPI test (just the computation of blocks)
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
+          mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
 
       - name: Run Tests (mpich)
         run: |
           mamba remove -y openmpi-cc
-          python -m pip uninstall -y mpi4py
+          pip uninstall -y mpi4py
 
           mamba install -y mpich
-          python -m pip install -U mpi4py --no-cache-dir
+          pip install -U mpi4py --no-cache-dir
 
-          mpiexec -n 2 python3 -m pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
+          mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
 
       - name: coveralls
         env:
