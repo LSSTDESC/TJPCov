@@ -52,8 +52,8 @@ jobs:
       - name: "macOS: set env variables"
         if: runner.os == 'macOS'
         run: |
-          # mamba install llvm-openmp
-          # SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+          mamba install llvm-openmp
+          SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
           export CFLAGS="-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
           export LDFLAGS="-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
@@ -81,8 +81,9 @@ jobs:
             
       - name: Install TJPCov
         run: |
-          python -m pip install .[test]
-          python -m pip install .[nmt]
+          # We need to explicitly instally numpy first for namaster.
+          python -m pip install numpy 
+          python -m pip install .[full]
 
       - name: Run Tests
         run: |
