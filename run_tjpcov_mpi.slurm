@@ -10,7 +10,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --licenses=cfs,SCRATCH
 #SBATCH --output=/pscratch/sd/m/mkwiecie/tjpcov/tjpcov-clusters-run.log-%j.txt
-#SBATCH --mail-user=mkwiecie@ucsc.edu
+#SBATCH --mail-user=youremail@yourdomain.edu
 #SBATCH --mail-type=ALL
 #SBATCH --module=mpich
  

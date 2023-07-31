@@ -34,7 +34,7 @@ If you want to contribute to TJPCov, run the following steps to set up your deve
 
 ## Planning & development
 
-Ask @felipeaoli, @carlosggarcia, @mattkwiecien for access to the repository and join the #desc-mcp-cov channel on the LSST DESC slack to contribute.
+Ask @felipeaoli or @mattkwiecien for access to the repository and join the #desc-mcp-cov channel on the LSST DESC slack to contribute.
 
 We have adopted the following style convention (which are enforced in each PR):
  - [Google-style docstrings](https://google.github.io/styleguide/pyguide.html)

@@ -8,7 +8,9 @@ from sacc import standard_types
 
 class CovarianceClusterCounts(CovarianceBuilder):
     """The base class for calculating covariance that includes galaxy cluster
-    number counts. This class is able to compute the covariance for
+    number counts.
+
+    This class is able to compute the covariance for
     `_tracers_types = ("cluster_counts", "cluster_counts")`
     """
 
@@ -52,7 +54,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
     def load_from_cosmology(self, cosmo):
         """Values used by the covariance calculation that come from a CCL
-        cosmology object.  Derived attributes from the cosmology are set here.
+        cosmology object.
+
+        Derived attributes from the cosmology are set here.
 
         Args:
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
@@ -63,7 +67,10 @@ class CovarianceClusterCounts(CovarianceBuilder):
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
-        """Cluster covariance has special parameters set in the SACC file. This
+        """Helper method to set class attributes based on data from the SACC
+        file.
+
+        Cluster covariance has special parameters set in the SACC file. This
         informs the code that the data to calculate the cluster covariance is
         there.  We set extract those values from the sacc file here, and set
         the attributes here.
@@ -161,7 +168,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return romb(kernel, dx=spacing)
 
     def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
-        """We don't assume that redshift can be measured exactly, so we include
+        """Implementation of the photometric redshift uncertainty distribution.
+
+        We don't assume that redshift can be measured exactly, so we include
         a measurement of the uncertainty around photometric redshifts. Assume,
         given a true redshift z, the measured redshift will be gaussian. The
         uncertainty will increase with redshift bin.
@@ -213,7 +222,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return dV
 
     def mass_richness(self, ln_true_mass, richness_i):
-        """The probability that we observe richness given the true mass M, is
+        """Log-normal mass-richness relation without observational scatter.
+
+        The probability that we observe richness given the true mass M, is
         given by the convolution of a Poisson distribution (relating observed
         richness to true richness) with a Gaussian distribution (relating true
         richness to M). Such convolution can be translated into a parametrized
@@ -247,7 +258,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
         """The halo mass function weighted by the probability that we measure
-        observed richness lambda given true mass M.  Can also be understood
+        observed richness lambda given true mass M.
+
+        Can also be understood
         as the derivative of the number density of halos with variations in
         the background density (Eqn 3.31 N. Ferreira)
 
@@ -361,7 +374,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return self.fft_helper.two_fast_algorithm(z1, z2)
 
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """Build full matrix from blocks.  Uses a combination data type and
+        """Build full matrix from blocks using a combination data type and
         tracer combinations to place data blocks in the covariance matrix.
 
         Args:

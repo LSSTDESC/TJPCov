@@ -28,9 +28,9 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
 
         Args:
             tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_1')
+                ('survey', 'bin_richness_1', 'bin_z_0')
             tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_0')
+                ('survey', 'bin_richness_0', 'bin_z_0')
 
         Returns:
             array_like: Covariance for a single block
@@ -42,9 +42,9 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
 
         Args:
             tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_1')
+                ('survey', 'bin_richness_1', 'bin_z_0')
             tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_0')
+                ('survey', 'bin_richness_0', 'bin_z_0')
 
         Returns:
             float: Covariance for a single block
@@ -67,6 +67,7 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         """Compute a single covariance entry 'clusters_redshift_richness'
+
         Args:
             tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
             tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
@@ -76,7 +77,9 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
         return self._get_covariance_gaussian(tracer_comb1, tracer_comb2)
 
     def shot_noise(self, z_i, lbd_i):
-        """The covariance of number counts is a sum of a super sample
+        """Returns the cluster shot noise contribution to the covariance.
+
+        The covariance of number counts is a sum of a super sample
         covariance (SSC) term plus a gaussian diagonal term.  The diagonal
         term is also referred to as "shot noise" which we compute here.
 

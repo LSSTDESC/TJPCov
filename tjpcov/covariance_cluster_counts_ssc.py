@@ -102,6 +102,7 @@ class ClusterCountsSSC(CovarianceClusterCounts):
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         """Compute a single covariance entry 'clusters_redshift_richness'
+
         Args:
             tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
             tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)

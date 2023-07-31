@@ -6,8 +6,9 @@ from sacc import standard_types
 
 
 class ClusterMass(CovarianceBuilder):
-    """Implementation of cluster covariance that calculates the covriance
+    """Implementation of cluster covariance that calculates the covariance
     of cluster weak lensing mass measurements.
+
     This class is able to compute the covariance for
     `_tracers_types = ("cluster_mean_log_mass", "cluster_mean_log_mass")`
     """
@@ -53,7 +54,9 @@ class ClusterMass(CovarianceBuilder):
 
     def load_from_cosmology(self, cosmo):
         """Values used by the covariance calculation that come from a CCL
-        cosmology object.  Derived attributes from the cosmology are set here.
+        cosmology object.
+
+        Derived attributes from the cosmology are set here.
 
         Args:
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
@@ -64,7 +67,10 @@ class ClusterMass(CovarianceBuilder):
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
-        """Cluster covariance has special parameters set in the SACC file. This
+        """Helper method to set class attributes based on data from the SACC
+        file.
+
+        Cluster covariance has special parameters set in the SACC file. This
         informs the code that the data to calculate the cluster covariance is
         there.  We set extract those values from the sacc file here, and set
         the attributes here.
@@ -133,7 +139,7 @@ class ClusterMass(CovarianceBuilder):
         self.max_mass = np.log(1e16)
 
     def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """Build full matrix from blocks.  Uses a combination data type and
+        """Build full matrix from blocks using a combination data type and
         tracer combinations to place data blocks in the covariance matrix.
 
         Args:
@@ -191,9 +197,12 @@ class ClusterMass(CovarianceBuilder):
 
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
         """Compute a single covariance entry 'cluster_mean_log_mass'
+
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
-            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
+            tracer_comb1 (`tuple` of str): e.g.
+                ('survey', 'bin_richness_1', 'bin_z_0')
+            tracer_comb2 (`tuple` of str): e.g.
+                ('survey', 'bin_richness_0', 'bin_z_0')
         Returns:
             array_like: Covariance for a single block
         """
@@ -204,9 +213,9 @@ class ClusterMass(CovarianceBuilder):
 
         Args:
             tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_1')
+                ('survey', 'bin_richness_1', 'bin_z_0')
             tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_0')
+                ('survey', 'bin_richness_0', 'bin_z_0')
 
         Returns:
             float: Covariance for a single block
