@@ -65,11 +65,11 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           export MAMBA_NO_BANNER=1
-          mamba env update --file ${{ env.CONDA_ENV }} --prune
+          conda env update --file ${{ env.CONDA_ENV }} --prune
         
       - name: Activate TJPCov environment
         shell: bash -l {0}
-        run: mamba activate tjpcov
+        run: conda activate tjpcov
   
       - uses: psf/black@stable
 
