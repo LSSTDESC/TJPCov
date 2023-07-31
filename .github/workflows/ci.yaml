@@ -50,13 +50,13 @@ jobs:
           miniforge-version: latest
           miniforge-variant: Mambaforge
 
-      - name: "macOS: set env variables"
-        if: runner.os == 'macOS'
-        run: |
-          mamba install llvm-openmp
-          SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-          export CFLAGS="-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
-          export LDFLAGS="-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+      # - name: "macOS: set env variables"
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     mamba install llvm-openmp
+      #     SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+      #     export CFLAGS="-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
+      #     export LDFLAGS="-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
 
       - name: Check for cached environment
         uses: actions/cache@v3
@@ -76,14 +76,10 @@ jobs:
 
       - name: Run flake8
         run: |
-          pip install -U pip
-          pip install -U flake8
           flake8 tjpcov tests
             
       - name: Install TJPCov
         run: |
-          # We need to explicitly instally numpy first for namaster.
-          pip install numpy 
           pip install .[full]
 
       - name: Run Tests
@@ -92,7 +88,6 @@ jobs:
                  
       - name: Run Tests (OpenMPI)
         run: |
-          pip install .[mpi]
           # Run MPI test (just the computation of blocks)
           mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
 

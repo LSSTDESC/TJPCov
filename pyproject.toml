@@ -44,6 +44,7 @@ test = [
     "pytest",
     "pytest-rerunfailures",
     "pytest-cov",
+    "flake8",
     "coveralls",
 ]
 doc = [
@@ -66,6 +67,7 @@ full = [
     "pytest",
     "pytest-rerunfailures",
     "pytest-cov",
+    "flake8",
     "coveralls",
 ]
 

@@ -5,11 +5,11 @@ channels:
 dependencies:
   - python>=3.8
   - cmake
-  - gfortran
   - gsl
   - fftw
   - pip
   - namaster
   - openmpi-mpicc
+  - numpy # Install numpy early so namaster builds first try.
   - pip:
     - .[full]
