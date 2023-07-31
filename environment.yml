@@ -1,7 +1,6 @@
 name: tjpcov  # minimum environment for tjpcov development
 channels: 
   - conda-forge
-  - defaults
 dependencies:
   - python>=3.8
   - cmake

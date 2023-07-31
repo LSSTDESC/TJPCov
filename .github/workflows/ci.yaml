@@ -49,6 +49,9 @@ jobs:
           activate-environment: tjpcov
           miniforge-version: latest
           miniforge-variant: Mambaforge
+      
+      - name: Activate mamba environment
+        run: mamba activate tjpcov
 
       # - name: "macOS: set env variables"
       #   if: runner.os == 'macOS'
