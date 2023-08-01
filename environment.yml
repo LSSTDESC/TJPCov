@@ -6,6 +6,7 @@ dependencies:
   - cmake
   - gsl
   - fftw
+  - wheel
   - pip
   - namaster
   - openmpi-mpicc
