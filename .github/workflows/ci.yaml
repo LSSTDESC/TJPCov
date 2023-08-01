@@ -65,7 +65,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           export MAMBA_NO_BANNER=1
-          conda env update --file ${{ env.CONDA_ENV }} --prune
+          conda env update --file ${{ env.CONDA_ENV }}
         
       - name: Activate TJPCov environment
         shell: bash -l {0}
@@ -75,7 +75,9 @@ jobs:
 
       - name: Run flake8
         run: |
-          python -m flake8 tjpcov tests
+          which flake8
+          conda list --show-channel-urls
+          flake8 tjpcov tests
             
       - name: Install TJPCov
         run: |
