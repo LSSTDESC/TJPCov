@@ -75,7 +75,7 @@ jobs:
 
       - name: Run flake8
         run: |
-          flake8 tjpcov tests
+          python -m flake8 tjpcov tests
             
       - name: Install TJPCov
         run: |
