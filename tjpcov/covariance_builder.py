@@ -20,6 +20,28 @@ class CovarianceBuilder(ABC):
     computation of the blocks.
     """
 
+    @property
+    def covariance_block_data_type(self) -> str:
+        """The covariance block data type for your builder.
+
+        Returns:
+            str: Covariance block sacc data type
+        """
+        return self._block_data_type
+
+    @covariance_block_data_type.setter
+    def covariance_block_data_type(self, value: str):
+        """Set the covariance block data type for your builder.
+
+        If a set of tracers aren't unique to a data type, but you want to
+        only calculate the covariance for a specific data type within your
+        data vector, set this attribute to that data type.
+
+        Args:
+            value (str): Covariance block sacc data type
+        """
+        self._block_data_type = value
+
     def __init__(self, config):
         """Init the base class with a config file or dictionary.
 
@@ -71,8 +93,8 @@ class CovarianceBuilder(ABC):
         }
 
         self.cov = None
-
         self.nbpw = None
+        self._block_data_type = None
 
         # TODO: Move this somewhere else. They shouldn't be needed for fsky
         # approx.
@@ -131,7 +153,7 @@ class CovarianceBuilder(ABC):
         s = self.io.get_sacc_file()
         ndim = s.mean.size
 
-        cov_full = -1 * np.ones((ndim, ndim))
+        cov_full = np.zeros((ndim, ndim))
 
         print(
             "Building the covariance: placing blocks in their place",
@@ -143,16 +165,15 @@ class CovarianceBuilder(ABC):
             print(tracer_comb1, tracer_comb2, flush=True)
 
             cov_ij = next(blocks)
-            ix1 = s.indices(tracers=tracer_comb1)
-            ix2 = s.indices(tracers=tracer_comb2)
+            ix1 = s.indices(
+                tracers=tracer_comb1, data_type=self.covariance_block_data_type
+            )
+            ix2 = s.indices(
+                tracers=tracer_comb2, data_type=self.covariance_block_data_type
+            )
 
             cov_full[np.ix_(ix1, ix2)] = cov_ij
             cov_full[np.ix_(ix2, ix1)] = cov_ij.T
-
-        if np.any(cov_full == -1):
-            raise Exception(
-                "Something went wrong. Probably related to the data types"
-            )
 
         return cov_full
 

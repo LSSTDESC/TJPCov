@@ -3,16 +3,16 @@ import numpy as np
 
 
 class ClusterCountsGaussian(CovarianceClusterCounts):
-    """Implementation of cluster covariance that calculates the gaussian
-    (shot-noise) contribution to the autocorrelation of cluster counts (NxN).
+    """Implementation of gaussian covariance term.
+
+    This class calculates the gaussian (shot-noise) contribution to the
+    autocorrelation of cluster counts (NxN).
     """
 
     cov_type = "gauss"
 
     def __init__(self, config):
-        """Concrete implementation of covariance of cluster counts,
-        specifically gaussian contribution (shot-noise) to the number count
-        auto-correlation.
+        """Class to calculate the gaussian covariance of cluster counts
 
         Args:
             config (dict or str): If dict, it returns the configuration

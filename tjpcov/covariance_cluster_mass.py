@@ -6,8 +6,7 @@ from sacc import standard_types
 
 
 class ClusterMass(CovarianceBuilder):
-    """Implementation of cluster covariance that calculates the covariance
-    of cluster weak lensing mass measurements.
+    """Calculate the covariance of cluster mass measurements.
 
     This class is able to compute the covariance for
     `_tracers_types = ("cluster_mean_log_mass", "cluster_mean_log_mass")`
@@ -21,8 +20,7 @@ class ClusterMass(CovarianceBuilder):
     )
 
     def __init__(self, config, min_halo_mass=1e13):
-        """Constructor for the base class, used to pass through config options
-        for covariance calculation.
+        """Class to calculate the covariance of cluster mass measurements.
 
         Args:
             config (dict or str): If dict, it returns the configuration
@@ -51,10 +49,10 @@ class ClusterMass(CovarianceBuilder):
         self.fft_helper = FFTHelper(
             cosmo, self.z_lower_limit, self.z_upper_limit
         )
+        self.covariance_block_data_type = standard_types.cluster_mean_log_mass
 
     def load_from_cosmology(self, cosmo):
-        """Values used by the covariance calculation that come from a CCL
-        cosmology object.
+        """Load parameters from a CCL cosmology object.
 
         Derived attributes from the cosmology are set here.
 
@@ -67,8 +65,7 @@ class ClusterMass(CovarianceBuilder):
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
-        """Helper method to set class attributes based on data from the SACC
-        file.
+        """Load and set class attributes based on data from a SACC file.
 
         Cluster covariance has special parameters set in the SACC file. This
         informs the code that the data to calculate the cluster covariance is
@@ -137,47 +134,6 @@ class ClusterMass(CovarianceBuilder):
 
         self.min_mass = np.log(min_halo_mass)
         self.max_mass = np.log(1e16)
-
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """Build full matrix from blocks using a combination data type and
-        tracer combinations to place data blocks in the covariance matrix.
-
-        Args:
-            blocks (list): List of blocks
-            tracers_cov (list): List of tracer combinations corresponding to
-                each block in blocks. They must have the same order
-
-        Returns:
-            array: Covariance matrix for all combinations in the sacc file.
-        """
-        blocks = iter(blocks)
-
-        s = self.io.get_sacc_file()
-        ndim = s.mean.size
-
-        cov_full = np.zeros((ndim, ndim))
-
-        print(
-            "Building the covariance: placing blocks in their place",
-            flush=True,
-        )
-        for tracer_comb1, tracer_comb2 in tracers_cov:
-            print(tracer_comb1, tracer_comb2, flush=True)
-
-            cov_ij = next(blocks)
-            ix1 = s.indices(
-                data_type=standard_types.cluster_mean_log_mass,
-                tracers=tracer_comb1,
-            )
-            ix2 = s.indices(
-                data_type=standard_types.cluster_mean_log_mass,
-                tracers=tracer_comb2,
-            )
-
-            cov_full[np.ix_(ix1, ix2)] = cov_ij
-            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
-
-        return cov_full
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs

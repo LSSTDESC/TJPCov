@@ -7,12 +7,7 @@ from sacc import standard_types
 
 
 class CovarianceClusterCounts(CovarianceBuilder):
-    """The base class for calculating covariance that includes galaxy cluster
-    number counts.
-
-    This class is able to compute the covariance for
-    `_tracers_types = ("cluster_counts", "cluster_counts")`
-    """
+    """Class to calculate covariance of cluster counts."""
 
     space_type = "Fourier"
     _tracer_types = (
@@ -21,8 +16,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
     )
 
     def __init__(self, config, min_halo_mass=1e13):
-        """Constructor for the base class, used to pass through config options
-        for covariance calculation.
+        """Class to calculate covariance of cluster counts.
 
         Args:
             config (dict or str): If dict, it returns the configuration
@@ -51,10 +45,10 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         # Quick key to skip P(Richness|M)
         self.has_mproxy = self.config.get("has_mproxy", True)
+        self.covariance_block_data_type = standard_types.cluster_counts
 
     def load_from_cosmology(self, cosmo):
-        """Values used by the covariance calculation that come from a CCL
-        cosmology object.
+        """Load parameters from a CCL cosmology object.
 
         Derived attributes from the cosmology are set here.
 
@@ -67,8 +61,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
-        """Helper method to set class attributes based on data from the SACC
-        file.
+        """Set class attributes based on data from the SACC file.
 
         Cluster covariance has special parameters set in the SACC file. This
         informs the code that the data to calculate the cluster covariance is
@@ -139,8 +132,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         self.max_mass = np.log(1e16)
 
     def _quad_integrate(self, argument, from_lim, to_lim):
-        """Helper function to numerically integral arguments between bounds
-        using scipy quad function.
+        """Numerically integrate argument between bounds using scipy quad.
 
         Args:
             argument (callable): Function to integrate between bounds
@@ -155,8 +147,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return integral_value[0]
 
     def _romb_integrate(self, kernel, spacing):
-        """Helper function to numerically integral arguments between bounds
-        using scipy romberg integration
+        """Numerically integrate arguments between bounds using scipy romberg.
 
         Args:
             kernel (array_like): Vector of equally spaced samples of a function
@@ -202,7 +193,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return numerator / denominator
 
     def comoving_volume_element(self, z_true, z_i):
-        """Given a true redshift, and a redshift bin, this will give the
+        """Calculates the volume element for this bin.
+
+        Given a true redshift, and a redshift bin, this will give the
         volume element for this bin including photo-z uncertainties.
 
         Args:
@@ -257,12 +250,10 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return self._quad_integrate(integrand, richness_bin, richness_bin_next)
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
-        """The halo mass function weighted by the probability that we measure
-        observed richness lambda given true mass M.
+        """Integrates the HMF weighted by mass-richness relation.
 
-        Can also be understood
-        as the derivative of the number density of halos with variations in
-        the background density (Eqn 3.31 N. Ferreira)
+        The halo mass function weighted by the probability that we measure
+        observed richness lambda given true mass M.
 
         Args:
             z (float): Redshift
@@ -308,7 +299,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return self._quad_integrate(integrand, m_integ_lower, m_integ_upper)
 
     def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
-        """Calculate part of the super sample covariance, or the non-diagonal
+        """Calculate the SSC contribution to the covariance integrand.
+
+        Calculate part of the super sample covariance, or the non-diagonal
         correlation between two point functions whose observed modes are larger
         than the survey size.
 
@@ -361,9 +354,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
         return integral_val * factor_approx
 
     def double_bessel_integral(self, z1, z2):
-        """Calculates the double bessel integral using 2-FAST algorithm,
-        as function of z1 and z2. See section 7.1, 7.2 of N. Ferreira
-        dissertation.
+        """Calculates the double bessel integral using 2-FAST algorithm.
+
+        See section 7.1, 7.2 of N. Ferreira dissertation.
 
         Args:
             z1 (float): redshift lower bound
@@ -372,44 +365,3 @@ class CovarianceClusterCounts(CovarianceBuilder):
             float: Numerical approximation of integral.
         """
         return self.fft_helper.two_fast_algorithm(z1, z2)
-
-    def _build_matrix_from_blocks(self, blocks, tracers_cov):
-        """Build full matrix from blocks using a combination data type and
-        tracer combinations to place data blocks in the covariance matrix.
-
-        Args:
-            blocks (list): List of blocks
-            tracers_cov (list): List of tracer combinations corresponding to
-                each block in blocks. They must have the same order
-
-        Returns:
-            array: Covariance matrix for all combinations in the sacc file.
-        """
-        blocks = iter(blocks)
-
-        s = self.io.get_sacc_file()
-        ndim = s.mean.size
-
-        cov_full = np.zeros((ndim, ndim))
-
-        print(
-            "Building the covariance: placing blocks in their place",
-            flush=True,
-        )
-        for tracer_comb1, tracer_comb2 in tracers_cov:
-            # We do not need to do the reshape here because the blocks have
-            # been build looping over the data types present in the sacc file
-            print(tracer_comb1, tracer_comb2, flush=True)
-
-            cov_ij = next(blocks)
-            ix1 = s.indices(
-                data_type=standard_types.cluster_counts, tracers=tracer_comb1
-            )
-            ix2 = s.indices(
-                data_type=standard_types.cluster_counts, tracers=tracer_comb2
-            )
-
-            cov_full[np.ix_(ix1, ix2)] = cov_ij
-            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
-
-        return cov_full

@@ -5,16 +5,16 @@ from scipy.integrate import romb
 
 
 class ClusterCountsSSC(CovarianceClusterCounts):
-    """Implementation of cluster covariance that calculates the SSC
-    contribution to the autocorrelation of cluster counts (NxN) following
-    N. Ferreira 2019.
+    """Implementation of the SSC cluster covariance term.
+
+    Calculates the sample variance contribution to the autocorrelation of
+    cluster counts (NxN) following N. Ferreira 2019.
     """
 
     cov_type = "SSC"
 
     def __init__(self, config):
-        """Concrete implementation of covariance of cluster counts,
-        specifically the SSC contribution to the number count auto-correlation.
+        """Class to calculate the SSC covariance of cluster counts
 
         Args:
             config (dict or str): If dict, it returns the configuration
