@@ -13,4 +13,4 @@ dependencies:
   - coveralls
   - numpy # Install numpy early so namaster builds first try.
   - pip:
-    - -e --no-deps .[full]
+    - -e .[full]
