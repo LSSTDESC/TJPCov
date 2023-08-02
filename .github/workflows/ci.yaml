@@ -20,7 +20,8 @@ jobs:
     
     defaults:
       run:
-        shell: bash -el {0}
+        # IMPORTANT: this is needed to make sure that the conda environment is auto activated
+        shell: bash -el {0} 
 
     strategy:
       fail-fast: false
@@ -69,25 +70,25 @@ jobs:
         run: |
           export MAMBA_NO_BANNER=1
           conda env update --file ${{ env.CONDA_ENV }}
-          conda list
 
       - name: Run linters
         run: |
           black .
           flake8 tjpcov tests
             
-      - name: Run Tests
-        run: |
-          pip install .[nmt] --no-deps
-          pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+      # - name: Run Tests
+      #   run: |
+      #     # Always run --no-deps with pip install to prevent re-installing dependencies
+      #     pip install .[nmt] --no-deps
+      #     pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
                  
       - name: Run Tests (OpenMPI)
         run: |
-          conda install -y openmpi-cc
+          conda install -y openmpi
           pip install .[mpi] --no-deps
           # Run MPI test (just the computation of blocks)
           mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
-          conda remove -y openmpi-cc
+          conda remove -y openmpi
           pip uninstall -y mpi4py
 
       - name: Run Tests (mpich)
