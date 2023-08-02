@@ -78,14 +78,7 @@ jobs:
         with:
           path: ${{env.CONDA}}/envs
           key:
-            ${{runner.os}}
-            .${{runner.arch}}
-            .mamba-py
-            .${{matrix.python-version}}
-            .${{hashFiles('pyproject.toml')}}
-            .${{hashFiles('.environment.yml')}}
-            .${{steps.get-date.outputs.today}}
-            .${{env.CACHE_NUMBER}}
+            ${{runner.os}}.${{runner.arch}}.mamba-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}.${{hashFiles('.environment.yml')}}.${{steps.get-date.outputs.today}}.${{env.CACHE_NUMBER}}
 
       - name: Install environment packages
         if: steps.cache.outputs.cache-hit != 'true'
