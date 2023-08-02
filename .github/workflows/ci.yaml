@@ -128,3 +128,4 @@ jobs:
         with:
           parallel-finished: true
           carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest,"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
