@@ -15,9 +15,13 @@ env:
   
 jobs:
   build:
-
     name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
     runs-on: ${{ matrix.runs-on }}
+    
+    defaults:
+      run:
+        shell: bash -el {0}
+
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +29,6 @@ jobs:
         runs-on: [ubuntu-latest, macos-latest]
 
     steps:
-
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -65,34 +68,31 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           export MAMBA_NO_BANNER=1
-          mamba env update --file ${{ env.CONDA_ENV }}
-        
+          conda env update --file ${{ env.CONDA_ENV }}
+          conda list
+
       - name: Run linters
         run: |
-          mamba activate tjpcov
           black .
           flake8 tjpcov tests
             
       - name: Run Tests
         run: |
-          mamba activate tjpcov 
           pip install .[nmt] --no-deps
           pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
                  
       - name: Run Tests (OpenMPI)
         run: |
-          mamba activate tjpcov 
-          mamba install -y openmpi-cc
+          conda install -y openmpi-cc
           pip install .[mpi] --no-deps
           # Run MPI test (just the computation of blocks)
           mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
-          mamba remove -y openmpi-cc
+          conda remove -y openmpi-cc
           pip uninstall -y mpi4py
 
       - name: Run Tests (mpich)
         run: |
-          mamba activate tjpcov
-          mamba install -y mpich
+          conda install -y mpich
           pip install -U mpi4py --no-cache-dir
           mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
 
@@ -100,5 +100,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run:
-          mamba activate tjpcov
           coveralls --service=github
