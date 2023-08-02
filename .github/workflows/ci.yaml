@@ -75,12 +75,11 @@ jobs:
 
       - name: Run flake8
         run: |
-          pip install -U flake8
           flake8 tjpcov tests
             
       - name: Install TJPCov
         run: |
-          pip install .[full]
+          pip install .[full] --no-deps
 
       - name: Run Tests
         run: |

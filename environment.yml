@@ -1,17 +1,26 @@
-name: tjpcov  # minimum environment for tjpcov development
+name: tjpcov
 channels: 
   - conda-forge
 dependencies:
   - python>=3.8
-  - cmake
-  - gsl
-  - fftw
-  - wheel
   - pip
-  - namaster
-  - openmpi-mpicc
+  - wheel
+  - black
   - flake8
+  - pytest
+  - pytest-cov
+  - pytest-rerunfailures
   - coveralls
-  - numpy # Install numpy early so namaster builds first try.
-  - pip:
-    - -e .[full]
+  - nox
+  - numpy
+  - scipy
+  - pyyaml
+  - pyccl >= 2.5.0, < 2.8.0
+  - sacc>=0.8
+  - namaster
+  - camb
+  - Jinja2
+  - healpy
+  - h5py
+  - mpi4py
+  
