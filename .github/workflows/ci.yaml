@@ -65,11 +65,13 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           export MAMBA_NO_BANNER=1
-          conda env update --file ${{ env.CONDA_ENV }}
+          conda env update --yes --file ${{ env.CONDA_ENV }}
         
       - name: Activate TJPCov environment
         shell: bash -l {0}
-        run: conda activate tjpcov
+        run: |
+          conda activate tjpcov
+          conda list
   
       - uses: psf/black@stable
 
