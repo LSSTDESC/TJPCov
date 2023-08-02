@@ -90,12 +90,12 @@ jobs:
         run: pip install .[nmt] --no-deps
 
       - name: Run Tests
-        run: pytest -vv tests --cov=tjpcov
+        run: pytest --cov-report -vv tests --cov=tjpcov
                  
       - name: Run MPI Tests (OpenMPI)
         run: |
           mamba install -y openmpi
-          pip install .[mpi] --no-deps
+          pip install .[mpi] -no-deps
 
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
@@ -105,7 +105,7 @@ jobs:
       - name: Run MPI Tests (mpich)
         run: |
           mamba install -y mpich
-          pip install -U mpi4py --no-cache-dir
+          pip install -U mpi4py --no-cache-dir -no-deps
 
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
