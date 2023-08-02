@@ -14,7 +14,25 @@ env:
   CONDA_ENV: ./environment.yml
   
 jobs:
+
+  lint:
+    name: Run Linters
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run black
+        uses: psf/black@stable
+
+      - name: Run flake8
+        uses: py-actions/flake8@v2
+        with:
+          path: "tjpcov tests"
+
   tests:
+    needs: lint
     name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
     runs-on: ${{ matrix.runs-on }}
     
@@ -74,11 +92,6 @@ jobs:
         run: |
           export MAMBA_NO_BANNER=1
           mamba env update --file ${{ env.CONDA_ENV }}
-
-      - name: Run linters
-        run: |
-          black .
-          flake8 tjpcov tests
 
       - name: Install TJPCov
         run: pip install .[nmt] --no-deps
