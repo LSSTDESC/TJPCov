@@ -90,7 +90,7 @@ jobs:
         run: pip install .[nmt] --no-deps
 
       - name: Run Tests
-        run: pytest --cov-report lcov -vv tests --cov=tjpcov
+        run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
       
       - name: Run MPI Tests (OpenMPI)
         run: |
@@ -114,6 +114,9 @@ jobs:
         with:
           flag-name: run-${{matrix.python-version}}-${{matrix.runs-on}}
           parallel: true
+          path-to-lcov: lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
 
   finish:
     needs: tests
