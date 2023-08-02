@@ -95,7 +95,7 @@ jobs:
       - name: Run MPI Tests (OpenMPI)
         run: |
           mamba install -y openmpi
-          pip install .[mpi] -no-deps
+          pip install .[mpi] --no-deps
 
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
