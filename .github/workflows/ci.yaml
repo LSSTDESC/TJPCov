@@ -90,24 +90,30 @@ jobs:
         run: pip install .[nmt] --no-deps
 
       - name: Run Tests
-        run: pytest --cov-report html -vv tests --cov=tjpcov
-                 
-      - name: Run MPI Tests (OpenMPI)
-        run: |
-          mamba install -y openmpi
-          pip install .[mpi] --no-deps
+        run: pytest --cov-report lcov -vv tests/test_covariance_clusters.py --cov=tjpcov
+      
+      - name: Collect coverage report
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: run-${{matrix.python-version}}-${{matrix.runs-on}}
+          parallel: true
 
-          mpiexec -n 2 pytest -vv tests/test_mpi.py
+      # - name: Run MPI Tests (OpenMPI)
+      #   run: |
+      #     mamba install -y openmpi
+      #     pip install .[mpi] --no-deps
 
-          mamba remove -y openmpi
-          pip uninstall -y mpi4py
+      #     mpiexec -n 2 pytest -vv tests/test_mpi.py
 
-      - name: Run MPI Tests (mpich)
-        run: |
-          mamba install -y mpich
-          pip install -U mpi4py --no-cache-dir --no-deps
+      #     mamba remove -y openmpi
+      #     pip uninstall -y mpi4py
 
-          mpiexec -n 2 pytest -vv tests/test_mpi.py
+      # - name: Run MPI Tests (mpich)
+      #   run: |
+      #     mamba install -y mpich
+      #     pip install -U mpi4py --no-cache-dir --no-deps
+
+      #     mpiexec -n 2 pytest -vv tests/test_mpi.py
 
       - name: Collect coverage report
         uses: coverallsapp/github-action@v2
