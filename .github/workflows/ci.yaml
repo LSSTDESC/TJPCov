@@ -14,7 +14,7 @@ env:
   CONDA_ENV: ./environment.yml
   
 jobs:
-  build:
+  tests:
     name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
     runs-on: ${{ matrix.runs-on }}
     
@@ -47,58 +47,74 @@ jobs:
           miniforge-version: latest
           miniforge-variant: Mambaforge
       
+      - name: Cache Date
+        id: get-date
+        run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
+        
       - name: Check for cached environment
         uses: actions/cache@v3
         id: cache
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
         with:
-          path: ${{ env.CONDA }}/envs
+          path: ${{env.CONDA}}/envs
           key:
-            ${{runner.os}}.conda-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}
-  
-
-      # - name: "macOS: set env variables"
-      #   if: runner.os == 'macOS'
-      #   run: |
-      #     mamba install llvm-openmp
-      #     SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-      #     export CFLAGS="-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
-      #     export LDFLAGS="-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
-
+            ${{runner.os}}
+            .${{runner.arch}}
+            .mamba-py
+            .${{matrix.python-version}}
+            .${{hashFiles('pyproject.toml')}}
+            .${{hashFiles('.environment.yml')}}
+            .${{steps.get-date.outputs.today}}
+            .${{env.CACHE_NUMBER}}
 
       - name: Install environment packages
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           export MAMBA_NO_BANNER=1
-          conda env update --file ${{ env.CONDA_ENV }}
+          mamba env update --file ${{ env.CONDA_ENV }}
 
       - name: Run linters
         run: |
           black .
           flake8 tjpcov tests
-            
-      # - name: Run Tests
-      #   run: |
-      #     # Always run --no-deps with pip install to prevent re-installing dependencies
-      #     pip install .[nmt] --no-deps
-      #     pytest -vv --ignore=tests/test_mpi.py  --cov=tjpcov
+
+      - name: Install TJPCov
+        run: pip install .[nmt] --no-deps
+
+      - name: Run Tests
+        run: pytest -vv tests --cov=tjpcov
                  
-      - name: Run Tests (OpenMPI)
+      - name: Run MPI Tests (OpenMPI)
         run: |
-          conda install -y openmpi
+          mamba install -y openmpi
           pip install .[mpi] --no-deps
-          # Run MPI test (just the computation of blocks)
-          mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
-          conda remove -y openmpi
+
+          mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+          mamba remove -y openmpi
           pip uninstall -y mpi4py
 
-      - name: Run Tests (mpich)
+      - name: Run MPI Tests (mpich)
         run: |
-          conda install -y mpich
+          mamba install -y mpich
           pip install -U mpi4py --no-cache-dir
-          mpiexec -n 2 pytest -vv tests/test_mpi.py --cov=tjpcov --cov-append
 
-      - name: coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run:
-          coveralls --service=github
+          mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+      - name: Collect coverage report
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: run-${{matrix.python-version}}-${{matrix.runs-on}}
+          parallel: true
+
+  finish:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish code coverage report
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+          carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest,"
