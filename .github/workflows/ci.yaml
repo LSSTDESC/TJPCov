@@ -95,12 +95,12 @@ jobs:
 
       - name: Run MPI Tests (OpenMPI)
         run: |
-          mamba install -y openmpi
-          pip install .[mpi] --no-deps
+          mamba install -y openmpi-cc
+          pip install -U mpi4py --no-deps
 
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
-          mamba remove -y openmpi
+          mamba remove -y openmpi-cc
           pip uninstall -y mpi4py
 
       - name: Run MPI Tests (mpich)
