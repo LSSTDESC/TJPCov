@@ -90,8 +90,9 @@ jobs:
         run: pip install .[nmt] --no-deps
 
       - name: Run Tests
-        run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
-      
+        # run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
+        run: pytest -vv tests --cov=tjpcov
+
       - name: Run MPI Tests (OpenMPI)
         run: |
           mamba install -y openmpi
@@ -109,13 +110,20 @@ jobs:
 
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
+
       - name: Collect coverage report
-        uses: coverallsapp/github-action@v2
-        with:
-          flag-name: run-${{matrix.python-version}}-${{matrix.runs-on}}
-          parallel: true
-          path-to-lcov: lcov.info
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_PARALLEL: true
+          COVERALLS_FLAG_NAME: run-${{matrix.python-version}}-${{matrix.runs-on}}
+        run:
+          coveralls --service=github 
+          
+      # - name: Collect coverage report
+      #   uses: coverallsapp/github-action@v2
+      #   with:
+      #     path-to-lcov: lcov.info
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
 
 
   finish:
@@ -123,9 +131,10 @@ jobs:
     name: Collect and publish coverage report
     runs-on: ubuntu-latest
     steps:
+
       - name: Publish code coverage report
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
-          carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest,"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
+        run:
+          coveralls --service=github done
