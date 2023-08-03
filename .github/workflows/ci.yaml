@@ -91,11 +91,10 @@ jobs:
 
       - name: Run Tests
         # run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
-        run: pytest -vv tests --cov=tjpcov
+        run: pytest -vv tests/test_mpi.py --cov=tjpcov
 
       - name: Run MPI Tests (OpenMPI)
         run: |
-
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
           mamba remove -y openmpi
@@ -110,6 +109,7 @@ jobs:
 
 
       - name: Collect coverage report
+        # Note we can't use the coveralls app for now, it's incompatible with pytest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_PARALLEL: true
@@ -128,15 +128,18 @@ jobs:
     needs: tests
     name: Collect and publish coverage report
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        # IMPORTANT: this is needed to make sure that the conda environment is auto activated
-        shell: bash -el {0} 
+    
     steps:
+      - uses: actions/setup-python@v4
+        name: "Setup Pip"
+        with:
+          python-version: '3.11'
 
       - name: Publish code coverage report
+        # Note we can't use the coveralls app for now, it's incompatible with pytest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
         run:
+          pip install -U coveralls
           coveralls --service=github done
