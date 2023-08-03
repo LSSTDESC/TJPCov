@@ -92,9 +92,13 @@ jobs:
       - name: Run Tests
         # run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
         run: pytest -vv tests/test_mpi.py --cov=tjpcov
+        # run: pytest -vv tests --cov=tjpcov
 
       - name: Run MPI Tests (OpenMPI)
         run: |
+          mamba install -y openmpi
+          pip install -U mpi4py --no-cache-dir --no-deps
+
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
           mamba remove -y openmpi
@@ -106,6 +110,9 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
           mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+          mamba remove -y mpich
+          pip uninstall -y mpi4py
 
 
       - name: Collect coverage report
@@ -128,7 +135,7 @@ jobs:
     needs: tests
     name: Collect and publish coverage report
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/setup-python@v4
         name: "Setup Pip"
