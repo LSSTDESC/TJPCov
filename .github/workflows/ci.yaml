@@ -130,6 +130,10 @@ jobs:
     needs: tests
     name: Collect and publish coverage report
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # IMPORTANT: this is needed to make sure that the conda environment is auto activated
+        shell: bash -el {0} 
     steps:
 
       - name: Publish code coverage report
