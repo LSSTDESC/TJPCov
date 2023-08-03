@@ -11,7 +11,6 @@ dependencies:
   - pytest-cov
   - pytest-rerunfailures
   - coveralls
-  - nox
   - numpy
   - scipy
   - pyyaml
@@ -22,5 +21,6 @@ dependencies:
   - Jinja2
   - healpy
   - h5py
+  - openmpi
   - mpi4py
   
