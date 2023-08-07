@@ -97,9 +97,8 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
-        # run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
-        run: pytest -vv tests/test_covariance_clusters.py --cov=tjpcov
-        # run: pytest -vv tests --cov=tjpcov
+        run: pytest -vv --cov-report=lcov:lcov.info --cov=tjpcov tests/test_covariance_clusters.py 
+        # run: pytest -vv tests/test_covariance_clusters.py --cov=tjpcov
 
       - name: Run MPI Tests (OpenMPI)
         run: |
@@ -140,25 +139,26 @@ jobs:
     name: Collect and publish coverage report
     runs-on: ubuntu-latest
     
-    # steps:
-    #   - name: Coveralls Finished
-    #     uses: coverallsapp/github-action@master
-    #     with:
-    #       github-token: ${{ secrets.GITHUB_TOKEN }}
-    #       parallel-finished: true
-    #       carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
-    #       service_name: github-actions
     steps:
-      - uses: actions/setup-python@v4
-        name: "Setup Pip"
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
         with:
-          python-version: '3.11'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
+          path-to-lcov: lcov.info
 
-      - name: Publish code coverage report
-        # Note we can't use the coveralls app for now, it's incompatible with pytest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
-        run: |
-          pip install -U coveralls
-          coveralls --service=github
+    # steps:
+    #   - uses: actions/setup-python@v4
+    #     name: "Setup Pip"
+    #     with:
+    #       python-version: '3.11'
+
+    #   - name: Publish code coverage report
+    #     # Note we can't use the coveralls app for now, it's incompatible with pytest
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #       COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
+    #     run: |
+    #       pip install -U coveralls
+    #       coveralls --service=github
