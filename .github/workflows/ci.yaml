@@ -89,7 +89,7 @@ jobs:
         run: | 
           pip install .[nmt] --no-deps
 
-      - name: Install mpi4py
+      - name: Install mpi4py into cache
         # If this is cached, re-add mpi4py
         if: steps.cache.outputs.cache-hit == 'true'
         run: |
@@ -98,7 +98,7 @@ jobs:
 
       - name: Run Tests
         # run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
-        run: pytest -vv tests/test_mpi.py --cov=tjpcov
+        run: pytest -vv tests/test_covariance_clusters.py --cov=tjpcov
         # run: pytest -vv tests --cov=tjpcov
 
       - name: Run MPI Tests (OpenMPI)
