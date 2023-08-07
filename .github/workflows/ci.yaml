@@ -148,4 +148,4 @@ jobs:
           COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
         run:
           pip install -U coveralls
-          coveralls --service=github done
+          coveralls done
