@@ -153,27 +153,44 @@ class CovarianceBuilder(ABC):
         s = self.io.get_sacc_file()
         ndim = s.mean.size
 
-        cov_full = np.zeros((ndim, ndim))
+        cov_full = -1 * np.ones((ndim, ndim))
 
         print(
             "Building the covariance: placing blocks in their place",
             flush=True,
         )
+
         for tracer_comb1, tracer_comb2 in tracers_cov:
             # We do not need to do the reshape here because the blocks have
             # been build looping over the data types present in the sacc file
             print(tracer_comb1, tracer_comb2, flush=True)
 
             cov_ij = next(blocks)
+
             ix1 = s.indices(
                 tracers=tracer_comb1, data_type=self.covariance_block_data_type
             )
             ix2 = s.indices(
                 tracers=tracer_comb2, data_type=self.covariance_block_data_type
             )
-
             cov_full[np.ix_(ix1, ix2)] = cov_ij
             cov_full[np.ix_(ix2, ix1)] = cov_ij.T
+
+            if self.covariance_block_data_type is not None:
+                other_ix1 = [
+                    x for x in s.indices(tracers=tracer_comb1) if x not in ix1
+                ]
+                other_ix2 = [
+                    x for x in s.indices(tracers=tracer_comb2) if x not in ix2
+                ]
+
+                cov_full[np.ix_(other_ix1, other_ix2)] = 0
+                cov_full[np.ix_(other_ix2, other_ix1)] = 0
+
+        if np.any(cov_full == -1):
+            raise Exception(
+                "Something went wrong. Probably related to the data types"
+            )
 
         return cov_full
 
