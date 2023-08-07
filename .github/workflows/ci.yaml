@@ -151,6 +151,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
-        run:
+        run: |
           pip install -U coveralls
           coveralls done
