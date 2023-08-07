@@ -86,7 +86,15 @@ jobs:
           mamba env update --file ${{ env.CONDA_ENV }}
 
       - name: Install TJPCov
-        run: pip install .[nmt] --no-deps
+        run: | 
+          pip install .[nmt] --no-deps
+
+      - name: Install mpi4py
+        # If this is cached, re-add mpi4py
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: |
+          mamba install -y openmpi
+          pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
         # run: pytest --cov-report lcov:lcov.info -vv tests --cov=tjpcov
@@ -95,9 +103,6 @@ jobs:
 
       - name: Run MPI Tests (OpenMPI)
         run: |
-          mamba install -y openmpi
-          pip install -U mpi4py --no-cache-dir --no-deps
-
           mpiexec -n 2 pytest -vv tests/test_mpi.py
 
           mamba remove -y openmpi
