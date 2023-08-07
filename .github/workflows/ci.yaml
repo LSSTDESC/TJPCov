@@ -97,7 +97,7 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
-        run: pytest -vv --cov-report=lcov:lcov.info --cov=tjpcov tests/test_covariance_clusters.py 
+        run: pytest -vv --cov=tjpcov tests/test_covariance_clusters.py 
         # run: pytest -vv tests/test_covariance_clusters.py --cov=tjpcov
 
       - name: Run MPI Tests (OpenMPI)
@@ -122,43 +122,7 @@ jobs:
         # Note we can't use the coveralls app for now, it's incompatible with pytest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: run-${{matrix.python-version}}-${{matrix.runs-on}}
         run:
           coveralls --service=github 
           
-      # - name: Collect coverage report
-      #   uses: coverallsapp/github-action@v2
-      #   with:
-      #     path-to-lcov: lcov.info
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-
-
-  # finish:
-  #   needs: tests
-  #   name: Collect and publish coverage report
-  #   runs-on: ubuntu-latest
-    
-  #   steps:
-  #     - name: Coveralls Finished
-  #       uses: coverallsapp/github-action@master
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         parallel-finished: true
-  #         carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
-  #         path-to-lcov: lcov.info
-
-    # steps:
-    #   - uses: actions/setup-python@v4
-    #     name: "Setup Pip"
-    #     with:
-    #       python-version: '3.11'
-
-    #   - name: Publish code coverage report
-    #     # Note we can't use the coveralls app for now, it's incompatible with pytest
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #       COVERALLS_CARRYFORWARD_FLAGS: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
-    #     run: |
-    #       pip install -U coveralls
-    #       coveralls --service=github
