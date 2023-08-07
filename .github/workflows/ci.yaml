@@ -57,7 +57,6 @@ jobs:
         with:
           channels: conda-forge
           python-version: ${{ matrix.python-version }}
-          channel-priority: strict
           show-channel-urls: true
           auto-update-conda: true
           use-mamba: true
