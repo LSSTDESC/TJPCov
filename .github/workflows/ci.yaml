@@ -117,7 +117,7 @@ jobs:
           pip uninstall -y mpi4py
 
       - name: Code coverage
-        if: ${{ (runner.os == 'ubuntu-latest') && (matrix.python-version == '3.11') }}
+        if: ${{ (matrix.os == 'ubuntu') && (matrix.python-version == '3.11') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
