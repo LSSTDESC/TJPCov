@@ -30,7 +30,7 @@ dependencies = [
     "pytest",
     "pytest-rerunfailures",
     "pyccl>=2.5.0,<2.8.0",
-    "sacc>=0.9",
+    "sacc>=0.12",
     "camb",
     "healpy",
     "h5py"

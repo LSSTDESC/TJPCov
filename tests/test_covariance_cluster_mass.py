@@ -12,6 +12,8 @@ import yaml
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 OUTDIR = "./tests/tmp/"
+N_z_bins = 18
+N_lambda_bins = 3
 
 
 def teardown_module():
@@ -24,14 +26,14 @@ def setup_module():
     richness_min, richness_max = np.log10(10), np.log10(100)
 
     z_tracers = []
-    z_edges = np.linspace(z_min, z_max, 19)
+    z_edges = np.linspace(z_min, z_max, N_z_bins + 1)
     for i, zbin in enumerate(zip(z_edges[:-1], z_edges[1:])):
         bin_z_label = f"bin_z_{i}"
         s.add_tracer("bin_z", bin_z_label, zbin[0], zbin[1])
         z_tracers.append(bin_z_label)
 
     richness_tracers = []
-    richness_edges = np.linspace(richness_min, richness_max, 4)
+    richness_edges = np.linspace(richness_min, richness_max, N_lambda_bins + 1)
     for i, richness_bin in enumerate(
         zip(richness_edges[:-1], richness_edges[1:])
     ):
@@ -67,14 +69,14 @@ def setup_module():
 
 def _setup_sacc_tracers(z_min, z_max, richness_min, richness_max, s_file):
     z_tracers = []
-    z_edges = np.linspace(z_min, z_max, 19)
+    z_edges = np.linspace(z_min, z_max, N_z_bins + 1)
     for i, zbin in enumerate(zip(z_edges[:-1], z_edges[1:])):
         bin_z_label = f"bin_z_{i}"
         s_file.add_tracer("bin_z", bin_z_label, zbin[0], zbin[1])
         z_tracers.append(bin_z_label)
 
     richness_tracers = []
-    richness_edges = np.linspace(richness_min, richness_max, 4)
+    richness_edges = np.linspace(richness_min, richness_max, N_lambda_bins + 1)
     for i, richness_bin in enumerate(
         zip(richness_edges[:-1], richness_edges[1:])
     ):

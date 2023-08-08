@@ -166,26 +166,20 @@ class CovarianceBuilder(ABC):
             print(tracer_comb1, tracer_comb2, flush=True)
 
             cov_ij = next(blocks)
+            my_dtype = self.covariance_block_data_type
 
-            ix1 = s.indices(
-                tracers=tracer_comb1, data_type=self.covariance_block_data_type
-            )
-            ix2 = s.indices(
-                tracers=tracer_comb2, data_type=self.covariance_block_data_type
-            )
-            cov_full[np.ix_(ix1, ix2)] = cov_ij
-            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
-
-            if self.covariance_block_data_type is not None:
-                other_ix1 = [
-                    x for x in s.indices(tracers=tracer_comb1) if x not in ix1
-                ]
-                other_ix2 = [
-                    x for x in s.indices(tracers=tracer_comb2) if x not in ix2
-                ]
-
+            if my_dtype is not None:
+                # Zero out off diagonal entries to your data type.
+                other_ix1 = s.indices(tracers=tracer_comb1)
+                other_ix2 = s.indices(tracers=tracer_comb2)
                 cov_full[np.ix_(other_ix1, other_ix2)] = 0
                 cov_full[np.ix_(other_ix2, other_ix1)] = 0
+
+            ix1 = s.indices(tracers=tracer_comb1, data_type=my_dtype)
+            ix2 = s.indices(tracers=tracer_comb2, data_type=my_dtype)
+
+            cov_full[np.ix_(ix1, ix2)] = cov_ij
+            cov_full[np.ix_(ix2, ix1)] = cov_ij.T
 
         if np.any(cov_full == -1):
             raise Exception(
