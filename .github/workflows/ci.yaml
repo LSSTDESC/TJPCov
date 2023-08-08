@@ -97,7 +97,24 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
-        run: coverage run --source=tjpcov -m pytest tests/test_covariance_clusters.py 
+        run: coverage run --source=tjpcov -m pytest -vv tests/ 
+          
+      - name: Run MPI Tests (OpenMPI)
+        run: |
+          mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+          mamba remove -y openmpi
+          pip uninstall -y mpi4py
+
+      - name: Run MPI Tests (mpich)
+        run: |
+          mamba install -y mpich
+          pip install -U mpi4py --no-cache-dir --no-deps
+
+          mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+          mamba remove -y mpich
+          pip uninstall -y mpi4py
       
       - name: Collect coverage report
         uses: coverallsapp/github-action@v2
@@ -105,29 +122,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
-          
-      # - name: Run MPI Tests (OpenMPI)
-      #   run: |
-      #     mpiexec -n 2 pytest -vv tests/test_mpi.py
-
-      #     mamba remove -y openmpi
-      #     pip uninstall -y mpi4py
-
-      # - name: Run MPI Tests (mpich)
-      #   run: |
-      #     mamba install -y mpich
-      #     pip install -U mpi4py --no-cache-dir --no-deps
-
-      #     mpiexec -n 2 pytest -vv tests/test_mpi.py
-
-      #     mamba remove -y mpich
-      #     pip uninstall -y mpi4py
-
-      # - name: Publish code coverage
-      #   if: ${{ (runner.os == 'Linux') && (matrix.python-version == '3.11') }}
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: coveralls --service=github
 
   finish:
     needs: tests
