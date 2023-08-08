@@ -98,7 +98,6 @@ jobs:
 
       - name: Run Tests
         run: pytest -vv --cov=tjpcov tests/test_covariance_clusters.py 
-        # run: pytest -vv tests/test_covariance_clusters.py --cov=tjpcov
 
       - name: Run MPI Tests (OpenMPI)
         run: |
@@ -117,12 +116,10 @@ jobs:
           mamba remove -y mpich
           pip uninstall -y mpi4py
 
-
-      - name: Collect coverage report
-        # Note we can't use the coveralls app for now, it's incompatible with pytest
+      - name: Code coverage
+        if: ${{ (runner.os == 'ubuntu-latest') && (matrix.python-version == '3.11') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_FLAG_NAME: run-${{matrix.python-version}}-${{matrix.runs-on}}
-        run:
-          coveralls --service=github 
-          
+        run: |
+          coveralls --service=github
+      
