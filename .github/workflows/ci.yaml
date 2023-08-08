@@ -97,14 +97,13 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
-        run: coverage run --cov-report=lcov:lcov.info --source=tjpcov -m pytest tests/test_covariance_clusters.py 
+        run: coverage run --source=tjpcov -m pytest tests/test_covariance_clusters.py 
       
       - name: Collect coverage report
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ join(matrix.*, '-') }}
-          path-to-lcov: lcov.info
           parallel: true
           
       # - name: Run MPI Tests (OpenMPI)
