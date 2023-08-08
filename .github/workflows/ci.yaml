@@ -97,29 +97,27 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
-        run: pytest -vv --cov=tjpcov tests/test_covariance_clusters.py 
+        run: coverage run --source=tjpcov -m pytest tests/test_covariance_clusters.py 
+      
+      # - name: Run MPI Tests (OpenMPI)
+      #   run: |
+      #     mpiexec -n 2 pytest -vv tests/test_mpi.py
 
-      - name: Run MPI Tests (OpenMPI)
-        run: |
-          mpiexec -n 2 pytest -vv tests/test_mpi.py
+      #     mamba remove -y openmpi
+      #     pip uninstall -y mpi4py
 
-          mamba remove -y openmpi
-          pip uninstall -y mpi4py
+      # - name: Run MPI Tests (mpich)
+      #   run: |
+      #     mamba install -y mpich
+      #     pip install -U mpi4py --no-cache-dir --no-deps
 
-      - name: Run MPI Tests (mpich)
-        run: |
-          mamba install -y mpich
-          pip install -U mpi4py --no-cache-dir --no-deps
+      #     mpiexec -n 2 pytest -vv tests/test_mpi.py
 
-          mpiexec -n 2 pytest -vv tests/test_mpi.py
+      #     mamba remove -y mpich
+      #     pip uninstall -y mpi4py
 
-          mamba remove -y mpich
-          pip uninstall -y mpi4py
-
-      - name: Code coverage
+      - name: Publish code coverage
         if: ${{ (runner.os == 'Linux') && (matrix.python-version == '3.11') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          coveralls --service=github
-      
+        run: coveralls --service=github

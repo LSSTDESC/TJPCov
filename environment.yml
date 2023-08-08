@@ -8,7 +8,6 @@ dependencies:
   - black
   - flake8
   - pytest
-  - pytest-cov
   - pytest-rerunfailures
   - coveralls
   - numpy
