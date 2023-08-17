@@ -20,6 +20,28 @@ class CovarianceBuilder(ABC):
     computation of the blocks.
     """
 
+    @property
+    def covariance_block_data_type(self) -> str:
+        """The covariance block data type for your builder.
+
+        Returns:
+            str: Covariance block sacc data type
+        """
+        return self._block_data_type
+
+    @covariance_block_data_type.setter
+    def covariance_block_data_type(self, value: str):
+        """Set the covariance block data type for your builder.
+
+        If a set of tracers aren't unique to a data type, but you want to
+        only calculate the covariance for a specific data type within your
+        data vector, set this attribute to that data type.
+
+        Args:
+            value (str): Covariance block sacc data type
+        """
+        self._block_data_type = value
+
     def __init__(self, config):
         """Init the base class with a config file or dictionary.
 
@@ -71,8 +93,8 @@ class CovarianceBuilder(ABC):
         }
 
         self.cov = None
-
         self.nbpw = None
+        self._block_data_type = None
 
         # TODO: Move this somewhere else. They shouldn't be needed for fsky
         # approx.
@@ -133,15 +155,28 @@ class CovarianceBuilder(ABC):
 
         cov_full = -1 * np.ones((ndim, ndim))
 
-        print("Building the covariance: placing blocks in their place")
+        print(
+            "Building the covariance: placing blocks in their place",
+            flush=True,
+        )
+
         for tracer_comb1, tracer_comb2 in tracers_cov:
             # We do not need to do the reshape here because the blocks have
             # been build looping over the data types present in the sacc file
-            print(tracer_comb1, tracer_comb2)
+            print(tracer_comb1, tracer_comb2, flush=True)
 
             cov_ij = next(blocks)
-            ix1 = s.indices(tracers=tracer_comb1)
-            ix2 = s.indices(tracers=tracer_comb2)
+            my_dtype = self.covariance_block_data_type
+
+            if my_dtype is not None:
+                # Zero out off diagonal entries to your data type.
+                other_ix1 = s.indices(tracers=tracer_comb1)
+                other_ix2 = s.indices(tracers=tracer_comb2)
+                cov_full[np.ix_(other_ix1, other_ix2)] = 0
+                cov_full[np.ix_(other_ix2, other_ix1)] = 0
+
+            ix1 = s.indices(tracers=tracer_comb1, data_type=my_dtype)
+            ix2 = s.indices(tracers=tracer_comb2, data_type=my_dtype)
 
             cov_full[np.ix_(ix1, ix2)] = cov_ij
             cov_full[np.ix_(ix2, ix1)] = cov_ij.T
@@ -174,10 +209,12 @@ class CovarianceBuilder(ABC):
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
-        print("Computing independent covariance blocks")
+        print("Computing independent covariance blocks", flush=True)
         tasks_per_rank = self._split_tasks_by_rank(tracers_cov)
         for tracer_comb1, tracer_comb2 in tasks_per_rank:
-            print(f"Rank {self.rank}: {tracer_comb1}, {tracer_comb2}")
+            print(
+                f"Rank {self.rank}: {tracer_comb1}, {tracer_comb2}", flush=True
+            )
             # TODO: Options to compute the covariance block should be defined
             # at initialization and/or through kwargs?
             cov = self.get_covariance_block_for_sacc(
@@ -297,15 +334,20 @@ class CovarianceBuilder(ABC):
 
         # Let's use only one of the data types since all of them will have to
         # be e.g. cl, xi for the same tracer combination
-        dtypes1 = self.get_tracer_comb_data_types(tracer_comb1)[0]
-        dtypes2 = self.get_tracer_comb_data_types(tracer_comb2)[0]
+        dtypes1 = self.get_tracer_comb_data_types(tracer_comb1)
+        dtypes2 = self.get_tracer_comb_data_types(tracer_comb2)
 
         s = self.io.get_sacc_file()
 
         # Check in the given order
-        correct_dtypes = (self._tracer_types[0] in dtypes1) and (
-            self._tracer_types[1] in dtypes2
+        correct_dtype1 = any(
+            self._tracer_types[0] in dtype for dtype in dtypes1
         )
+        correct_dtype2 = any(
+            self._tracer_types[1] in dtype for dtype in dtypes2
+        )
+        correct_dtypes = correct_dtype1 and correct_dtype2
+
         if not correct_dtypes:
             # Check in the opposite order
             correct_dtypes = (self._tracer_types[1] in dtypes1) and (

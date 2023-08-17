@@ -80,10 +80,10 @@ class FourierGaussianNmt(CovarianceFourier):
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
-        print("Computing independent covariance blocks")
-        print("Computing the blocks for independent workspaces")
+        print("Computing independent covariance blocks", flush=True)
+        print("Computing the blocks for independent workspaces", flush=True)
         for tracer_comb1, tracer_comb2 in self._split_tasks_by_rank(trs_wsp):
-            print(tracer_comb1, tracer_comb2)
+            print(tracer_comb1, tracer_comb2, flush=True)
             cov = self.get_covariance_block_for_sacc(
                 tracer_comb1=tracer_comb1, tracer_comb2=tracer_comb2, **kwargs
             )
@@ -105,12 +105,12 @@ class FourierGaussianNmt(CovarianceFourier):
         if self.comm:
             self.comm.Barrier()
 
-        print("Computing the remaining blocks")
+        print("Computing the remaining blocks", flush=True)
         # Now loop over the remaining tracers
         for tracer_comb1, tracer_comb2 in self._split_tasks_by_rank(
             tracers_cov
         ):
-            print(tracer_comb1, tracer_comb2)
+            print(tracer_comb1, tracer_comb2, flush=True)
             cov = self.get_covariance_block_for_sacc(
                 tracer_comb1=tracer_comb1, tracer_comb2=tracer_comb2, **kwargs
             )
@@ -195,7 +195,7 @@ class FourierGaussianNmt(CovarianceFourier):
 
         fname = os.path.join(self.io.outdir, fname)
         if os.path.isfile(fname) and not clobber:
-            print(f"Loading saved covariance {fname}")
+            print(f"Loading saved covariance {fname}", flush=True)
             cov = np.load(fname)["cov"]
             return cov
 

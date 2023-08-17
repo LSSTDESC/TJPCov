@@ -21,6 +21,8 @@ def covariance_from_name(name):
         from .covariance_cluster_counts_gaussian import (
             ClusterCountsGaussian as Cov,
         )
+    elif name == "ClusterMass":
+        from .covariance_cluster_mass import ClusterMass as Cov
     elif name == "FourierGaussianFsky":
         from .covariance_gaussian_fsky import FourierGaussianFsky as Cov
     elif name == "RealGaussianFsky":

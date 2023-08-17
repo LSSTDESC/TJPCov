@@ -13,8 +13,8 @@ dependencies:
   - numpy
   - scipy
   - pyyaml
-  - pyccl >= 2.5.0, < 2.8.0
-  - sacc>=0.8
+  - pyccl>=2.5.0,<2.8.0
+  - sacc>=0.12
   - namaster
   - camb
   - Jinja2
@@ -22,4 +22,4 @@ dependencies:
   - h5py
   - openmpi
   - mpi4py
-  
+
