@@ -27,8 +27,6 @@ dependencies = [
     "numpy",
     "Jinja2",
     "pyyaml",
-    "pytest",
-    "pytest-rerunfailures",
     "pyccl>=2.5.0,<2.8.0",
     "sacc>=0.12",
     "camb",
