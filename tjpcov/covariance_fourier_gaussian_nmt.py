@@ -428,8 +428,6 @@ class FourierGaussianNmt(CovarianceFourier):
             recompute = False
         if recompute or (not np.any(isfiles)):
             cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
-            # Use a global lock to ensure another process does not come and
-            # delete the file before we've read it.
             if fnames[0] and not os.path.isfile(fnames[0]):
                 cw.write_to(fnames[0])
             for fn, isf in zip(fnames[1:], isfiles[1:]):
