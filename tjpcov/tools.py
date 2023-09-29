@@ -3,7 +3,6 @@
 import h5py
 import healpy as hp
 import numpy as np
-import os
 
 
 def read_map_from_hdf5(fname, name, nside):
