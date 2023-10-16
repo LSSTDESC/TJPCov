@@ -78,13 +78,14 @@ class FourierSSCHaloModel(CovarianceFourier):
         tr[3], tr[4] = tracer_comb2
 
         cosmo = self.get_cosmology()
-        mass_def = ccl.halos.MassDef200m()
-        hmf = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
-        hbf = ccl.halos.HaloBiasTinker10(cosmo, mass_def=mass_def)
-        nfw = ccl.halos.HaloProfileNFW(
-            ccl.halos.ConcentrationDuffy08(mass_def), fourier_analytic=True
-        )
-        hmc = ccl.halos.HMCalculator(cosmo, hmf, hbf, mass_def)
+        mass_def = ccl.halos.MassDef200m
+        hmf = ccl.halos.MassFuncTinker08(mass_def=mass_def)
+        hbf = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
+        cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
+        nfw = ccl.halos.HaloProfileNFW(mass_def=mass_def, concentration=cM,
+                                       fourier_analytic=True)
+        hmc = ccl.halos.HMCalculator(mass_function=hmf, halo_bias=hbf,
+                                     mass_def=mass_def)
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
@@ -117,10 +118,10 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         ccl_tracers, _ = self.get_tracer_info()
 
-        isnc1 = isinstance(ccl_tracers[tr[1]], ccl.NumberCountsTracer)
-        isnc2 = isinstance(ccl_tracers[tr[2]], ccl.NumberCountsTracer)
-        isnc3 = isinstance(ccl_tracers[tr[3]], ccl.NumberCountsTracer)
-        isnc4 = isinstance(ccl_tracers[tr[4]], ccl.NumberCountsTracer)
+        s = self.io.get_sacc_file()
+        isnc = {}
+        for i in range(1, 5):
+            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or ("lens" in tr[i])
 
         tk3D = ccl.halos.halomod_Tk3D_SSC_linear_bias(
             cosmo=cosmo,
@@ -130,10 +131,10 @@ class FourierSSCHaloModel(CovarianceFourier):
             bias2=bias2,
             bias3=bias3,
             bias4=bias4,
-            is_number_counts1=isnc1,
-            is_number_counts2=isnc2,
-            is_number_counts3=isnc3,
-            is_number_counts4=isnc4,
+            is_number_counts1=isnc[1],
+            is_number_counts2=isnc[2],
+            is_number_counts3=isnc[3],
+            is_number_counts4=isnc[4],
         )
 
         masks = self.get_masks_dict(tr, {})
@@ -152,17 +153,17 @@ class FourierSSCHaloModel(CovarianceFourier):
         mask_wl /= np.sum(m12) * np.sum(m34) * area**2
 
         # TODO: Allow using fsky instead of the masks?
-        sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a, mask_wl=mask_wl)
+        sigma2_B = ccl.sigma2_B_from_mask(cosmo, a_arr=a, mask_wl=mask_wl)
 
         ell = self.get_ell_eff()
         cov_ssc = ccl.covariances.angular_cl_cov_SSC(
             cosmo,
-            cltracer1=ccl_tracers[tr[1]],
-            cltracer2=ccl_tracers[tr[2]],
-            cltracer3=ccl_tracers[tr[3]],
-            cltracer4=ccl_tracers[tr[4]],
+            tracer1=ccl_tracers[tr[1]],
+            tracer2=ccl_tracers[tr[2]],
+            tracer3=ccl_tracers[tr[3]],
+            tracer4=ccl_tracers[tr[4]],
             ell=ell,
-            tkka=tk3D,
+            t_of_kk_a=tk3D,
             sigma2_B=(a, sigma2_B),
             integration_method=integration_method,
         )

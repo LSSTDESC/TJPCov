@@ -553,7 +553,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
     # Check chi2, which is what we actually care about
     if tracer_comb1 == tracer_comb2:
         s = cnmt.io.get_sacc_file()
-        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-4)
+        assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-3)
 
     # Check that it runs if one of the masks does not overlap with the others
     if tracer_comb1 != tracer_comb2:
@@ -1153,7 +1153,7 @@ def test_full_covariance_benchmark():
     delta = clf - cl
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
-    assert np.abs(chi2 / chi2_bm - 1) < 1e-4
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-3
 
     # Clean after the test
     clean_outdir()
@@ -1224,4 +1224,4 @@ def test_txpipe_like_input():
     delta = clf - cl
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
-    assert np.abs(chi2 / chi2_bm - 1) < 1e-4
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-3

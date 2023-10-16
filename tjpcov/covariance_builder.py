@@ -241,7 +241,7 @@ class CovarianceBuilder(ABC):
 
             if cosmo is None or cosmo == "set":
                 self.cosmo = ccl.Cosmology(**self.config["parameters"])
-            elif isinstance(cosmo, ccl.core.Cosmology):
+            elif isinstance(cosmo, ccl.Cosmology):
                 self.cosmo = cosmo
             elif isinstance(cosmo, str):
                 ext = cosmo.split(".")[-1]
@@ -258,7 +258,7 @@ class CovarianceBuilder(ABC):
             else:
                 raise ValueError(
                     "cosmo entry looks wrong. It has to be one"
-                    "of ['set', ccl.core.Cosmology instance, "
+                    "of ['set', ccl.Cosmology instance, "
                     "a yaml file or a pickle"
                 )
 

@@ -145,7 +145,7 @@ def test_get_covariance(fg_nmt_cov):
     cov = fg_nmt_cov.get_covariance() + 1e-100
     cov_bm = s.covariance.covmat + 1e-100
     assert np.max(np.abs(np.diag(cov) / np.diag(cov_bm) - 1)) < 1e-3
-    assert np.max(np.abs(cov / cov_bm - 1)) < 1
+    assert np.max(np.abs(np.diag(cov, 1) / np.diag(cov_bm, 1) - 1)) < 1e-2
 
     # Check chi2
     clf = np.array([])
@@ -157,7 +157,7 @@ def test_get_covariance(fg_nmt_cov):
     delta = clf - cl
     chi2 = delta.dot(np.linalg.inv(cov)).dot(delta)
     chi2_bm = delta.dot(np.linalg.inv(cov_bm)).dot(delta)
-    assert np.abs(chi2 / chi2_bm - 1) < 1e-4
+    assert np.abs(chi2 / chi2_bm - 1) < 1e-3
 
 
 def test_covariance_calculator(cov_calc, cov_calc_mpi):

@@ -27,7 +27,7 @@ dependencies = [
     "numpy",
     "Jinja2",
     "pyyaml",
-    "pyccl>=2.5.0,<2.8.0",
+    "pyccl>=3.0.0",
     "sacc>=0.12",
     "camb",
     "healpy",
