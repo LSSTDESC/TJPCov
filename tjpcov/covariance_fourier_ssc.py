@@ -82,10 +82,12 @@ class FourierSSCHaloModel(CovarianceFourier):
         hmf = ccl.halos.MassFuncTinker08(mass_def=mass_def)
         hbf = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
         cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
-        nfw = ccl.halos.HaloProfileNFW(mass_def=mass_def, concentration=cM,
-                                       fourier_analytic=True)
-        hmc = ccl.halos.HMCalculator(mass_function=hmf, halo_bias=hbf,
-                                     mass_def=mass_def)
+        nfw = ccl.halos.HaloProfileNFW(
+            mass_def=mass_def, concentration=cM, fourier_analytic=True
+        )
+        hmc = ccl.halos.HMCalculator(
+            mass_function=hmf, halo_bias=hbf, mass_def=mass_def
+        )
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
@@ -121,7 +123,9 @@ class FourierSSCHaloModel(CovarianceFourier):
         s = self.io.get_sacc_file()
         isnc = {}
         for i in range(1, 5):
-            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or ("lens" in tr[i])
+            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or (
+                "lens" in tr[i]
+            )
 
         tk3D = ccl.halos.halomod_Tk3D_SSC_linear_bias(
             cosmo=cosmo,
