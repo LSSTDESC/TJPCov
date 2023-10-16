@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-import pyccl as ccl
 import pymaster as nmt
 import pytest
 import sacc
