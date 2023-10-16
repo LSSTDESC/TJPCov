@@ -5,6 +5,7 @@ import pymaster as nmt
 import pytest
 import sacc
 import shutil
+import pyccl as ccl
 
 from tjpcov.covariance_builder import CovarianceFourier
 
@@ -241,7 +242,7 @@ def test_get_tracer_info(mock_cov_fourier):
         if "gc" in tr:
             z, nz = (trsacc.z, trsacc.nz)
             assert nz == pytest.approx(ccltr.get_dndz(z), rel=1e-4)
-            chi = ccl.comoving_radial_distance(cosmo, 1/(1+z))
+            chi = ccl.comoving_radial_distance(cosmo, 1 / (1 + z))
             kz = ccltr.get_kernel(chi)[0]
             z_max_nz = z[np.argmax(nz)]
             z_max_kz = z[np.argmax(kz)]
@@ -249,7 +250,7 @@ def test_get_tracer_info(mock_cov_fourier):
         elif "wl" in tr:
             z, nz = (trsacc.z, trsacc.nz)
             assert nz == pytest.approx(ccltr.get_dndz(z), rel=1e-4)
-            chi = ccl.comoving_radial_distance(cosmo, 1/(1+z))
+            chi = ccl.comoving_radial_distance(cosmo, 1 / (1 + z))
             kz = ccltr.get_kernel(chi)[0]
             z_max_nz = z[np.argmax(nz)]
             z_max_kz = z[np.argmax(kz)]
@@ -257,7 +258,7 @@ def test_get_tracer_info(mock_cov_fourier):
         elif "cv" in tr:
             assert not isinstance(ccltr, ccl.tracers.NzTracer)
             chi_max = ccltr.chi_max
-            chi_max2 = ccl.comoving_radial_distance(cosmo, 1/(1+1100))
+            chi_max2 = ccl.comoving_radial_distance(cosmo, 1 / (1 + 1100))
             assert chi_max == pytest.approx(chi_max2, rel=1e-4)
 
     # Check tracer_noise_coupled. Modify the sacc file to add metadata
