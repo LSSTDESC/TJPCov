@@ -1,4 +1,4 @@
-name: tjpcov_ccl3
+name: tjpcov
 channels: 
   - conda-forge
 dependencies:
