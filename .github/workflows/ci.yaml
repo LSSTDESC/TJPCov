@@ -84,8 +84,6 @@ jobs:
         run: |
           export MAMBA_NO_BANNER=1
           mamba env update --file ${{ env.CONDA_ENV }}
-          # GitHub complains without this
-          mamba install coverage
 
       - name: Install TJPCov
         run: | 
