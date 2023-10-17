@@ -3,6 +3,8 @@ tjpcov:
 
   cosmo: tests/data/cosmo_desy1.yaml
 
+  cov_type: [FourierGaussianFsky]
+  
   # Survey params:
   # 5 lens bins
   {% for i in range(5) %} 
