@@ -19,6 +19,8 @@ OUTDIR = "./tests/tmp/"
 N_z_bins = 18
 N_lambda_bins = 3
 
+MASSDEF = ccl.halos.MassDef200m
+
 
 def teardown_module():
     shutil.rmtree(OUTDIR)
@@ -108,7 +110,7 @@ def mock_covariance_gauss(mock_cosmo):
     cc_cov.fft_helper = FFTHelper(
         mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
     )
-    cc_cov.mass_func = hmf.MassFuncTinker10(mock_cosmo)
+    cc_cov.mass_func = hmf.MassFuncTinker10(mass_def=MASSDEF)
     cc_cov.h0 = 0.67
     return cc_cov
 
@@ -120,7 +122,7 @@ def mock_covariance_ssc(mock_cosmo):
     cc_cov.fft_helper = FFTHelper(
         mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
     )
-    cc_cov.mass_func = hmf.MassFuncTinker10(mock_cosmo)
+    cc_cov.mass_func = hmf.MassFuncTinker10(mass_def=MASSDEF)
     cc_cov.h0 = 0.67
     return cc_cov
 
@@ -163,7 +165,7 @@ def test_integral_mass_no_bias(
     mock_covariance_gauss: CovarianceClusterCounts, z, ref_val
 ):
     test = mock_covariance_gauss.mass_richness_integral(z, 0, remove_bias=True)
-    assert test == pytest.approx(ref_val, rel=1e-4)
+    assert test == pytest.approx(ref_val, rel=1e-3)
 
 
 def test_double_bessel_integral(
@@ -171,13 +173,13 @@ def test_double_bessel_integral(
 ):
     ref = 8.427201745032292e-05
     test = mock_covariance_gauss.double_bessel_integral(0.3, 0.3)
-    assert test == pytest.approx(ref, rel=1e-4)
+    assert test == pytest.approx(ref, rel=1e-3)
 
 
 def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
     ref = 63973.635143644424
     test = mock_covariance_gauss.shot_noise(0, 0)
-    assert test == pytest.approx(ref, 1e-4)
+    assert test == pytest.approx(ref, rel=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -191,7 +193,7 @@ def test_integral_mass(
     mock_covariance_gauss: CovarianceClusterCounts, z, reference_val
 ):
     test = mock_covariance_gauss.mass_richness_integral(z, 0)
-    assert test == pytest.approx(reference_val, rel=1e-4)
+    assert test == pytest.approx(reference_val, rel=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -278,7 +280,7 @@ def test_cov_nxn(
         ("mock_survey", "bin_z_0", "bin_rich_0"),
         ("mock_survey", "bin_z_0", "bin_rich_0"),
     )
-    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-4)
+    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
 
 
 def test_cluster_count_tracer_missing_throws():

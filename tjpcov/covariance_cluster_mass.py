@@ -60,9 +60,9 @@ class ClusterMass(CovarianceBuilder):
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
         """
         self.cosmo = cosmo
-        mass_def = ccl.halos.MassDef200m()
+        mass_def = ccl.halos.MassDef200m
         self.c = ccl.physical_constants.CLIGHT / 1000
-        self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
+        self.mass_func = ccl.halos.MassFuncTinker08(mass_def=mass_def)
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
         """Load and set class attributes based on data from a SACC file.

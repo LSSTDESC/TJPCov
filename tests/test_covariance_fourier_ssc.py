@@ -51,18 +51,18 @@ def get_config():
 
 
 def get_halo_model(cosmo):
-    md = ccl.halos.MassDef200m()
-    mf = ccl.halos.MassFuncTinker08(cosmo, mass_def=md)
-    hb = ccl.halos.HaloBiasTinker10(cosmo, mass_def=md)
-    hmc = ccl.halos.HMCalculator(cosmo, mf, hb, md)
+    md = ccl.halos.MassDef200m
+    mf = ccl.halos.MassFuncTinker08(mass_def=md)
+    hb = ccl.halos.HaloBiasTinker10(mass_def=md)
+    hmc = ccl.halos.HMCalculator(mass_function=mf, halo_bias=hb, mass_def=md)
 
     return hmc
 
 
 def get_NFW_profile():
-    md = ccl.halos.MassDef200m()
-    cm = ccl.halos.ConcentrationDuffy08(mdef=md)
-    pNFW = ccl.halos.HaloProfileNFW(cm)
+    md = ccl.halos.MassDef200m
+    cm = ccl.halos.ConcentrationDuffy08(mass_def=md)
+    pNFW = ccl.halos.HaloProfileNFW(mass_def=md, concentration=cm)
 
     return pNFW
 
@@ -158,7 +158,7 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     tkk_ssc = ccl.halos.halomod_Tk3D_SSC_linear_bias(
         cosmo,
         hmc,
-        nfw_profile,
+        prof=nfw_profile,
         bias1=bias1,
         bias2=bias2,
         bias3=bias3,
@@ -170,7 +170,7 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     )
 
     cl_mask = get_cl_footprint(*tracer_comb1, *tracer_comb2)
-    sigma2_B = ccl.sigma2_B_from_mask(cosmo, a=a_arr, mask_wl=cl_mask)
+    sigma2_B = ccl.sigma2_B_from_mask(cosmo, a_arr=a_arr, mask_wl=cl_mask)
 
     ccl_tracers, _ = cov_fssc.get_tracer_info()
     tr1 = ccl_tracers[tracer_comb1[0]]
@@ -179,13 +179,13 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     tr4 = ccl_tracers[tracer_comb2[1]]
     cov_ccl = ccl.angular_cl_cov_SSC(
         cosmo,
-        cltracer1=tr1,
-        cltracer2=tr2,
+        tracer1=tr1,
+        tracer2=tr2,
         ell=ell,
-        tkka=tkk_ssc,
+        t_of_kk_a=tkk_ssc,
         sigma2_B=(a_arr, sigma2_B),
-        cltracer3=tr3,
-        cltracer4=tr4,
+        tracer3=tr3,
+        tracer4=tr4,
     )
 
     assert np.max(np.fabs(np.diag(cov_ssc / cov_ccl - 1))) < 1e-5
@@ -266,7 +266,7 @@ def test_get_covariance_block_WL_benchmark(cov_fssc):
     cosmo = ccl.Cosmology(
         Omega_c=0.25, Omega_b=0.05, h=h, n_s=0.97, sigma8=0.8, m_nu=0.0
     )
-    WL_tracer = ccl.WeakLensingTracer(cosmo, (z, nofz))
+    WL_tracer = ccl.WeakLensingTracer(cosmo, dndz=(z, nofz))
 
     # Trick TJPCov to use the ells we want instead the ones in the file
     s = sacc.Sacc()

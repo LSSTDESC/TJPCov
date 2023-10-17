@@ -1,11 +1,11 @@
 import os
 
 import numpy as np
-import pyccl as ccl
 import pymaster as nmt
 import pytest
 import sacc
 import shutil
+import pyccl as ccl
 
 from tjpcov.covariance_builder import CovarianceFourier
 
@@ -235,14 +235,31 @@ def test_get_tracer_info(mock_cov_fourier):
         else:
             assert np.abs(nl / (sigma_e**2 / Ngal) - 1) < 1e-5
 
-    # TODO: We should check the CCL tracers are the same
+    sacc = mock_cov_fourier.io.sacc_file
+    cosmo = mock_cov_fourier.get_cosmology()
     for tr, ccltr in ccl_tracers.items():
+        trsacc = sacc.tracers[tr]
         if "gc" in tr:
-            assert isinstance(ccltr, ccl.NumberCountsTracer)
+            z, nz = (trsacc.z, trsacc.nz)
+            assert nz == pytest.approx(ccltr.get_dndz(z), rel=1e-4)
+            chi = ccl.comoving_radial_distance(cosmo, 1 / (1 + z))
+            kz = ccltr.get_kernel(chi)[0]
+            z_max_nz = z[np.argmax(nz)]
+            z_max_kz = z[np.argmax(kz)]
+            assert z_max_nz == pytest.approx(z_max_kz, rel=1e-2)
         elif "wl" in tr:
-            assert isinstance(ccltr, ccl.WeakLensingTracer)
+            z, nz = (trsacc.z, trsacc.nz)
+            assert nz == pytest.approx(ccltr.get_dndz(z), rel=1e-4)
+            chi = ccl.comoving_radial_distance(cosmo, 1 / (1 + z))
+            kz = ccltr.get_kernel(chi)[0]
+            z_max_nz = z[np.argmax(nz)]
+            z_max_kz = z[np.argmax(kz)]
+            assert z_max_kz < z_max_nz
         elif "cv" in tr:
-            assert isinstance(ccltr, ccl.CMBLensingTracer)
+            assert not isinstance(ccltr, ccl.tracers.NzTracer)
+            chi_max = ccltr.chi_max
+            chi_max2 = ccl.comoving_radial_distance(cosmo, 1 / (1 + 1100))
+            assert chi_max == pytest.approx(chi_max2, rel=1e-4)
 
     # Check tracer_noise_coupled. Modify the sacc file to add metadata
     # information for the tracer noise

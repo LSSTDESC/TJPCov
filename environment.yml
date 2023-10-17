@@ -13,7 +13,7 @@ dependencies:
   - numpy
   - scipy
   - pyyaml
-  - pyccl>=2.5.0,<2.8.0
+  - pyccl>=3.0.0
   - sacc>=0.12
   - namaster
   - camb

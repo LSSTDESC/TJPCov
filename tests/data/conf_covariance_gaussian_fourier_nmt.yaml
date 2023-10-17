@@ -64,4 +64,3 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
-  baryons_power_spectrum: 'nobaryons'

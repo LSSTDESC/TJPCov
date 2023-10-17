@@ -33,7 +33,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
                 + " points were not included in the sacc file."
             )
 
-        self.overdensity_delta = 200
+        self.hbias = ccl.halos.HaloBiasTinker10()
         self.h0 = float(self.config["parameters"].get("h"))
         self.load_from_sacc(sacc_file, min_halo_mass)
 
@@ -56,9 +56,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
         """
         self.cosmo = cosmo
-        mass_def = ccl.halos.MassDef200m()
+        mass_def = ccl.halos.MassDef200m
         self.c = ccl.physical_constants.CLIGHT / 1000
-        self.mass_func = ccl.halos.MassFuncTinker08(cosmo, mass_def=mass_def)
+        self.mass_func = ccl.halos.MassFuncTinker08(mass_def=mass_def)
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
         """Set class attributes based on data from the SACC file.
@@ -270,18 +270,15 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
             scale_factor = 1 / (1 + z)
 
-            mass_func = self.mass_func.get_mass_function(
-                self.cosmo, np.exp(ln_m), scale_factor
-            )
+            mass_func = self.mass_func(self.cosmo, np.exp(ln_m), scale_factor)
 
             argument *= mass_func
 
             if not remove_bias:
-                halo_bias = ccl.halo_bias(
+                halo_bias = self.hbias(
                     self.cosmo,
                     np.exp(ln_m),
                     scale_factor,
-                    overdensity=self.overdensity_delta,
                 )
                 argument *= halo_bias
 
