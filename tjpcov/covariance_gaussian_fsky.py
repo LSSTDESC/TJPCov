@@ -4,6 +4,8 @@ import pyccl as ccl
 from .wigner_transform import bin_cov
 from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
 
+#FAO
+# from .covariance.io import CovarianceIO
 
 class FourierGaussianFsky(CovarianceFourier):
     """Class to compute the Gaussian CellxCell cov. with the Knox formula."""
@@ -60,7 +62,171 @@ class FourierGaussianFsky(CovarianceFourier):
 
         return ell, ell_eff, ell_edges
 
+
+    def new_get_cl(self, tracer_1, tracer_2, from_sacc=True):
+        """Modified version for user input Cl
+
+        """
+        dt_list = ['galaxy_density_cl', 
+                   'galaxy_shearDensity_cl_e', 
+                   'galaxy_shear_cl_ee']
+        assert isinstance(tracer_1, str), f"{tracer_1} should be str"
+        assert isinstance(tracer_2, str), f"{tracer_2} should be str"
+        if (tracer_1.startswith('l')) and (tracer_2.startswith('l')):
+            data_type = dt_list[0]
+        elif (tracer_1.startswith('s')) and (tracer_2.startswith('s')):
+            data_type = dt_list[2]
+        else:
+            data_type = dt_list[1]
+
+        import sacc 
+
+        # io = CovarianceIO(config)
+
+        s = sacc.Sacc.load_fits("/home/faoli/programs/lsst/cov-validation/forecastCMU/"+
+                                "lsst_y1_3x2pt_ccl_datavector_srd_covmat_no_scale_cuts_yet.fits")
+        _l, _cl = s.get_ell_cl(data_type, tracer_1, tracer_2)
+        print("AAAAAA",_cl.shape)
+        if _cl.shape[0] == 0:
+            print(tracer_1, tracer_2, "not found in sacc file")
+            _l, _cl = s.get_ell_cl(data_type, tracer_2, tracer_1)
+            print("2nd try:", _cl.shape)
+            if _cl.shape[0] == 0:
+                print(tracer_2, tracer_1, "not found in sacc file")
+                _cl = np.zeros(20) # FAO how to get the  proper shape?
+        return _cl
+
+
     def get_covariance_block(
+        self,
+        tracer_comb1,
+        tracer_comb2,
+        include_b_modes=False,
+        for_real=False,
+        lmax=None,
+    ):
+        """Compute a single covariance matrix for a given pair of C_ell.
+
+        Args:
+            tracer_comb1 (list): List of the pair of tracer names of C_ell^1
+            tracer_comb2 (list): List of the pair of tracer names of C_ell^2
+            include_b_modes (bool, optional): If True, return the full SSC with
+                zeros in for B-modes (if any). If False, return the non-zero
+                block. This option cannot be modified through the configuration
+                file to avoid breaking the compatibility with the NaMaster
+                covariance.
+            for_real (bool, optional): If True, returns the covariance before
+                normalization and binning. It requires setting lmax.
+            lmax (int, optional): Maximum ell up to which to compute the
+            covariance
+
+        Returns:
+            array: The covariance block
+        """
+        cosmo = self.get_cosmology()
+        if for_real:
+            if lmax is None:
+                raise ValueError("You need to set lmax if for_real is True")
+            else:
+                ell = np.arange(lmax + 1)
+        else:
+            # binning information not need for Real
+            ell, ell_bins, ell_edges = self.get_binning_info()
+
+        ccl_tracers, tracer_Noise = self.get_tracer_info()
+
+        #FAO
+        ell = np.array([23., 32. , 45. ,63.5,    89. ,   124. ,   173. ,
+                        241.5,   337. ,   469.5,   654. ,   911. ,  1269. ,  1767.5,
+                        2461.5,  3427.5,  4772.5,  6646., 9254.5, 12886. ])
+        ell_edges
+
+
+
+        tracer_Noise = {'lens_0': 2.7259692123984827e-08,
+                        'lens_1': 1.9719610253649196e-08,
+                        'lens_2': 1.9893918329285173e-08,
+                        'lens_3': 2.3564441981473987e-08,
+                        'lens_4': 3.064920759828348e-08,
+                        'source_0': 1.588899504443017e-09,
+                        'source_1': 1.588899504443017e-09,
+                        'source_2': 1.588899504443017e-09,
+                        'source_3': 1.588899504443017e-09,
+                        'source_4': 1.588899504443017e-09}
+        # import pdb; pdb.set_trace()
+        cl = {}
+        cl[13] = self.new_get_cl(
+            tracer_comb1[0], 
+            tracer_comb2[0]
+        )
+        cl[24] = self.new_get_cl(
+            tracer_1=tracer_comb1[1],
+            tracer_2=tracer_comb2[1],
+        )
+        cl[14] = self.new_get_cl(
+            tracer_1=tracer_comb1[0],
+            tracer_2=tracer_comb2[1],
+        )
+        cl[23] = self.new_get_cl(
+            tracer_1=tracer_comb1[1],
+            tracer_2=tracer_comb2[0],
+        )
+
+        SN = {}
+        SN[13] = (
+            tracer_Noise[tracer_comb1[0]]
+            if tracer_comb1[0] == tracer_comb2[0]
+            else 0
+        )
+        SN[24] = (
+            tracer_Noise[tracer_comb1[1]]
+            if tracer_comb1[1] == tracer_comb2[1]
+            else 0
+        )
+        SN[14] = (
+            tracer_Noise[tracer_comb1[0]]
+            if tracer_comb1[0] == tracer_comb2[1]
+            else 0
+        )
+        SN[23] = (
+            tracer_Noise[tracer_comb1[1]]
+            if tracer_comb1[1] == tracer_comb2[0]
+            else 0
+        )
+
+        cov = np.diag(
+            (cl[13] + SN[13]) * (cl[24] + SN[24])
+            + (cl[14] + SN[14]) * (cl[23] + SN[23])
+        )
+
+        if for_real:
+            # If it is to compute the real space covariance, return the
+            # covariance before binning or normalizing
+            return cov
+
+        norm = (2 * ell + 1) * np.gradient(ell) * self.fsky
+        cov /= norm
+
+        #FAO TOBE REMOVED
+        return cov
+        # TODO: Maybe it's a better approximation just to use the ell_effective
+        lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
+
+        # Include the B-modes if requested (e.g. needed to build the full
+        # covariance)
+        if include_b_modes:
+            nbpw = lb.size
+            ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
+            ncell2 = self.get_tracer_comb_ncell(tracer_comb2)
+            cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
+            cov_full[:, 0, :, 0] = cov
+            cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
+            cov = cov_full
+
+        return cov
+
+
+    def OLDget_covariance_block(
         self,
         tracer_comb1,
         tracer_comb2,
