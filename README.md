@@ -18,7 +18,7 @@ To use TJPCov, we recommend installing with pip:
  - `python -m pip install .\[nmt\]` will install tjpcov, the minimal
      dependencies and the dependencies needed to use NaMaster.
  - `python -m pip install .\[mpi4py\]` will install, the minimal
-     dependencies and the mpi4py library to use MPI parallelization.
+     dependencies and the mpi4py library to use MPI parallelization. **Note** This will not work on NERSC; see [the NERSC docs](https://docs.nersc.gov/development/languages/python/parallel-python/#mpi4py-in-your-custom-conda-environment) for how to install there.
  - `python -m pip install .\[full\]` will install tjpcov and all dependencies
 
 Note that due to a bug in the NaMaster installation, one needs to make sure numpy is installed before trying to install NaMaster. If you are doing a fresh install, run `python -m pip install .` first, and then `python -m pip install .\[nmt\]`
