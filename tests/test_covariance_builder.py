@@ -7,12 +7,61 @@ import shutil
 import pickle
 import pyccl as ccl
 import pymaster as nmt
-
+from unittest.mock import MagicMock
 from tjpcov.covariance_builder import CovarianceBuilder
 from scipy.linalg import block_diag
 
 INPUT_YML = "./tests/data/conf_covariance_builder_minimal.yaml"
 OUTDIR = "tests/tmp/"
+
+
+def test_no_config_throws():
+    mock_builder = MagicMock(CovarianceBuilder)
+
+    with pytest.raises(ValueError):
+        CovarianceBuilder.__init__(mock_builder, None)
+
+    with pytest.raises(TypeError):
+        CovarianceBuilder.__init__(mock_builder)
+
+
+def test_invalid_config_throws():
+    mock_builder = MagicMock(CovarianceBuilder)
+
+    with pytest.raises(FileNotFoundError):
+        CovarianceBuilder.__init__(mock_builder, "")
+
+    with pytest.raises(KeyError):
+        CovarianceBuilder.__init__(mock_builder, {})
+
+
+def test_config_values_read():
+    mock_builder = MagicMock(CovarianceBuilder)
+    config = {
+        "tjpcov": {
+            "IA": "IA_Value",
+            "mask_file": "mask_file_value",
+            "mask_names": "mask_names_value",
+            "nside": "nside_value",
+        }
+    }
+
+    CovarianceBuilder.__init__(mock_builder, config)
+
+    assert mock_builder.IA == "IA_Value"
+    assert mock_builder.mask_files == "mask_file_value"
+    assert mock_builder.mask_names == "mask_names_value"
+    assert mock_builder.nside == "nside_value"
+    assert mock_builder.config == config
+    assert mock_builder.cov is None
+    assert mock_builder.cosmo is None
+    assert mock_builder.nbpw is None
+    assert mock_builder.Ngal == {}
+    assert mock_builder.sigma_e == {}
+    # Need to implement __eq__ and __hash__ and a bit of refactoring in
+    # CovarianceIO to make this work
+    # assert mock_builder.io == CovarianceIO(config)
+    assert mock_builder.io.config == config
 
 
 def setup_module():

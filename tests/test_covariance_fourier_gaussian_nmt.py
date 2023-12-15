@@ -343,6 +343,7 @@ def test_compute_all_blocks():
         )
 
 
+@pytest.mark.precision_sensitive
 def test_get_cl_for_cov(cov_fg_nmt):
     # We just need to test for one case as the function will complain if the
     # Cell inputted has the wrong shape
@@ -402,6 +403,8 @@ def test_get_cl_for_cov(cov_fg_nmt):
         )
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "tracer_comb1,tracer_comb2",
     [
@@ -565,6 +568,7 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
         )
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "tracer_comb1,tracer_comb2",
     [
@@ -660,6 +664,7 @@ def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
         assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, 1e-6)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "kwargs",
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
@@ -767,6 +772,7 @@ def test_get_covariance_workspace(cov_fg_nmt, kwargs):
     # assert not os.path.isfile(fname)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize("nmt_conf", [{}, {"n_iter": 0}])
 def test_get_fields_dict(cov_fg_nmt, nmt_conf):
     tr = get_tracers_dict_for_cov()
@@ -965,6 +971,7 @@ def test_get_nell(cov_fg_nmt):
     assert nell == cov_fg_nmt.get_nell(nside=NSIDE)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "kwargs",
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
@@ -1028,6 +1035,7 @@ def test_get_workspace(cov_fg_nmt, kwargs):
     # assert not os.path.isfile(fname)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "kwargs",
     [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
@@ -1120,6 +1128,8 @@ def test_get_workspace_dict(cov_fg_nmt, kwargs):
     w2 = cov_fg_nmt.get_workspaces_dict(tracers, None, cache=cache, **kwargs)
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_full_covariance_benchmark():
     config = get_config(INPUT_YML)
@@ -1200,6 +1210,8 @@ def test_full_covariance_benchmark():
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_txpipe_like_input():
     # We don't need to pass the bins because we have provided the workspaces
     # through the cache in the configuration file

@@ -94,6 +94,8 @@ def test_smoke():
     FourierSSCHaloModel(INPUT_YML_SSC)
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "tracer_comb1,tracer_comb2",
     [
@@ -243,6 +245,8 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     assert np.all(covf["cov"] == cov_ssc_zb)
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_get_covariance_block_WL_benchmark(cov_fssc):
     # Based on CCL benchmark test in benchmarks/test_covariances.py
     #

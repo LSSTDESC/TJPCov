@@ -111,6 +111,7 @@ def test_get_cov_WT_spin(cov_prj_real, tr1, tr2):
     assert spin == spin2
 
 
+@pytest.mark.slow
 def test_get_Wigner_transform(cov_prj_real):
     wt = cov_prj_real.get_Wigner_transform()
 
@@ -138,6 +139,8 @@ def test_build_matrix_from_blocks(cov_prj_real):
     assert np.all(cov == cov2)
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "tracer_comb1",
     [

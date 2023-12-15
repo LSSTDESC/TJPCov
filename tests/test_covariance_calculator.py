@@ -57,6 +57,7 @@ def test_get_covariance_classes(mock_cov_calc):
         cc.get_covariance_classes()
 
 
+@pytest.mark.slow
 def test_get_covariance(mock_cov_calc):
     cov = mock_cov_calc.get_covariance() + 1e-100
 
@@ -67,6 +68,7 @@ def test_get_covariance(mock_cov_calc):
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
 
 
+@pytest.mark.slow
 def test_get_covariance_terms(mock_cov_calc):
     cov_terms = mock_cov_calc.get_covariance_terms()
 
@@ -77,6 +79,8 @@ def test_get_covariance_terms(mock_cov_calc):
     assert np.all(cov_terms["SSC"] == cov_ssc)
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_create_sacc_cov(mock_cov_calc):
     cov = mock_cov_calc.get_covariance() + 1e-100
 

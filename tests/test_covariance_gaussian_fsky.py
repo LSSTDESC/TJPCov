@@ -73,6 +73,7 @@ def test_Fourier_get_binning_info(cov_fg_fsky):
         cov_fg_fsky.get_binning_info("log")
 
 
+@pytest.mark.slow
 def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
     # Test made independent of pickled objects
     tracer_comb1 = ("lens0", "lens0")
@@ -129,6 +130,7 @@ def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
     np.testing.assert_allclose(cov2, cov)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "tracer_comb1",
     [
@@ -159,6 +161,7 @@ def test_Real_get_fourier_block(
     assert np.all(cov == cov2 / norm)
 
 
+@pytest.mark.slow
 def test_smoke_get_covariance(cov_fg_fsky, cov_rg_fsky):
     # Check that we can get the full covariance
     cov_fg_fsky.get_covariance()
