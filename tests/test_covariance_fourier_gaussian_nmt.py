@@ -49,7 +49,7 @@ def cov_fg_nmt():
 
 # Useful functions
 def get_config(fname):
-    return CovarianceIO._parse(fname)
+    return CovarianceIO.get_dict_from_yaml(fname)
 
 
 def assert_chi2(s, tracer_comb1, tracer_comb2, cov, cov_bm, threshold):

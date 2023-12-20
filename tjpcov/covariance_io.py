@@ -8,7 +8,7 @@ import yaml
 
 
 class CovarianceIO:
-    """Class to handle the input/output of the covariances.
+    """Class to handle the file input/output of the covariances.
 
     This class does not compute anything and it is initialized inside the
     CovarianceBuilder and CovarianceCalculator classes.
@@ -22,37 +22,31 @@ class CovarianceIO:
                 dictionary directly. If string, it asumes a YAML file and
                 parses it.
         """
-        self.config = self._read_config(config)
-        self.sacc_file = None
-
-        # Output directory where to save all the time consuming calculations
-        self.outdir = self.config["tjpcov"].get("outdir", "./")
-        os.makedirs(self.outdir, exist_ok=True)
-
-    def _read_config(self, config):
-        """Return the configuration dictionary.
-
-        Args:
-            config (dict or str): If dict, it returns the configuration
-                dictionary directly. If string, it asumes a YAML file and
-                parses it.
-
-        Return:
-            dict: Configuration dictionary
-        """
-        if isinstance(config, dict):
-            pass
-        elif isinstance(config, str):
-            config = self._parse(config)
-        else:
-            raise ValueError(
+        if not isinstance(config, (dict, str)):
+            raise TypeError(
                 "config must be of type dict or str, given" + f"{type(config)}"
             )
+        self.sacc_file = None
 
-        return config
+        if isinstance(config, str):
+            config = self.get_dict_from_yaml(config)
+
+        self.config = config
+
+        if "tjpcov" not in self.config.keys():
+            raise ValueError("tjpcov section not found in configuration.")
+
+        if not isinstance(self.config["tjpcov"], dict):
+            raise ValueError("tjpcov section must be a dictionary.")
+
+        if "outdir" not in self.config["tjpcov"].keys():
+            raise ValueError("outdir not found in the tjpcov configuration.")
+
+        self.outdir = config["tjpcov"].get("outdir", "./")
+        os.makedirs(self.outdir, exist_ok=True)
 
     @staticmethod
-    def _parse(filename):
+    def get_dict_from_yaml(filename):
         """Parse a configuration file.
 
         Args:
@@ -63,6 +57,7 @@ class CovarianceIO:
         """
         with open(filename, "r") as fp:
             config_str = jinja2.Template(fp.read()).render()
+
         config = yaml.load(config_str, Loader=yaml.Loader)
 
         return config
@@ -81,43 +76,46 @@ class CovarianceIO:
             :obj:`sacc.sacc.Sacc`: The final sacc file with the covariance
             matrix included.
         """
-        output = os.path.join(self.get_outdir(), output)
+        output_file_nm = os.path.join(self.outdir, output)
 
-        s = self.get_sacc_file().copy()
-        s.add_covariance(cov, overwrite=True)
+        sacc_clone = self.get_sacc_file().copy()
+        sacc_clone.add_covariance(cov, overwrite=True)
 
-        if os.path.isfile(output) and (not overwrite):
-            date = datetime.utcnow()
-            timestamp = date.strftime("%Y%m%d%H%M%S")
-            output_new = output + f"_{timestamp}"
-            warnings.warn(
-                f"Output file {output} already exists. "
-                "Appending the UTC time to the filename to avoid "
-                "losing the covariance computation. Writing sacc "
-                "file to {output_new}"
-            )
-            output = output_new
+        if not os.path.isfile(output_file_nm) or overwrite:
+            sacc_clone.save_fits(output_file_nm, overwrite=overwrite)
+            return sacc_clone
 
-        s.save_fits(output, overwrite=overwrite)
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        output_file_nm = output_file_nm + f"_{timestamp}"
+        warnings.warn(
+            f"Output file {output} already exists. "
+            "Appending the UTC time to the filename to avoid "
+            "losing the covariance computation. Writing sacc "
+            f"file to {output_file_nm}"
+        )
 
-        return s
+        sacc_clone.save_fits(output_file_nm, overwrite=overwrite)
 
-    def get_outdir(self):
-        """Return the path to save the sacc file."""
-        return self.outdir
+        return sacc_clone
 
     def get_sacc_file(self):
         """Return the input sacc file."""
+
         if self.sacc_file is None:
-            sacc_file = self.config["tjpcov"].get("sacc_file")
-            if isinstance(sacc_file, sacc.Sacc):
-                self.sacc_file = sacc_file
-            elif isinstance(sacc_file, str):
-                self.sacc_file = sacc.Sacc.load_fits(sacc_file)
-            else:
-                raise ValueError(
-                    "sacc_file must be a sacc.Sacc or str, "
-                    + f"given {type(sacc_file)}"
-                )
+            self.sacc_file = self._load_sacc_from_config()
 
         return self.sacc_file
+
+    def _load_sacc_from_config(self):
+        sacc_file = self.config["tjpcov"].get("sacc_file")
+        if "sacc_file" not in self.config["tjpcov"].keys():
+            raise ValueError(
+                "sacc_file not found in the tjpcov configuration."
+            )
+        if not isinstance(sacc_file, str):
+            raise ValueError(
+                "sacc_file entry in the config file must be a string."
+            )
+
+        sacc_file = sacc.Sacc.load_fits(sacc_file)
+        return sacc_file
