@@ -18,7 +18,7 @@ OUTDIR = "tests/tmp/"
 def test_no_config_throws():
     mock_builder = MagicMock(CovarianceBuilder)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         CovarianceBuilder.__init__(mock_builder, None)
 
     with pytest.raises(TypeError):
@@ -31,7 +31,7 @@ def test_invalid_config_throws():
     with pytest.raises(FileNotFoundError):
         CovarianceBuilder.__init__(mock_builder, "")
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         CovarianceBuilder.__init__(mock_builder, {})
 
 

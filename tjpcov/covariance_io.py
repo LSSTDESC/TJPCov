@@ -40,7 +40,10 @@ class CovarianceIO:
             raise ValueError("tjpcov section must be a dictionary.")
 
         if "outdir" not in self.config["tjpcov"].keys():
-            raise ValueError("outdir not found in the tjpcov configuration.")
+            warnings.warn(
+                "outdir not found in the tjpcov configuration, "
+                + "defaulting to the working directory."
+            )
 
         self.outdir = config["tjpcov"].get("outdir", "./")
         os.makedirs(self.outdir, exist_ok=True)

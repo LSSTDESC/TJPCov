@@ -63,8 +63,8 @@ def test_config_requires_tjpcov_is_dict():
 
 
 def test_config_requires_tjpcov_has_outdir():
-    with pytest.raises(
-        ValueError, match="outdir not found in the tjpcov configuration"
+    with pytest.warns(
+        Warning, match="outdir not found in the tjpcov configuration"
     ):
         CovarianceIO({"tjpcov": {"key": "./"}})
 
