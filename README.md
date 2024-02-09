@@ -26,6 +26,8 @@ pip install 'tjpcov[full]'
 ```
 will include all dependencies (for details, see Optional dependencies (PyPi only) section)
 
+> **_NOTE:_** If you plan to use TJPCov with MPI on NERSC, extra work must be done to get MPI running in your conda environment.  See [the NERSC docs](https://docs.nersc.gov/development/languages/python/parallel-python/#mpi4py-in-your-custom-conda-environment) for how to install MPI there.
+
 ### Developer Installation
 If you wish to contribute to TJPCov, follow the steps below to set up your development environment.
 
@@ -45,7 +47,7 @@ Because TJPCov relies on some packages that may not be necessary for every user,
  - `pip install 'tjpcov[nmt]'` will install tjpcov, the minimal
      dependencies and the dependencies needed to use NaMaster.
  - `pip install 'tjpcov[mpi4py]'` will install, the minimal
-     dependencies and the mpi4py library to use MPI parallelization. **Note** This will not work on NERSC; see [the NERSC docs](https://docs.nersc.gov/development/languages/python/parallel-python/#mpi4py-in-your-custom-conda-environment) for how to install there.
+     dependencies and the mpi4py library to use MPI parallelization. **Does not work on NERSC** (see above)
  - `pip install 'tjpcov[full]'` will install tjpcov and all dependencies
 
 

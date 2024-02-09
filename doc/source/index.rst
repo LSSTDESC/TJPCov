@@ -30,7 +30,7 @@ For those interested in contributing, we have included guidelines to help you un
 .. toctree::
    :maxdepth: 1
    :caption: License
-   :name:
+   :name: license
 
    license
 
