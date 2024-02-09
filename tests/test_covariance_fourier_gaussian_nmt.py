@@ -560,9 +560,9 @@ def test_get_covariance_block(tracer_comb1, tracer_comb2):
 
     # Check that it runs if one of the masks does not overlap with the others
     if tracer_comb1 != tracer_comb2:
-        cnmt.mask_files[
-            tracer_comb1[0]
-        ] = "./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz"  # noqa: E501
+        cnmt.mask_files[tracer_comb1[0]] = (
+            "./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_nonoverlapping.fits.gz"  # noqa: E501
+        )
         cov = cnmt.get_covariance_block(
             tracer_comb1, tracer_comb2, clobber=True
         )
