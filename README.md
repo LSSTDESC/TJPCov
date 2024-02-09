@@ -9,29 +9,47 @@ TJPCov is a general covariance calculator interface to be used within LSST DESC.
 
 ## Installation
 
-### Non-developer Installation
-To use TJPCov, we recommend installing with pip:
+### Quickstart
+The easiest and recommended way to install TJPCov is to install it via conda:
+```
+conda install -c conda-forge tjpcov
+```
 
- - `python -m pip install .` will install tjpcov and the minimal dependencies.
- - `python -m pip install .\[doc\]` will install tjpcov, the minimal
-     dependencies and the dependencies needed to build the documentation.
- - `python -m pip install .\[nmt\]` will install tjpcov, the minimal
-     dependencies and the dependencies needed to use NaMaster.
- - `python -m pip install .\[mpi4py\]` will install, the minimal
-     dependencies and the mpi4py library to use MPI parallelization.
- - `python -m pip install .\[full\]` will install tjpcov and all dependencies
-
-Note that due to a bug in the NaMaster installation, one needs to make sure numpy is installed before trying to install NaMaster. If you are doing a fresh install, run `python -m pip install .` first, and then `python -m pip install .\[nmt\]`
+Alternatively you may also install tjpcov via PyPi:
+```
+pip install tjpcov 
+```
+will install TJPCov with minimal dependencies, and
+```
+pip install 'tjpcov[full]'
+```
+will include all dependencies (for details, see Optional dependencies (PyPi only) section)
 
 ### Developer Installation
-
-If you want to contribute to TJPCov, run the following steps to set up your development environment.
+If you wish to contribute to TJPCov, follow the steps below to set up your development environment.
 
 1. Clone the repository
 2. Create the conda environment with `conda env create --file environment.yml`
 3. Activate the environment with `conda activate tjpcov`
 4. Run `pip install -e .`
 5. Run `pytest -vv tests/`
+
+
+### Optional dependencies (PyPi only)
+Because TJPCov relies on some packages that may not be necessary for every user, we have added different installation options to accommodate different use cases. For example, if a user has no plans to use MPI with TJPCov, they do not need `mpi4py`. Below we list the different installation options available on PyPi.
+
+ - `pip install tjpcov` will install tjpcov and the minimal dependencies.
+ - `pip install tjpcov'[doc]'` will install tjpcov, the minimal
+     dependencies and the dependencies needed to build the documentation.
+ - `pip install 'tjpcov[nmt]'` will install tjpcov, the minimal
+     dependencies and the dependencies needed to use NaMaster.
+ - `pip install 'tjpcov[mpi4py]'` will install, the minimal
+     dependencies and the mpi4py library to use MPI parallelization.
+ - `pip install 'tjpcov[full]'` will install tjpcov and all dependencies
+
+
+#### Developer installation (PyPi only)
+If you are using PyPi to set up your development environment (we recommend using conda instead), due to a bug in the NaMaster installation, one needs to make sure numpy is installed before trying to install NaMaster. For a fresh install, run `python -m pip install .` first, and then `python -m pip install .\[nmt\]`
 
 
 ## Planning & development
@@ -57,7 +75,7 @@ flake8 .
 Furthermore, we are following GitHub's recommendation of using [Semantic Versioning](https://semver.org/) in our releases.
 
 
-## Dependencies and versioning
+## Supported Python Versions
 TJPCov currently runs on python 3.8, but python 3.9, 3.10 and 3.11 are supported.
 
 TJPCov also has a few specific software versions hardcoded.  Please check the `pyproject.toml` file to see version requirements.
