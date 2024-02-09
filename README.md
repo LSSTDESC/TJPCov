@@ -1,3 +1,4 @@
+[![Conda Version](https://anaconda.org/conda-forge/tjpcov/badges/version.svg)](https://anaconda.org/conda-forge/tjpcov/)
 [![PyPI version](https://badge.fury.io/py/tjpcov.svg)](https://badge.fury.io/py/tjpcov)
 [![Coverage Status](https://coveralls.io/repos/github/LSSTDESC/TJPCov/badge.svg?branch=master)](https://coveralls.io/github/LSSTDESC/TJPCov?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/tjpcov/badge/?version=latest)](https://tjpcov.readthedocs.io/en/latest/?badge=latest)
