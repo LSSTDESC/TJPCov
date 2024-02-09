@@ -1,8 +1,8 @@
 Developer Installation
-------------
+----------------------
 
 Using conda (Recommended)
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 If you wish to contribute to TJPCov, follow the steps below to set up your development environment.
 
 1. Clone the repository
