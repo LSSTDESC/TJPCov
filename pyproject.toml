@@ -44,6 +44,7 @@ doc = [
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
+    "sphinx-book-theme",
 ]
 nmt = [
     "pymaster>=1.4.0"
@@ -57,6 +58,7 @@ full = [
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
+    "sphinx-book-theme",
 ]
 
 [project.urls]
