@@ -1,5 +1,5 @@
 Example: Basic covariance computation
-=====================================
+-------------------------------------
 
 Users should use the :code:`tjpcov.covariance_calculator.CovarianceCalculator`
 class with a configuration file or dictionary input.
@@ -15,7 +15,7 @@ Extra sections (e.g. :code:`GaussianFsky`) are ignored.
 In order to generate the covariance there are two options:
 
 1. Using the :code:`run_tjpcov.py` script.
-------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: bash
 
@@ -27,7 +27,7 @@ covariance in the output directory defined in the configuration file (i.e.
 to use a different file name (the path will be the same).
 
 2. Interactively
-----------------
+^^^^^^^^^^^^^^^^
 
 If you just want to get the final covariance:
 
