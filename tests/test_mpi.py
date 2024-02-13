@@ -102,6 +102,8 @@ def test_split_tasks_by_rank(fg_nmt_cov):
     assert tasks[fg_nmt_cov.rank :: fg_nmt_cov.size] == tasks_splitted
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_compute_all_blocks(fssc_nmt_cov):
     blocks, tracers_blocks = fssc_nmt_cov._compute_all_blocks()
     nblocks = len(
@@ -118,6 +120,8 @@ def test_compute_all_blocks(fssc_nmt_cov):
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_compute_all_blocks_nmt(fg_nmt_cov):
     # FourierGaussianNmt has its own _compute_all_blocks
     blocks, tracers_blocks = fg_nmt_cov._compute_all_blocks()
@@ -135,6 +139,8 @@ def test_compute_all_blocks_nmt(fg_nmt_cov):
         assert np.max(np.abs((bi + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_get_covariance(fg_nmt_cov):
     # This checks that there is no problem during the gathering of blocks
 
@@ -160,6 +166,8 @@ def test_get_covariance(fg_nmt_cov):
     assert np.abs(chi2 / chi2_bm - 1) < 1e-3
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_covariance_calculator(cov_calc, cov_calc_mpi):
     # Test get_covariance_terms
     cov = None
