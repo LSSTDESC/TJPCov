@@ -723,7 +723,7 @@ class CovarianceFourier(CovarianceBuilder):
         ell, _ = sacc_file.get_ell_cl(dtype, *tracers)
 
         return ell
-    
+
     def get_binning_info(self):
         """Return all ells used for the different bandpowers, their effective ell and
         bandpower edges based on the SACC information.
@@ -744,7 +744,8 @@ class CovarianceFourier(CovarianceBuilder):
         inds = sacc_file.indices(data_type=dt, tracers=(tr1, tr2))
         bpw = sacc_file.get_bandpower_windows(inds)
         if bpw is not None:
-            ells = np.repeat(bpw.values, bpw.weight.shape[1]).reshape(bpw.weight.shape)
+            ells = np.repeat(bpw.values, bpw.weight.shape[1]).reshape(
+                bpw.weight.shape)
             ell_eff = np.average(ells, weights=bpw.weight, axis=0)
             ell_edges = np.zeros(bpw.weight.shape[1] + 1)
             for i in range(bpw.weight.shape[1]):

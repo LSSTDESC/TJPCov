@@ -66,7 +66,8 @@ class FourierGaussianFsky(CovarianceFourier):
                 ell_edges = np.arange(ell_min, ell_max + 1, ell_delta)
                 ell = np.arange(ell_min, ell_max + ell_delta - 2)
             else:
-                raise NotImplementedError(f"Binning {binning} not implemented yet")
+                raise NotImplementedError(
+                    f"Binning {binning} not implemented yet")
 
             return ell, ell_eff, ell_edges
 
