@@ -751,7 +751,7 @@ class CovarianceFourier(CovarianceBuilder):
             for i in range(bpw.weight.shape[1]):
                 ell_edges[i] = bpw.values[bpw.weight[:, i] > 0][0]
                 if i == bpw.weight.shape[1] - 1:
-                    ell_edges[i+1] = bpw.values[bpw.weight[:, i] > 0][-1]
+                    ell_edges[i + 1] = bpw.values[bpw.weight[:, i] > 0][-1]
             return bpw.values, ell_eff, ell_edges
         else:
             return None

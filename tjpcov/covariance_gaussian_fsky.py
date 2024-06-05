@@ -50,8 +50,10 @@ class FourierGaussianFsky(CovarianceFourier):
             ell_edges = out[2]
             return ell, ell_eff, ell_edges
         else:
-            warnings.warn("No bandpower windows found, \
-                           falling back to linear method")
+            warnings.warn(
+                "No bandpower windows found, \
+                           falling back to linear method"
+            )
             ell_eff = self.get_ell_eff()
             nbpw = ell_eff.size
 
@@ -67,7 +69,8 @@ class FourierGaussianFsky(CovarianceFourier):
                 ell = np.arange(ell_min, ell_max + ell_delta - 2)
             else:
                 raise NotImplementedError(
-                    f"Binning {binning} not implemented yet")
+                    f"Binning {binning} not implemented yet"
+                )
 
             return ell, ell_eff, ell_edges
 
