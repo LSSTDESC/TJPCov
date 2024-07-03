@@ -46,15 +46,53 @@ class FourierGaussianFsky(CovarianceFourier):
         nbpw = ell_eff.size
 
         ellb_min, ellb_max = ell_eff.min(), ell_eff.max()
-        if binning == "linear":
-            del_ell = (ell_eff[1:] - ell_eff[:-1])[0]
+        print(ell_eff)
+        if binning == "linear":#(ellb_max-ellb_min)/len(ell_eff)==ell_eff[1]-ell_eff[0]:
+            print('linear binning!')
+            #del_ell = (ell_eff[1:] - ell_eff[:-1])[0]
 
-            ell_min = ellb_min - del_ell / 2
-            ell_max = ellb_max + del_ell / 2
+            #ell_min = ellb_min - del_ell / 2
+            #ell_max = ellb_max + del_ell / 2
 
-            ell_delta = (ell_max - ell_min) // nbpw
-            ell_edges = np.arange(ell_min, ell_max + 1, ell_delta)
-            ell = np.arange(ell_min, ell_max + ell_delta - 2)
+            #ell_delta = (ell_max - ell_min) // nbpw
+            #ell_edges = np.arange(ell_min, ell_max + 1, ell_delta)
+            #ell = np.arange(ell_min, ell_max + ell_delta - 2)
+            lmin = 20
+            lmax=2000
+            ncl = len(ell_eff)
+            linspacing = np.linspace(lmin, lmax, 2*ncl+1)
+
+            ell_edges = linspacing[0::2]
+            ell = linspacing[1::2]
+
+        
+        elif binning == "log":#(np.log10(ellb_max)-np.log10(ellb_min))/len(ell_eff)==np.log10(ell_eff[1])-np.log10(ell_eff[0]):
+            print('log binning!')
+            lmin = 20
+            lmax=15000
+            ncl = len(ell_eff)
+            logspacing = np.logspace(np.log10(lmin), np.log10(lmax), num=2*ncl+1, endpoint=True)
+            ell_edges = logspacing[0::2]
+            ell = logspacing[1::2]
+            #print(ell_edges)
+            #print(ell)
+            #print(ell_eff)
+
+        elif binning=="sqrt":#(np.sqrt(ellb_max)-np.sqrt(ellb_min))/len(ell_eff)==np.sqrt(ell_eff[1])-np.sqrt(ell_eff[0]):
+            print('sqrt binning!')
+            lmin = 20
+            lmax=2000
+            ncl = len(ell_eff)
+            spacing = (np.sqrt(lmax) - np.sqrt(lmin))/(2*ncl)
+            temp = [lmin]
+            for i in range(2*ncl): temp.append((spacing + np.sqrt(temp[-1]))**2)
+            temp=np.array(temp)
+            ell_edges = temp[0::2]
+            ell = temp[1::2]
+            #print(ell_edges)
+            #print(ell)
+            #print(ell_eff)            
+
         else:
             raise NotImplementedError(f"Binning {binning} not implemented yet")
 
@@ -67,6 +105,7 @@ class FourierGaussianFsky(CovarianceFourier):
         include_b_modes=True,
         for_real=False,
         lmax=None,
+        #lmin=20, #binning_scheme=?
     ):
         """Compute a single covariance matrix for a given pair of C_ell.
 
@@ -94,36 +133,66 @@ class FourierGaussianFsky(CovarianceFourier):
                 ell = np.arange(lmax + 1)
         else:
             # binning information not need for Real
-            ell, ell_bins, ell_edges = self.get_binning_info()
+            ell, ell_bins, ell_edges = self.get_binning_info(binning='log') #lmax, lmin
 
         ccl_tracers, tracer_Noise = self.get_tracer_info()
-
+        limber = False
         cl = {}
-        cl[13] = ccl.angular_cl(
-            cosmo,
-            ccl_tracers[tracer_comb1[0]],
-            ccl_tracers[tracer_comb2[0]],
-            ell,
-        )
-        cl[24] = ccl.angular_cl(
-            cosmo,
-            ccl_tracers[tracer_comb1[1]],
-            ccl_tracers[tracer_comb2[1]],
-            ell,
-        )
-        cl[14] = ccl.angular_cl(
-            cosmo,
-            ccl_tracers[tracer_comb1[0]],
-            ccl_tracers[tracer_comb2[1]],
-            ell,
-        )
-        cl[23] = ccl.angular_cl(
-            cosmo,
-            ccl_tracers[tracer_comb1[1]],
-            ccl_tracers[tracer_comb2[0]],
-            ell,
-        )
+        if limber:
+            cl[13] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[0]],
+                ccl_tracers[tracer_comb2[0]],
+                ell,
+            )
+            cl[24] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[1]],
+                ccl_tracers[tracer_comb2[1]],
+                ell,
+            )
+            cl[14] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[0]],
+                ccl_tracers[tracer_comb2[1]],
+                ell,
+            )
+            cl[23] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[1]],
+                ccl_tracers[tracer_comb2[0]],
+                ell,
+            )
 
+        else:
+            cl[13] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[0]],
+                ccl_tracers[tracer_comb2[0]],
+                ell, l_limber="auto",
+                non_limber_integration_method="FKEM",
+            )
+            cl[24] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[1]],
+                ccl_tracers[tracer_comb2[1]],
+                ell, l_limber="auto",
+                non_limber_integration_method="FKEM",
+            )
+            cl[14] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[0]],
+                ccl_tracers[tracer_comb2[1]],
+                ell, l_limber="auto",
+                non_limber_integration_method="FKEM",
+            )
+            cl[23] = ccl.angular_cl(
+                cosmo,
+                ccl_tracers[tracer_comb1[1]],
+                ccl_tracers[tracer_comb2[0]],
+                ell, l_limber="auto",
+                non_limber_integration_method="FKEM",
+            )            
         SN = {}
         SN[13] = (
             tracer_Noise[tracer_comb1[0]]

@@ -44,6 +44,8 @@ class CovarianceCalculator:
             self.rank = None
             self.size = None
 
+        #this is where I can set lmin, lmax, and binning scheme. 
+
     def get_covariance_classes(self):
         """Return a dictionary with the covariance classes initialized.
 

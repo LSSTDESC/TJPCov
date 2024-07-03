@@ -204,7 +204,7 @@ class CovarianceBuilder(ABC):
         """
         # Make a list of all independent tracer combinations
         tracers_cov = self.get_list_of_tracers_for_cov()
-
+        print(tracers_cov)
         # Save blocks and the corresponding tracers, as comm.gather does not
         # return the blocks in the original order.
         blocks = []
