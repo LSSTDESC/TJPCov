@@ -107,6 +107,13 @@ class CovarianceBuilder(ABC):
         # nside is needed if mask_files contain hdf5 files
         self.nside = config["tjpcov"].get("nside")
 
+        self.lmax = config["tjpcov"].get("lmax", None)
+        self.lmin = config["tjpcov"].get("lmin", 20)
+        self.binning_scheme = config["tjpcov"].get("binning_scheme", "log")
+        self.nonlimber = config["tjpcov"].get("nonlimber", False)
+
+
+
     def _split_tasks_by_rank(self, tasks):
         """Yield the tasks corresponding to the given process.
 

@@ -27,7 +27,7 @@ class FourierGaussianFsky(CovarianceFourier):
         if self.fsky is None:
             raise ValueError("You need to set fsky for FourierGaussianFsky")
 
-    def get_binning_info(self, binning="linear"):
+    def get_binning_info(self, binning, lmax, lmin):
         """Get the ells for bins given the sacc object.
 
         Args:
@@ -43,8 +43,36 @@ class FourierGaussianFsky(CovarianceFourier):
         # configuration. Check how it is done in TXPipe:
         # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
         ell_eff = self.get_ell_eff()
-        nbpw = ell_eff.size
+        #nbpw = ell_eff.size
+        ncl = len(ell_eff)
+        #ellb_min, ellb_max = ell_eff.min(), ell_eff.max()
+        #print(ell_eff)
+        #print(binning, lmax, lmin)
+        if binning == "linear":
+            print('linear binning!')
+            linspacing = np.linspace(lmin, lmax, 2*ncl+1)
+            ell_edges = linspacing[0::2]
+            ell = linspacing[1::2]
 
+        elif binning == "log":#(np.log10(ellb_max)-np.log10(ellb_min))/len(ell_eff)==np.log10(ell_eff[1])-np.log10(ell_eff[0]):
+            print('log binning!')
+            logspacing = np.logspace(np.log10(lmin), np.log10(lmax), num=2*ncl+1, endpoint=True)
+            ell_edges = logspacing[0::2]
+            ell = logspacing[1::2]
+
+        elif binning=="sqrt":#(np.sqrt(ellb_max)-np.sqrt(ellb_min))/len(ell_eff)==np.sqrt(ell_eff[1])-np.sqrt(ell_eff[0]):
+            print('sqrt binning!')
+            spacing = (np.sqrt(lmax) - np.sqrt(lmin))/(2*ncl)
+            temp = [lmin]
+            for i in range(2*ncl): temp.append((spacing + np.sqrt(temp[-1]))**2)
+            temp=np.array(temp)
+            ell_edges = temp[0::2]
+            ell = temp[1::2]        
+
+        else:
+            raise NotImplementedError(f"Binning {binning} not implemented yet")
+
+        '''
         ellb_min, ellb_max = ell_eff.min(), ell_eff.max()
         print(ell_eff)
         if binning == "linear":#(ellb_max-ellb_min)/len(ell_eff)==ell_eff[1]-ell_eff[0]:
@@ -95,7 +123,7 @@ class FourierGaussianFsky(CovarianceFourier):
 
         else:
             raise NotImplementedError(f"Binning {binning} not implemented yet")
-
+        '''
         return ell, ell_eff, ell_edges
 
     def get_covariance_block(
@@ -105,7 +133,6 @@ class FourierGaussianFsky(CovarianceFourier):
         include_b_modes=True,
         for_real=False,
         lmax=None,
-        #lmin=20, #binning_scheme=?
     ):
         """Compute a single covariance matrix for a given pair of C_ell.
 
@@ -133,12 +160,13 @@ class FourierGaussianFsky(CovarianceFourier):
                 ell = np.arange(lmax + 1)
         else:
             # binning information not need for Real
-            ell, ell_bins, ell_edges = self.get_binning_info(binning='log') #lmax, lmin
+            #if lmax is None:
+            #    raise ValueError("You need to always set lmax")
+            ell, ell_bins, ell_edges = self.get_binning_info(self.binning_scheme, self.lmax, self.lmin)
 
         ccl_tracers, tracer_Noise = self.get_tracer_info()
-        limber = False
         cl = {}
-        if limber:
+        if not self.nonlimber:
             cl[13] = ccl.angular_cl(
                 cosmo,
                 ccl_tracers[tracer_comb1[0]],

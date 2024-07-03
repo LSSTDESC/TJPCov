@@ -48,7 +48,7 @@ class CovarianceIO:
             raise ValueError(
                 "config must be of type dict or str, given" + f"{type(config)}"
             )
-
+        #print(config)
         return config
 
     @staticmethod
