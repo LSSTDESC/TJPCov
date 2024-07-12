@@ -1,0 +1,137 @@
+name: Tests
+on:
+   push:
+     branches: [ master ]
+   pull_request:
+     branches: [ master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 3
+  CONDA_ENV: ./environment.yml
+  
+jobs:
+
+  lint:
+    name: Run Linters
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run black
+        uses: psf/black@stable
+
+      - name: Run flake8
+        uses: py-actions/flake8@v2
+        with:
+          path: "tjpcov tests"
+
+  tests:
+    needs: lint
+    name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.runs-on }}
+    
+    defaults:
+      run:
+        # IMPORTANT: this is needed to make sure that the conda environment is auto activated
+        shell: bash -el {0} 
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.11"]
+        runs-on: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up mamba
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          channels: conda-forge
+          python-version: ${{ matrix.python-version }}
+          show-channel-urls: true
+          auto-update-conda: true
+          use-mamba: true
+          activate-environment: tjpcov
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+      
+      - name: Cache Date
+        id: get-date
+        run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
+        
+      - name: Check for cached environment
+        uses: actions/cache@v3
+        id: cache
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ${{env.CONDA}}/envs
+          key:
+            ${{runner.os}}.${{runner.arch}}.mamba-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}.${{hashFiles('environment.yml')}}.${{steps.get-date.outputs.today}}.${{env.CACHE_NUMBER}}
+
+      - name: Install environment packages
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          export MAMBA_NO_BANNER=1
+          mamba env update --file ${{ env.CONDA_ENV }}
+
+      - name: Install TJPCov
+        run: | 
+          pip install .[nmt] --no-deps
+
+      - name: Install mpi4py into cache
+        # If this is cached, re-add mpi4py
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: |
+          mamba install -y openmpi
+          pip install -U mpi4py --no-cache-dir --no-deps
+
+      - name: Run Tests
+        run: coverage run --source=tjpcov -m pytest -vv tests/ 
+          
+      - name: Run MPI Tests (OpenMPI)
+        run: |
+          mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+          mamba remove -y openmpi
+          pip uninstall -y mpi4py
+
+      - name: Run MPI Tests (mpich)
+        run: |
+          mamba install -y mpich
+          pip install -U mpi4py --no-cache-dir --no-deps
+
+          mpiexec -n 2 pytest -vv tests/test_mpi.py
+
+          mamba remove -y mpich
+          pip uninstall -y mpi4py
+      
+      - name: Collect coverage report
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: run-${{ join(matrix.*, '-') }}
+          parallel: true
+
+  finish:
+    needs: tests
+    name: Collect all coverage reports and publish to coveralls.io
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Collect all coverage reports and publish to coveralls.io
+        uses: coverallsapp/github-action@master
+        with:
+          carryforward: "run-3.8-ubuntu-latest,run-3.11-ubuntu-latest,run-3.8-macos-latest,run-3.11-macos-latest"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true

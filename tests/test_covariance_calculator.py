@@ -9,30 +9,30 @@ import sacc
 import shutil
 
 
-input_yml = "./tests/data/conf_covariance_calculator.yml"
-outdir = "tests/tmp"
+INPUT_YML = "./tests/data/conf_covariance_calculator.yml"
+OUTDIR = "./tests/tmp/"
 
 
-def clean_tmp():
-    if os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-        os.makedirs(outdir)
+def setup_module():
+    os.makedirs(OUTDIR, exist_ok=True)
 
 
-# Cleaning the tmp dir before running and after running the tests
-@pytest.fixture(autouse=True)
-def run_clean_tmp():
-    clean_tmp()
+def teardown_module():
+    shutil.rmtree(OUTDIR)
+
+
+@pytest.fixture
+def mock_cov_calc():
+    return CovarianceCalculator(INPUT_YML)
 
 
 def test_smoke():
-    CovarianceCalculator(input_yml)
+    CovarianceCalculator(INPUT_YML)
 
 
 # TODO: Test with "clxN" when clusters are implemented
-def test_get_covariance_classes():
-    cc = CovarianceCalculator(input_yml)
-    classes = cc.get_covariance_classes()
+def test_get_covariance_classes(mock_cov_calc):
+    classes = mock_cov_calc.get_covariance_classes()
 
     assert isinstance(classes["gauss"], dict)
     assert isinstance(classes["SSC"], dict)
@@ -40,14 +40,14 @@ def test_get_covariance_classes():
     assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
     # Test it raises an error if two gauss contributions are requested
-    config = cc.config.copy()
+    config = mock_cov_calc.config.copy()
     config["tjpcov"]["cov_type"] = ["FourierGaussianFsky"] * 2
     with pytest.raises(ValueError):
         cc = CovarianceCalculator(config)
         cc.get_covariance_classes()
 
     # Test that it raises an error if you request Fourier and Real space covs
-    config = cc.config.copy()
+    config = mock_cov_calc.config.copy()
     config["tjpcov"]["cov_type"] = [
         "FourierGaussianFsky",
         "RealGaussianFsky",
@@ -57,60 +57,54 @@ def test_get_covariance_classes():
         cc.get_covariance_classes()
 
 
-def test_get_covariance():
-    cc = CovarianceCalculator(input_yml)
-    cov = cc.get_covariance() + 1e-100
+def test_get_covariance(mock_cov_calc):
+    cov = mock_cov_calc.get_covariance() + 1e-100
 
-    cov_gauss = FourierGaussianNmt(input_yml).get_covariance()
-    cov_ssc = FourierSSCHaloModel(input_yml).get_covariance()
+    cov_gauss = FourierGaussianNmt(INPUT_YML).get_covariance()
+    cov_ssc = FourierSSCHaloModel(INPUT_YML).get_covariance()
     cov2 = (cov_gauss + cov_ssc) + 1e-100
 
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
 
 
-def test_get_covariance_terms():
-    cc = CovarianceCalculator(input_yml)
-    cov_terms = cc.get_covariance_terms()
+def test_get_covariance_terms(mock_cov_calc):
+    cov_terms = mock_cov_calc.get_covariance_terms()
 
-    cov_gauss = FourierGaussianNmt(input_yml).get_covariance()
-    cov_ssc = FourierSSCHaloModel(input_yml).get_covariance()
+    cov_gauss = FourierGaussianNmt(INPUT_YML).get_covariance()
+    cov_ssc = FourierSSCHaloModel(INPUT_YML).get_covariance()
 
     assert np.all(cov_terms["gauss"] == cov_gauss)
     assert np.all(cov_terms["SSC"] == cov_ssc)
 
 
-def test_create_sacc_cov():
-    cc = CovarianceCalculator(input_yml)
-    cov = cc.get_covariance() + 1e-100
+def test_create_sacc_cov(mock_cov_calc):
+    cov = mock_cov_calc.get_covariance() + 1e-100
 
     # Check returned file
-    s = cc.create_sacc_cov()
+    s = mock_cov_calc.create_sacc_cov()
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
+
     # Check saved file
-    s = sacc.Sacc.load_fits(outdir + "/cls_cov.fits")
+    s = sacc.Sacc.load_fits(OUTDIR + "cls_cov.fits")
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
 
     # Test the different terms are saved
-    assert os.path.isfile(outdir + "/cls_cov_gauss.fits")
-    assert os.path.isfile(outdir + "/cls_cov_SSC.fits")
-    os.remove(outdir + "/cls_cov.fits")
-    os.remove(outdir + "/cls_cov_gauss.fits")
-    os.remove(outdir + "/cls_cov_SSC.fits")
+    assert os.path.isfile(OUTDIR + "cls_cov_gauss.fits")
+    assert os.path.isfile(OUTDIR + "cls_cov_SSC.fits")
 
     # Custom name
     # Check returned file
-    s = cc.create_sacc_cov("test.fits", save_terms=False)
+    s = mock_cov_calc.create_sacc_cov("test.fits", save_terms=False)
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
+
     # Check saved file
-    s = sacc.Sacc.load_fits(outdir + "/test.fits")
+    s = sacc.Sacc.load_fits(OUTDIR + "test.fits")
     cov2 = s.covariance.covmat + 1e-100
     assert np.max(np.abs(cov / cov2 - 1) < 1e-10)
 
     # Test the different terms are not saved
-    assert not os.path.isfile(outdir + "/test_gauss.fits")
-    assert not os.path.isfile(outdir + "/test_SSC.fits")
-
-    os.remove(outdir + "/test.fits")
+    assert not os.path.isfile(OUTDIR + "test_gauss.fits")
+    assert not os.path.isfile(OUTDIR + "test_SSC.fits")

@@ -16,7 +16,7 @@ tjpcov:
     DESwl__0: mask_DESwl0
     DESwl__1: mask_DESwl1
 
-  outdir: ./tests/benchmarks/32_DES_tjpcov_bm/tjpcov_tmp/
+  outdir: ./tests/tmp/
 
   # Ngal & sigma_e are not needed in nmt if the coupled noise is provided
   # through the cache or sacc file. These are here to test that one can also
@@ -64,4 +64,3 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
-  baryons_power_spectrum: 'nobaryons'

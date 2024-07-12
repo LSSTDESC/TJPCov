@@ -1,9 +1,9 @@
 tjpcov:
   use_mpi: False
   do_xi: False
-  cov_type: [ClusterCountsGaussian, ClusterCountsSSC]
+  cov_type: [ClusterMass, ClusterCountsGaussian, ClusterCountsSSC]
   # sacc input file 
-  sacc_file: ../tests/data/clusters/mock_clusters.sacc
+  sacc_file: ../tests/data/clusters/cluster_redshift_richness.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
   outdir: ../tests/data/clusters/
@@ -19,4 +19,3 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
-  baryons_power_spectrum: 'nobaryons'

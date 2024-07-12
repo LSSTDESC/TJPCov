@@ -13,7 +13,7 @@ authors = [
 ]
 description = "Covariances for LSST DESC"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -27,9 +27,8 @@ dependencies = [
     "numpy",
     "Jinja2",
     "pyyaml",
-    "pytest",
-    "pyccl>=2.5.0",
-    "sacc>=0.7",
+    "pyccl>=3.0.0",
+    "sacc>=0.12",
     "camb",
     "healpy",
     "h5py"
@@ -45,6 +44,7 @@ doc = [
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
+    "sphinx-book-theme",
 ]
 nmt = [
     "pymaster>=1.4.0"
@@ -58,6 +58,7 @@ full = [
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
+    "sphinx-book-theme",
 ]
 
 [project.urls]
