@@ -724,6 +724,38 @@ class CovarianceFourier(CovarianceBuilder):
 
         return ell
 
+    def get_binning_info(self):
+        """Return all ells used for the different bandpowers, their effective
+        ell and bandpower edges based on the SACC information.
+
+        It assume that all tracers have the same bandpower windows.
+
+        Args:
+            sacc_data (:obj:`sacc.sacc.Sacc`): Data Sacc instance
+
+        Returns:
+            ells: Array with the ells to pass to theory prediction.
+            ell_eff: Array with effective ells from sacc
+            ell_edges: Array with bandpower edges (assumed to be contiguous).
+        """
+        sacc_file = self.io.get_sacc_file()
+        tr1, tr2 = sacc_file.get_tracer_combinations()[0]
+        dt = sacc_file.get_data_types(tracers=(tr1, tr2))[0]
+        inds = sacc_file.indices(data_type=dt, tracers=(tr1, tr2))
+        bpw = sacc_file.get_bandpower_windows(inds)
+        if bpw is not None:
+            ells = np.repeat(bpw.values, bpw.weight.shape[1])
+            ells = ells.reshape(bpw.weight.shape)
+            ell_eff = np.average(ells, weights=bpw.weight, axis=0)
+            ell_edges = np.zeros(bpw.weight.shape[1] + 1)
+            for i in range(bpw.weight.shape[1]):
+                ell_edges[i] = bpw.values[bpw.weight[:, i] > 0][0]
+                if i == bpw.weight.shape[1] - 1:
+                    ell_edges[i + 1] = bpw.values[bpw.weight[:, i] > 0][-1]
+            return bpw.values, ell_eff, ell_edges
+        else:
+            return None
+
     def get_sacc_with_concise_dtypes(self):
         """Return a copy of the sacc file with concise data types.
 

@@ -1,5 +1,6 @@
 import numpy as np
 import pyccl as ccl
+import warnings
 
 from .wigner_transform import bin_cov
 from .covariance_builder import CovarianceFourier, CovarianceProjectedReal
@@ -41,24 +42,37 @@ class FourierGaussianFsky(CovarianceFourier):
         """
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
-        # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
-        ell_eff = self.get_ell_eff()
-        nbpw = ell_eff.size
-
-        ellb_min, ellb_max = ell_eff.min(), ell_eff.max()
-        if binning == "linear":
-            del_ell = (ell_eff[1:] - ell_eff[:-1])[0]
-
-            ell_min = ellb_min - del_ell / 2
-            ell_max = ellb_max + del_ell / 2
-
-            ell_delta = (ell_max - ell_min) // nbpw
-            ell_edges = np.arange(ell_min, ell_max + 1, ell_delta)
-            ell = np.arange(ell_min, ell_max + ell_delta - 2)
+        # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67a
+        out = self.get_binning_info()
+        if out is not None:
+            ell = out[0]
+            ell_eff = out[1]
+            ell_edges = out[2]
+            return ell, ell_eff, ell_edges
         else:
-            raise NotImplementedError(f"Binning {binning} not implemented yet")
+            warnings.warn(
+                "No bandpower windows found, \
+                           falling back to linear method"
+            )
+            ell_eff = self.get_ell_eff()
+            nbpw = ell_eff.size
 
-        return ell, ell_eff, ell_edges
+            ellb_min, ellb_max = ell_eff.min(), ell_eff.max()
+            if binning == "linear":
+                del_ell = (ell_eff[1:] - ell_eff[:-1])[0]
+
+                ell_min = ellb_min - del_ell / 2
+                ell_max = ellb_max + del_ell / 2
+
+                ell_delta = (ell_max - ell_min) // nbpw
+                ell_edges = np.arange(ell_min, ell_max + 1, ell_delta)
+                ell = np.arange(ell_min, ell_max + ell_delta - 2)
+            else:
+                raise NotImplementedError(
+                    f"Binning {binning} not implemented yet"
+                )
+
+            return ell, ell_eff, ell_edges
 
     def get_covariance_block(
         self,
