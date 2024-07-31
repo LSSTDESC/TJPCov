@@ -66,6 +66,7 @@ def get_nmt_bin(lmax=95):
     return nmt.NmtBin.from_edges(bpw_edges[:-1], bpw_edges[1:])
 
 
+@pytest.mark.precision_sensitive
 def test_build_matrix_from_blocks():
     class CFT(CovarianceFourierTester):
         def get_covariance_block(self, trs1, trs2):
@@ -85,6 +86,7 @@ def test_build_matrix_from_blocks():
     assert np.max(np.abs(cov / cov2 - 1)) < 1e-10
 
 
+@pytest.mark.precision_sensitive
 def test__get_covariance_block_for_sacc():
     # Test with matrices ordered as in C
     class CFT(CovarianceFourierTester):
@@ -208,6 +210,7 @@ def test_get_tracer_comb_ncell(mock_cov_fourier):
     )
 
 
+@pytest.mark.precision_sensitive
 def test_get_tracer_info(mock_cov_fourier):
     ccl_tracers1, tracer_noise1 = mock_cov_fourier.get_tracer_info()
     (

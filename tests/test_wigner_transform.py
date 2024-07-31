@@ -62,11 +62,13 @@ def bin_cov(r, cov, r_bins):
     return bin_center, cov_int
 
 
+@pytest.mark.slow
 def test_smoke():
     WT_kwargs = get_WT_kwargs()
     wigner_transform.WignerTransform(**WT_kwargs)
 
 
+@pytest.mark.slow
 def test_cl_grid():
     wt = get_WT()
     ell = np.arange(5, 96, 2)
@@ -77,6 +79,8 @@ def test_cl_grid():
     assert np.all(cl2[~sel] == wt.ell[~sel])
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_cl_cov_grid():
     wt = get_WT()
     ell = np.arange(5, 96, 2)
@@ -94,6 +98,8 @@ def test_cl_cov_grid():
     )
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize("s1_s2", [(0, 0), (0, 2), (2, 2), (2, -2)])
 @pytest.mark.parametrize("s1_s2_cross", [(0, 0), (0, 2), (2, 2), (2, -2)])
 def test_projected_covariance(s1_s2, s1_s2_cross):
@@ -115,12 +121,14 @@ def test_projected_covariance(s1_s2, s1_s2_cross):
     assert np.max(np.abs(matb / matb_2) - 1) < 1e-5
 
 
+@pytest.mark.slow
 def test_taper():
     with pytest.raises(NotImplementedError):
         wt = get_WT()
         wt.taper(wt.ell)
 
 
+@pytest.mark.slow
 def test_diagonal_err():
     wt = get_WT()
     assert np.all(wt.diagonal_err(get_matrix(wt.ell)) == np.sqrt(wt.ell))
@@ -142,6 +150,8 @@ def test_diagonal_err():
 #     # assert np.max(np.abs(wd / wd2 - 1)) < 1e-5
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize("s1,s2", [(0, 0), (0, 2), (2, 2), (2, -2)])
 def test_wigner_d_parallel(s1, s2):
     kwargs = get_WT_kwargs()

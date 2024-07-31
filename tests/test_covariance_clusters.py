@@ -154,6 +154,7 @@ def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
     assert mock_covariance_gauss.cosmo == cosmo
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "z, ref_val",
     [
@@ -168,6 +169,7 @@ def test_integral_mass_no_bias(
     assert test == pytest.approx(ref_val, rel=1e-3)
 
 
+@pytest.mark.precision_sensitive
 def test_double_bessel_integral(
     mock_covariance_gauss: CovarianceClusterCounts,
 ):
@@ -176,12 +178,15 @@ def test_double_bessel_integral(
     assert test == pytest.approx(ref, rel=1e-3)
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
     ref = 63973.635143644424
     test = mock_covariance_gauss.shot_noise(0, 0)
     assert test == pytest.approx(ref, rel=1e-3)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "z, reference_val",
     [
@@ -196,6 +201,7 @@ def test_integral_mass(
     assert test == pytest.approx(reference_val, rel=1e-3)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "z, reference_val",
     [
@@ -211,6 +217,7 @@ def test_integral_mass_no_mproxy(
     assert test == pytest.approx(reference_val, rel=1e-1)
 
 
+@pytest.mark.precision_sensitive
 def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
     reference_min = 0.0009528852621284171
 
@@ -221,6 +228,7 @@ def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
     assert np.sum(test_min) == pytest.approx(reference_min)
 
 
+@pytest.mark.precision_sensitive
 @pytest.mark.parametrize(
     "z_i, reference_val",
     [
@@ -265,6 +273,8 @@ def test_cov_gaussian_zero_offdiagonal(
     assert cov_10_gauss == 0
 
 
+@pytest.mark.slow
+@pytest.mark.precision_sensitive
 def test_cov_nxn(
     mock_covariance_gauss: ClusterCountsGaussian,
     mock_covariance_ssc: ClusterCountsSSC,
