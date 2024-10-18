@@ -1,0 +1,2883 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.4, pytest-8.2.2, pluggy-1.5.0 -- /home/paul/miniconda3/envs/forecasting/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /home/paul/TJPCov
+configfile: pyproject.toml
+collecting ... collected 173 items
+
+tests/test_covariance_builder.py::test_smoke PASSED                      [  0%]
+tests/test_covariance_builder.py::test_nuisance_config PASSED            [  1%]
+tests/test_covariance_builder.py::test_split_tasks_by_rank PASSED        [  1%]
+tests/test_covariance_builder.py::test_compute_all_blocks PASSED         [  2%]
+tests/test_covariance_builder.py::test_get_cosmology PASSED              [  2%]
+tests/test_covariance_builder.py::test_get_covariance_block_not_implemented PASSED [  3%]
+tests/test_covariance_builder.py::test_get_covariance PASSED             [  4%]
+tests/test_covariance_builder.py::test_get_covariance_block_for_sacc PASSED [  4%]
+tests/test_covariance_builder.py::test_get_list_of_tracers_for_cov PASSED [  5%]
+tests/test_covariance_builder.py::test_get_mask_names_dict PASSED        [  5%]
+tests/test_covariance_builder.py::test_get_masks_dict PASSED             [  6%]
+tests/test_covariance_builder.py::test_get_nbpw PASSED                   [  6%]
+tests/test_covariance_builder.py::test_get_tracers_spin_dict PASSED      [  7%]
+tests/test_covariance_builder.py::test_get_tracer_comb_spin PASSED       [  8%]
+tests/test_covariance_builder.py::test_get_tracer_comb_data_types PASSED [  8%]
+tests/test_covariance_builder.py::test_get_tracer_nmaps[DESwl__0] PASSED [  9%]
+tests/test_covariance_builder.py::test_get_tracer_nmaps[DESgc__0] PASSED [  9%]
+tests/test_covariance_calculator.py::test_smoke PASSED                   [ 10%]
+tests/test_covariance_calculator.py::test_get_covariance_classes PASSED  [ 10%]
+tests/test_covariance_calculator.py::test_get_covariance FAILED          [ 11%]
+tests/test_covariance_calculator.py::test_get_covariance_terms FAILED    [ 12%]
+tests/test_covariance_calculator.py::test_create_sacc_cov FAILED         [ 12%]
+tests/test_covariance_cluster_mass.py::test_is_not_null PASSED           [ 13%]
+tests/test_covariance_cluster_mass.py::test_cluster_count_tracer_missing_throws PASSED [ 13%]
+tests/test_covariance_cluster_mass.py::test_cluster_count_defaults_survey_area PASSED [ 14%]
+tests/test_covariance_cluster_mass.py::test_non_cluster_counts_covmat_zero PASSED [ 15%]
+tests/test_covariance_clusters.py::test_is_not_null PASSED               [ 15%]
+tests/test_covariance_clusters.py::test_load_from_sacc PASSED            [ 16%]
+tests/test_covariance_clusters.py::test_load_from_cosmology PASSED       [ 16%]
+tests/test_covariance_clusters.py::test_integral_mass_no_bias[0.3-1.463291259900985e-05] PASSED [ 17%]
+tests/test_covariance_clusters.py::test_integral_mass_no_bias[0.35-1.4251538328691035e-05] PASSED [ 17%]
+tests/test_covariance_clusters.py::test_double_bessel_integral PASSED    [ 18%]
+tests/test_covariance_clusters.py::test_shot_noise PASSED                [ 19%]
+tests/test_covariance_clusters.py::test_integral_mass[0.5-2.596895139062984e-05] PASSED [ 19%]
+tests/test_covariance_clusters.py::test_integral_mass[0.55-2.5910691906342223e-05] PASSED [ 20%]
+tests/test_covariance_clusters.py::test_integral_mass_no_mproxy[0.5-3.8e-05] PASSED [ 20%]
+tests/test_covariance_clusters.py::test_mass_richness PASSED             [ 21%]
+tests/test_covariance_clusters.py::test_calc_dv[0-6613.739621696188] PASSED [ 21%]
+tests/test_covariance_clusters.py::test_calc_dv[4-55940746.72160228] PASSED [ 22%]
+tests/test_covariance_clusters.py::test_calc_dv[8-3781771343.1278453] PASSED [ 23%]
+tests/test_covariance_clusters.py::test_calc_dv[14-252063237.8394578] PASSED [ 23%]
+tests/test_covariance_clusters.py::test_calc_dv[17-1113852.72571463] PASSED [ 24%]
+tests/test_covariance_clusters.py::test_cov_gaussian_zero_offdiagonal PASSED [ 24%]
+tests/test_covariance_clusters.py::test_cov_nxn PASSED                   [ 25%]
+tests/test_covariance_clusters.py::test_cluster_count_tracer_missing_throws PASSED [ 26%]
+tests/test_covariance_clusters.py::test_cluster_count_defaults_survey_area PASSED [ 26%]
+tests/test_covariance_clusters.py::test_non_cluster_counts_covmat_zero PASSED [ 27%]
+tests/test_covariance_fourier_base.py::test_build_matrix_from_blocks PASSED [ 27%]
+tests/test_covariance_fourier_base.py::test__get_covariance_block_for_sacc PASSED [ 28%]
+tests/test_covariance_fourier_base.py::test_get_datatypes_from_ncell PASSED [ 28%]
+tests/test_covariance_fourier_base.py::test_get_ell_eff PASSED           [ 29%]
+tests/test_covariance_fourier_base.py::test_get_sacc_with_concise_dtypes PASSED [ 30%]
+tests/test_covariance_fourier_base.py::test_get_tracer_comb_ncell PASSED [ 30%]
+tests/test_covariance_fourier_base.py::test_get_tracer_info PASSED       [ 31%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_compute_all_blocks PASSED [ 31%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_cl_for_cov FAILED [ 32%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb10-tracer_comb20] FAILED [ 32%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb11-tracer_comb21] FAILED [ 33%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb12-tracer_comb22] FAILED [ 34%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb13-tracer_comb23] FAILED [ 34%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb14-tracer_comb24] FAILED [ 35%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb15-tracer_comb25] FAILED [ 35%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb10-tracer_comb20] FAILED [ 36%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb11-tracer_comb21] FAILED [ 36%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb12-tracer_comb22] FAILED [ 37%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb13-tracer_comb23] FAILED [ 38%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb14-tracer_comb24] FAILED [ 38%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_workspace[kwargs0] FAILED [ 39%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_workspace[kwargs1] FAILED [ 39%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_fields_dict[nmt_conf0] FAILED [ 40%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_fields_dict[nmt_conf1] FAILED [ 41%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_list_of_tracers_for_wsp PASSED [ 41%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_list_of_tracers_for_cov_wsp PASSED [ 42%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_list_of_tracers_for_cov_without_trs_wsp_cwsp PASSED [ 42%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell PASSED      [ 43%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace[kwargs0] FAILED [ 43%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace[kwargs1] FAILED [ 44%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace_dict[kwargs0] FAILED [ 45%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace_dict[kwargs1] FAILED [ 45%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_full_covariance_benchmark FAILED [ 46%]
+tests/test_covariance_fourier_gaussian_nmt.py::test_txpipe_like_input FAILED [ 46%]
+tests/test_covariance_fourier_ssc.py::test_smoke PASSED                  [ 47%]
+tests/test_covariance_fourier_ssc.py::test_get_covariance_block[tracer_comb10-tracer_comb20] PASSED [ 47%]
+tests/test_covariance_fourier_ssc.py::test_get_covariance_block[tracer_comb11-tracer_comb21] PASSED [ 48%]
+tests/test_covariance_fourier_ssc.py::test_get_covariance_block[tracer_comb12-tracer_comb22] PASSED [ 49%]
+tests/test_covariance_fourier_ssc.py::test_get_covariance_block[tracer_comb13-tracer_comb23] PASSED [ 49%]
+tests/test_covariance_fourier_ssc.py::test_get_covariance_block[tracer_comb14-tracer_comb24] PASSED [ 50%]
+tests/test_covariance_fourier_ssc.py::test_get_covariance_block_WL_benchmark PASSED [ 50%]
+tests/test_covariance_gaussian_fsky.py::test_smoke PASSED                [ 51%]
+tests/test_covariance_gaussian_fsky.py::test_Fourier_get_binning_info PASSED [ 52%]
+tests/test_covariance_gaussian_fsky.py::test_Fourier_get_covariance_block PASSED [ 52%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb20-tracer_comb10] PASSED [ 53%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb20-tracer_comb11] PASSED [ 53%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb20-tracer_comb12] PASSED [ 54%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb20-tracer_comb13] PASSED [ 54%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb21-tracer_comb10] PASSED [ 55%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb21-tracer_comb11] PASSED [ 56%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb21-tracer_comb12] PASSED [ 56%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb21-tracer_comb13] PASSED [ 57%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb22-tracer_comb10] PASSED [ 57%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb22-tracer_comb11] PASSED [ 58%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb22-tracer_comb12] PASSED [ 58%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb22-tracer_comb13] PASSED [ 59%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb23-tracer_comb10] PASSED [ 60%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb23-tracer_comb11] PASSED [ 60%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb23-tracer_comb12] PASSED [ 61%]
+tests/test_covariance_gaussian_fsky.py::test_Real_get_fourier_block[tracer_comb23-tracer_comb13] PASSED [ 61%]
+tests/test_covariance_gaussian_fsky.py::test_smoke_get_covariance PASSED [ 62%]
+tests/test_covariance_io.py::test_smoke_input PASSED                     [ 63%]
+tests/test_covariance_io.py::test_create_sacc_cov PASSED                 [ 63%]
+tests/test_covariance_io.py::test_get_outdir PASSED                      [ 64%]
+tests/test_covariance_io.py::test_get_sacc_file PASSED                   [ 64%]
+tests/test_covariance_real_base.py::test_get_theta_eff PASSED            [ 65%]
+tests/test_covariance_real_base.py::test_get_binning_info PASSED         [ 65%]
+tests/test_covariance_real_base.py::test_get_cov_WT_spin[lens0-lens0] PASSED [ 66%]
+tests/test_covariance_real_base.py::test_get_cov_WT_spin[src0-lens0] PASSED [ 67%]
+tests/test_covariance_real_base.py::test_get_cov_WT_spin[lens0-src0] PASSED [ 67%]
+tests/test_covariance_real_base.py::test_get_cov_WT_spin[src0-src0] PASSED [ 68%]
+tests/test_covariance_real_base.py::test_get_Wigner_transform PASSED     [ 68%]
+tests/test_covariance_real_base.py::test_build_matrix_from_blocks PASSED [ 69%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb20-tracer_comb10] PASSED [ 69%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb20-tracer_comb11] PASSED [ 70%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb20-tracer_comb12] PASSED [ 71%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb20-tracer_comb13] PASSED [ 71%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb21-tracer_comb10] PASSED [ 72%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb21-tracer_comb11] PASSED [ 72%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb21-tracer_comb12] PASSED [ 73%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb21-tracer_comb13] PASSED [ 73%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb22-tracer_comb10] PASSED [ 74%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb22-tracer_comb11] PASSED [ 75%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb22-tracer_comb12] PASSED [ 75%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb22-tracer_comb13] PASSED [ 76%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb23-tracer_comb10] PASSED [ 76%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb23-tracer_comb11] PASSED [ 77%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb23-tracer_comb12] PASSED [ 78%]
+tests/test_covariance_real_base.py::test_get_covariance_block[tracer_comb23-tracer_comb13] PASSED [ 78%]
+tests/test_covariance_real_base.py::test__get_covariance_block_for_sacc[lens0-lens0] PASSED [ 79%]
+tests/test_covariance_real_base.py::test__get_covariance_block_for_sacc[src0-lens0] PASSED [ 79%]
+tests/test_covariance_real_base.py::test__get_covariance_block_for_sacc[lens0-src0] PASSED [ 80%]
+tests/test_covariance_real_base.py::test__get_covariance_block_for_sacc[src0-src0] PASSED [ 80%]
+tests/test_mpi.py::test_split_tasks_by_rank PASSED                       [ 81%]
+tests/test_mpi.py::test_compute_all_blocks PASSED                        [ 82%]
+tests/test_mpi.py::test_compute_all_blocks_nmt FAILED                    [ 82%]
+tests/test_mpi.py::test_get_covariance FAILED                            [ 83%]
+tests/test_mpi.py::test_covariance_calculator FAILED                     [ 83%]
+tests/test_tools.py::test_read_map_from_hdf5 PASSED                      [ 84%]
+tests/test_tools.py::test_read_map PASSED                                [ 84%]
+tests/test_wigner_transform.py::test_smoke PASSED                        [ 85%]
+tests/test_wigner_transform.py::test_cl_grid PASSED                      [ 86%]
+tests/test_wigner_transform.py::test_cl_cov_grid PASSED                  [ 86%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross0-s1_s20] PASSED [ 87%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross0-s1_s21] PASSED [ 87%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross0-s1_s22] PASSED [ 88%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross0-s1_s23] PASSED [ 89%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross1-s1_s20] PASSED [ 89%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross1-s1_s21] PASSED [ 90%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross1-s1_s22] PASSED [ 90%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross1-s1_s23] PASSED [ 91%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross2-s1_s20] PASSED [ 91%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross2-s1_s21] PASSED [ 92%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross2-s1_s22] PASSED [ 93%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross2-s1_s23] PASSED [ 93%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross3-s1_s20] PASSED [ 94%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross3-s1_s21] PASSED [ 94%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross3-s1_s22] PASSED [ 95%]
+tests/test_wigner_transform.py::test_projected_covariance[s1_s2_cross3-s1_s23] PASSED [ 95%]
+tests/test_wigner_transform.py::test_taper PASSED                        [ 96%]
+tests/test_wigner_transform.py::test_diagonal_err PASSED                 [ 97%]
+tests/test_wigner_transform.py::test_wigner_d_parallel[0-0] PASSED       [ 97%]
+tests/test_wigner_transform.py::test_wigner_d_parallel[0-2] PASSED       [ 98%]
+tests/test_wigner_transform.py::test_wigner_d_parallel[2-2] PASSED       [ 98%]
+tests/test_wigner_transform.py::test_wigner_d_parallel[2--2] PASSED      [ 99%]
+tests/test_wigner_transform.py::test_bin_cov PASSED                      [100%]
+
+=================================== FAILURES ===================================
+_____________________________ test_get_covariance ______________________________
+
+mock_cov_calc = <tjpcov.covariance_calculator.CovarianceCalculator object at 0x73012611c260>
+
+    def test_get_covariance(mock_cov_calc):
+>       cov = mock_cov_calc.get_covariance() + 1e-100
+
+tests/test_covariance_calculator.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_calculator.py:107: in get_covariance
+    cov_terms = self.get_covariance_terms()
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_calculator.py:134: in get_covariance_terms
+    cov.append(cmat.get_covariance())
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x730127887a40>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+__________________________ test_get_covariance_terms ___________________________
+
+mock_cov_calc = <tjpcov.covariance_calculator.CovarianceCalculator object at 0x730124f80dd0>
+
+    def test_get_covariance_terms(mock_cov_calc):
+>       cov_terms = mock_cov_calc.get_covariance_terms()
+
+tests/test_covariance_calculator.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_calculator.py:134: in get_covariance_terms
+    cov.append(cmat.get_covariance())
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x730124f80fb0>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+_____________________________ test_create_sacc_cov _____________________________
+
+mock_cov_calc = <tjpcov.covariance_calculator.CovarianceCalculator object at 0x7301211e0740>
+
+    def test_create_sacc_cov(mock_cov_calc):
+>       cov = mock_cov_calc.get_covariance() + 1e-100
+
+tests/test_covariance_calculator.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_calculator.py:107: in get_covariance
+    cov_terms = self.get_covariance_terms()
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_calculator.py:134: in get_covariance_terms
+    cov.append(cmat.get_covariance())
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301211e1460>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+_____________________________ test_get_cl_for_cov ______________________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301280e8440>
+
+    def test_get_cl_for_cov(cov_fg_nmt):
+        # We just need to test for one case as the function will complain if the
+        # Cell inputted has the wrong shape
+        m = get_mask_from_dtype("galaxy_clustering")
+        w = get_workspace_from_dtype("galaxy_clustering")
+        wSh = get_workspace_from_dtype("galaxy_shear")
+    
+        cl = get_cl("galaxy_clustering", fiducial=False)
+        cl_fid = get_cl("galaxy_clustering", fiducial=True)
+        cl_fid_Sh = get_cl("galaxy_shear", fiducial=True)
+    
+        cl_cp = (w.couple_cell(cl_fid["cl"]) + cl["nl_cp"]) / np.mean(m**2)
+        cl_cp_code = cov_fg_nmt.get_cl_for_cov(
+            cl_fid["cl"], cl["nl_cp"], m, m, w, nl_is_cp=True
+        )
+        assert np.abs(cl_cp / cl_cp_code - 1).max() < 1e-10
+    
+        # Inputting uncoupled noise.
+        nlfill = np.ones_like(cl_fid["ell"]) * cl["nl"][0, 0]
+        cl_cp_code = cov_fg_nmt.get_cl_for_cov(
+            cl_fid["cl"], nlfill, m, m, w, nl_is_cp=False
+        )
+        assert np.abs(cl_cp[0] / cl_cp_code[0] - 1).max() < 1e-2
+    
+        # Check that if I input the coupled but nl_is_cp is False, we don't recover
+        # cl_cp
+        cl_cp_code = cov_fg_nmt.get_cl_for_cov(
+            cl_fid["cl"], cl["nl_cp"], m, m, w, nl_is_cp=False
+        )
+        assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.4
+    
+        # Check that if I input the uncoupled but nl_is_cp is True, assert fails
+        cl_cp_code = cov_fg_nmt.get_cl_for_cov(
+            cl_fid["cl"], nlfill, m, m, w, nl_is_cp=True
+        )
+        assert np.abs(cl_cp / cl_cp_code - 1).max() > 0.5
+    
+        # Create a non overlapping mask
+        m2 = np.ones_like(m)
+        m2[m != 0] = 0
+        assert not np.all(
+            cov_fg_nmt.get_cl_for_cov(cl, cl["nl_cp"], m, m2, w, nl_is_cp=True)
+        )
+    
+        with pytest.raises(ValueError):
+>           cov_fg_nmt.get_cl_for_cov(
+                cl_fid_Sh, cl["nl_cp"], m, m, w, nl_is_cp=True
+            )
+
+tests/test_covariance_fourier_gaussian_nmt.py:391: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:141: in get_cl_for_cov
+    cl_cp = (w.couple_cell(clab) + nlab) / mean_mamb
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pymaster.workspaces.NmtWorkspace object at 0x7301280e9910>
+cl_in = NpzFile 'tests/benchmarks/32_DES_tjpcov_bm/fiducial/DESwl_DESwl/cl_DESwl__0_DESwl__0.npz' with keys: cl, ell, cl_cp, ell_binned, cl_binned
+
+    def couple_cell(self, cl_in):
+        """ Convolves a set of input power spectra with a coupling matrix
+        (see Eq. 9 of the NaMaster paper).
+    
+        Args:
+            cl_in (`array`): Set of input power spectra. The number of power
+                spectra must correspond to the spins of the two fields that
+                this :obj:`NmtWorkspace` object was initialized with (i.e. 1
+                for two spin-0 fields, 2 for one spin-0 field and one spin-s
+                field, and 4 for two spin-s fields).
+    
+        Returns:
+            (`array`): Mode-coupled power spectra.
+        """
+        if (len(cl_in) != self.wsp.ncls) or \
+           (len(cl_in[0]) < self.wsp.lmax + 1):
+            raise ValueError("Input power spectrum has wrong shape. "
+                             f"Expected ({self.wsp.ncls}, {self.wsp.lmax+1}), "
+>                            f"bu got {cl_in.shape}.")
+E           AttributeError: 'NpzFile' object has no attribute 'shape'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/pymaster/workspaces.py:214: AttributeError
+____________ test_get_covariance_block[tracer_comb10-tracer_comb20] ____________
+
+tracer_comb1 = ('DESgc__0', 'DESgc__0'), tracer_comb2 = ('DESgc__0', 'DESgc__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+            (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block(tracer_comb1, tracer_comb2):
+        # Load benchmark covariance
+        cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+    
+        # Pass the NmtBins through the config dictionary at initialization
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        cnmt = FourierGaussianNmt(config)
+        cache = None
+    
+        # Check that it raises an Error when use_coupled_noise is True but not
+        # coupled noise has been provided
+        trs = tracer_comb1 + tracer_comb2
+        auto = []
+        for i, j in [(1, 3), (2, 4), (1, 4), (2, 3)]:
+            auto.append(trs[i - 1] == trs[j - 1])
+    
+        # Make sure any of the combinations require the computation of the noise.
+        # Otherwise it will not fail
+        if any(auto):
+            with pytest.raises(ValueError):
+                cov = cnmt.get_covariance_block(
+                    tracer_comb1, tracer_comb2, use_coupled_noise=True
+                )
+    
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s = cnmt.io.get_sacc_file()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            cnmt.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        # Cov with coupled noise (as in benchmark)
+>       cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:455: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73012468dd90>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+____________ test_get_covariance_block[tracer_comb11-tracer_comb21] ____________
+
+tracer_comb1 = ('DESgc__0', 'DESwl__0'), tracer_comb2 = ('DESwl__0', 'DESwl__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+            (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block(tracer_comb1, tracer_comb2):
+        # Load benchmark covariance
+        cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+    
+        # Pass the NmtBins through the config dictionary at initialization
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        cnmt = FourierGaussianNmt(config)
+        cache = None
+    
+        # Check that it raises an Error when use_coupled_noise is True but not
+        # coupled noise has been provided
+        trs = tracer_comb1 + tracer_comb2
+        auto = []
+        for i, j in [(1, 3), (2, 4), (1, 4), (2, 3)]:
+            auto.append(trs[i - 1] == trs[j - 1])
+    
+        # Make sure any of the combinations require the computation of the noise.
+        # Otherwise it will not fail
+        if any(auto):
+            with pytest.raises(ValueError):
+                cov = cnmt.get_covariance_block(
+                    tracer_comb1, tracer_comb2, use_coupled_noise=True
+                )
+    
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s = cnmt.io.get_sacc_file()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            cnmt.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        # Cov with coupled noise (as in benchmark)
+>       cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:455: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301211cdc10>
+tracer_names = {1: 'DESgc__0', 2: 'DESwl__0', 3: 'DESwl__0', 4: 'DESwl__0'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESwl0', 3: 'mask_DESwl0', 4: 'mask_DESwl0'}
+spins = {1: 0, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+____________ test_get_covariance_block[tracer_comb12-tracer_comb22] ____________
+
+tracer_comb1 = ('DESgc__0', 'DESgc__0'), tracer_comb2 = ('DESwl__0', 'DESwl__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+            (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block(tracer_comb1, tracer_comb2):
+        # Load benchmark covariance
+        cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+    
+        # Pass the NmtBins through the config dictionary at initialization
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        cnmt = FourierGaussianNmt(config)
+        cache = None
+    
+        # Check that it raises an Error when use_coupled_noise is True but not
+        # coupled noise has been provided
+        trs = tracer_comb1 + tracer_comb2
+        auto = []
+        for i, j in [(1, 3), (2, 4), (1, 4), (2, 3)]:
+            auto.append(trs[i - 1] == trs[j - 1])
+    
+        # Make sure any of the combinations require the computation of the noise.
+        # Otherwise it will not fail
+        if any(auto):
+            with pytest.raises(ValueError):
+                cov = cnmt.get_covariance_block(
+                    tracer_comb1, tracer_comb2, use_coupled_noise=True
+                )
+    
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s = cnmt.io.get_sacc_file()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            cnmt.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        # Cov with coupled noise (as in benchmark)
+>       cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:455: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e17b770>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESwl__0', 4: 'DESwl__0'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESwl0', 4: 'mask_DESwl0'}
+spins = {1: 0, 2: 0, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+____________ test_get_covariance_block[tracer_comb13-tracer_comb23] ____________
+
+tracer_comb1 = ('DESwl__0', 'DESwl__0'), tracer_comb2 = ('DESwl__0', 'DESwl__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+            (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block(tracer_comb1, tracer_comb2):
+        # Load benchmark covariance
+        cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+    
+        # Pass the NmtBins through the config dictionary at initialization
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        cnmt = FourierGaussianNmt(config)
+        cache = None
+    
+        # Check that it raises an Error when use_coupled_noise is True but not
+        # coupled noise has been provided
+        trs = tracer_comb1 + tracer_comb2
+        auto = []
+        for i, j in [(1, 3), (2, 4), (1, 4), (2, 3)]:
+            auto.append(trs[i - 1] == trs[j - 1])
+    
+        # Make sure any of the combinations require the computation of the noise.
+        # Otherwise it will not fail
+        if any(auto):
+            with pytest.raises(ValueError):
+                cov = cnmt.get_covariance_block(
+                    tracer_comb1, tracer_comb2, use_coupled_noise=True
+                )
+    
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s = cnmt.io.get_sacc_file()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            cnmt.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        # Cov with coupled noise (as in benchmark)
+>       cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:455: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301211ce5d0>
+tracer_names = {1: 'DESwl__0', 2: 'DESwl__0', 3: 'DESwl__0', 4: 'DESwl__0'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESwl0', 2: 'mask_DESwl0', 3: 'mask_DESwl0', 4: 'mask_DESwl0'}
+spins = {1: 2, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+____________ test_get_covariance_block[tracer_comb14-tracer_comb24] ____________
+
+tracer_comb1 = ('DESwl__0', 'DESwl__0'), tracer_comb2 = ('DESwl__1', 'DESwl__1')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+            (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block(tracer_comb1, tracer_comb2):
+        # Load benchmark covariance
+        cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+    
+        # Pass the NmtBins through the config dictionary at initialization
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        cnmt = FourierGaussianNmt(config)
+        cache = None
+    
+        # Check that it raises an Error when use_coupled_noise is True but not
+        # coupled noise has been provided
+        trs = tracer_comb1 + tracer_comb2
+        auto = []
+        for i, j in [(1, 3), (2, 4), (1, 4), (2, 3)]:
+            auto.append(trs[i - 1] == trs[j - 1])
+    
+        # Make sure any of the combinations require the computation of the noise.
+        # Otherwise it will not fail
+        if any(auto):
+            with pytest.raises(ValueError):
+                cov = cnmt.get_covariance_block(
+                    tracer_comb1, tracer_comb2, use_coupled_noise=True
+                )
+    
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s = cnmt.io.get_sacc_file()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            cnmt.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        # Cov with coupled noise (as in benchmark)
+>       cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:455: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301211cd580>
+tracer_names = {1: 'DESwl__0', 2: 'DESwl__0', 3: 'DESwl__1', 4: 'DESwl__1'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESwl0', 2: 'mask_DESwl0', 3: 'mask_DESwl1', 4: 'mask_DESwl1'}
+spins = {1: 2, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+____________ test_get_covariance_block[tracer_comb15-tracer_comb25] ____________
+
+tracer_comb1 = ('DESwl__1', 'DESwl__1'), tracer_comb2 = ('DESwl__1', 'DESwl__1')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+            (("DESwl__1", "DESwl__1"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block(tracer_comb1, tracer_comb2):
+        # Load benchmark covariance
+        cov_bm = get_benchmark_cov(tracer_comb1, tracer_comb2) + 1e-100
+    
+        # Pass the NmtBins through the config dictionary at initialization
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        cnmt = FourierGaussianNmt(config)
+        cache = None
+    
+        # Check that it raises an Error when use_coupled_noise is True but not
+        # coupled noise has been provided
+        trs = tracer_comb1 + tracer_comb2
+        auto = []
+        for i, j in [(1, 3), (2, 4), (1, 4), (2, 3)]:
+            auto.append(trs[i - 1] == trs[j - 1])
+    
+        # Make sure any of the combinations require the computation of the noise.
+        # Otherwise it will not fail
+        if any(auto):
+            with pytest.raises(ValueError):
+                cov = cnmt.get_covariance_block(
+                    tracer_comb1, tracer_comb2, use_coupled_noise=True
+                )
+    
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s = cnmt.io.get_sacc_file()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            cnmt.io.sacc_file.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        # Cov with coupled noise (as in benchmark)
+>       cov = cnmt.get_covariance_block(tracer_comb1, tracer_comb2) + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:455: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e14e750>
+tracer_names = {1: 'DESwl__1', 2: 'DESwl__1', 3: 'DESwl__1', 4: 'DESwl__1'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESwl1', 2: 'mask_DESwl1', 3: 'mask_DESwl1', 4: 'mask_DESwl1'}
+spins = {1: 2, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_________ test_get_covariance_block_cache[tracer_comb10-tracer_comb20] _________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fd1e4b0>
+tracer_comb1 = ('DESgc__0', 'DESgc__0'), tracer_comb2 = ('DESgc__0', 'DESgc__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
+        # In a separate function because the previous one is already too long
+        # Add the coupled noise metadata information to the sacc file
+        s = cov_fg_nmt.io.get_sacc_file()
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
+    
+        cl13 = get_fiducial_cl(s, tr1, tr3, binned=False)
+        cl24 = get_fiducial_cl(s, tr2, tr4, binned=False)
+        cl14 = get_fiducial_cl(s, tr1, tr4, binned=False)
+        cl23 = get_fiducial_cl(s, tr2, tr3, binned=False)
+    
+        cache = {
+            # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+            # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+            # 'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+            # 'w12': w12, 'w34': w34,
+            # 'cw': cw,
+            "cl13": cl13,
+            "cl24": cl24,
+            "cl14": cl14,
+            "cl23": cl23,
+            # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+            "bins": get_nmt_bin(),
+        }
+    
+        cov = (
+>           cov_fg_nmt.get_covariance_block(
+                tracer_comb1, tracer_comb2, cache=cache
+            )
+            + 1e-100
+        )
+
+tests/test_covariance_fourier_gaussian_nmt.py:609: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fd1e4b0>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'bins': <pymaster.bins.NmtBin object at 0x7301246e2210>, 'cl13': array([[2.70469960e-05, 7.30682099e-05, 1.10269104e-...64e-05, 3.36954358e-05, 3.32268634e-05,
+        3.27643525e-05, 3.23075009e-05, 3.18560377e-05, 3.14098081e-05]]), ...}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_________ test_get_covariance_block_cache[tracer_comb11-tracer_comb21] _________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x730121183b30>
+tracer_comb1 = ('DESgc__0', 'DESwl__0'), tracer_comb2 = ('DESwl__0', 'DESwl__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
+        # In a separate function because the previous one is already too long
+        # Add the coupled noise metadata information to the sacc file
+        s = cov_fg_nmt.io.get_sacc_file()
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
+    
+        cl13 = get_fiducial_cl(s, tr1, tr3, binned=False)
+        cl24 = get_fiducial_cl(s, tr2, tr4, binned=False)
+        cl14 = get_fiducial_cl(s, tr1, tr4, binned=False)
+        cl23 = get_fiducial_cl(s, tr2, tr3, binned=False)
+    
+        cache = {
+            # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+            # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+            # 'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+            # 'w12': w12, 'w34': w34,
+            # 'cw': cw,
+            "cl13": cl13,
+            "cl24": cl24,
+            "cl14": cl14,
+            "cl23": cl23,
+            # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+            "bins": get_nmt_bin(),
+        }
+    
+        cov = (
+>           cov_fg_nmt.get_covariance_block(
+                tracer_comb1, tracer_comb2, cache=cache
+            )
+            + 1e-100
+        )
+
+tests/test_covariance_fourier_gaussian_nmt.py:609: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x730121183b30>
+tracer_names = {1: 'DESgc__0', 2: 'DESwl__0', 3: 'DESwl__0', 4: 'DESwl__0'}
+cache = {'bins': <pymaster.bins.NmtBin object at 0x73012474e2a0>, 'cl13': array([[0.00000000e+00, 0.00000000e+00, 3.60390093e-...00e+00, 0.00000000e+00, 0.00000000e+00,
+        0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]]), ...}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESwl0', 3: 'mask_DESwl0', 4: 'mask_DESwl0'}
+spins = {1: 0, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_________ test_get_covariance_block_cache[tracer_comb12-tracer_comb22] _________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fd1d970>
+tracer_comb1 = ('DESgc__0', 'DESgc__0'), tracer_comb2 = ('DESwl__0', 'DESwl__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
+        # In a separate function because the previous one is already too long
+        # Add the coupled noise metadata information to the sacc file
+        s = cov_fg_nmt.io.get_sacc_file()
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
+    
+        cl13 = get_fiducial_cl(s, tr1, tr3, binned=False)
+        cl24 = get_fiducial_cl(s, tr2, tr4, binned=False)
+        cl14 = get_fiducial_cl(s, tr1, tr4, binned=False)
+        cl23 = get_fiducial_cl(s, tr2, tr3, binned=False)
+    
+        cache = {
+            # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+            # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+            # 'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+            # 'w12': w12, 'w34': w34,
+            # 'cw': cw,
+            "cl13": cl13,
+            "cl24": cl24,
+            "cl14": cl14,
+            "cl23": cl23,
+            # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+            "bins": get_nmt_bin(),
+        }
+    
+        cov = (
+>           cov_fg_nmt.get_covariance_block(
+                tracer_comb1, tracer_comb2, cache=cache
+            )
+            + 1e-100
+        )
+
+tests/test_covariance_fourier_gaussian_nmt.py:609: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fd1d970>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESwl__0', 4: 'DESwl__0'}
+cache = {'bins': <pymaster.bins.NmtBin object at 0x730124f830b0>, 'cl13': array([[0.00000000e+00, 0.00000000e+00, 3.60390093e-...00e+00, 0.00000000e+00, 0.00000000e+00,
+        0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]]), ...}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESwl0', 4: 'mask_DESwl0'}
+spins = {1: 0, 2: 0, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_________ test_get_covariance_block_cache[tracer_comb13-tracer_comb23] _________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73012468d760>
+tracer_comb1 = ('DESwl__0', 'DESwl__0'), tracer_comb2 = ('DESwl__0', 'DESwl__0')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
+        # In a separate function because the previous one is already too long
+        # Add the coupled noise metadata information to the sacc file
+        s = cov_fg_nmt.io.get_sacc_file()
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
+    
+        cl13 = get_fiducial_cl(s, tr1, tr3, binned=False)
+        cl24 = get_fiducial_cl(s, tr2, tr4, binned=False)
+        cl14 = get_fiducial_cl(s, tr1, tr4, binned=False)
+        cl23 = get_fiducial_cl(s, tr2, tr3, binned=False)
+    
+        cache = {
+            # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+            # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+            # 'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+            # 'w12': w12, 'w34': w34,
+            # 'cw': cw,
+            "cl13": cl13,
+            "cl24": cl24,
+            "cl14": cl14,
+            "cl23": cl23,
+            # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+            "bins": get_nmt_bin(),
+        }
+    
+        cov = (
+>           cov_fg_nmt.get_covariance_block(
+                tracer_comb1, tracer_comb2, cache=cache
+            )
+            + 1e-100
+        )
+
+tests/test_covariance_fourier_gaussian_nmt.py:609: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73012468d760>
+tracer_names = {1: 'DESwl__0', 2: 'DESwl__0', 3: 'DESwl__0', 4: 'DESwl__0'}
+cache = {'bins': <pymaster.bins.NmtBin object at 0x73012468eb70>, 'cl13': array([[0.00000000e+00, 0.00000000e+00, 9.24673006e-...00e+00, 0.00000000e+00, 0.00000000e+00,
+        0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]]), ...}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESwl0', 2: 'mask_DESwl0', 3: 'mask_DESwl0', 4: 'mask_DESwl0'}
+spins = {1: 2, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_________ test_get_covariance_block_cache[tracer_comb14-tracer_comb24] _________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e14c710>
+tracer_comb1 = ('DESwl__0', 'DESwl__0'), tracer_comb2 = ('DESwl__1', 'DESwl__1')
+
+    @pytest.mark.parametrize(
+        "tracer_comb1,tracer_comb2",
+        [
+            (("DESgc__0", "DESgc__0"), ("DESgc__0", "DESgc__0")),
+            (("DESgc__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESgc__0", "DESgc__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__0", "DESwl__0")),
+            (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
+        ],
+    )
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
+        # In a separate function because the previous one is already too long
+        # Add the coupled noise metadata information to the sacc file
+        s = cov_fg_nmt.io.get_sacc_file()
+        for tr in s.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            s.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        (tr1, tr2), (tr3, tr4) = tracer_comb1, tracer_comb2
+    
+        cl13 = get_fiducial_cl(s, tr1, tr3, binned=False)
+        cl24 = get_fiducial_cl(s, tr2, tr4, binned=False)
+        cl14 = get_fiducial_cl(s, tr1, tr4, binned=False)
+        cl23 = get_fiducial_cl(s, tr2, tr3, binned=False)
+    
+        cache = {
+            # 'f1': f1, 'f2': f2, 'f3': f3, 'f4': f4,
+            # 'm1': m1, 'm2': m2, 'm3': m3, 'm4': m4,
+            # 'w13': w13, 'w23': w23, 'w14': w14, 'w24': w24,
+            # 'w12': w12, 'w34': w34,
+            # 'cw': cw,
+            "cl13": cl13,
+            "cl24": cl24,
+            "cl14": cl14,
+            "cl23": cl23,
+            # 'SN13': SN13, 'SN24': SN24, 'SN14': SN14, 'SN23': SN23,
+            "bins": get_nmt_bin(),
+        }
+    
+        cov = (
+>           cov_fg_nmt.get_covariance_block(
+                tracer_comb1, tracer_comb2, cache=cache
+            )
+            + 1e-100
+        )
+
+tests/test_covariance_fourier_gaussian_nmt.py:609: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e14c710>
+tracer_names = {1: 'DESwl__0', 2: 'DESwl__0', 3: 'DESwl__1', 4: 'DESwl__1'}
+cache = {'bins': <pymaster.bins.NmtBin object at 0x730125ab4620>, 'cl13': array([[0.00000000e+00, 0.00000000e+00, 1.04668369e-...00e+00, 0.00000000e+00, 0.00000000e+00,
+        0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]]), ...}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESwl0', 2: 'mask_DESwl0', 3: 'mask_DESwl1', 4: 'mask_DESwl1'}
+spins = {1: 2, 2: 2, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+____________________ test_get_covariance_workspace[kwargs0] ____________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e170e90>
+kwargs = {}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    )
+    def test_get_covariance_workspace(cov_fg_nmt, kwargs):
+        m1 = get_mask_from_dtype("galaxy_clustering")
+        m3 = get_mask_from_dtype("galaxy_shear")
+    
+        f1 = f2 = nmt.NmtField(m1, None, spin=0)
+        f3 = f4 = nmt.NmtField(m3, None, spin=2)
+    
+        cw = nmt.NmtCovarianceWorkspace()
+        cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
+    
+        cl = get_cl("cross", fiducial=False)
+        cl_fid = get_cl("cross", fiducial=True)
+        w13 = get_workspace_from_dtype("cross")
+        cl_cov = cov_fg_nmt.get_cl_for_cov(
+            cl_fid["cl"], cl["nl_cp"], m1, m3, w13, nl_is_cp=True
+        )
+        cl13 = cl14 = cl23 = cl24 = cl_cov
+    
+        w12 = get_workspace_from_dtype("galaxy_clustering")
+        w34 = get_workspace_from_dtype("galaxy_shear")
+        cov = nmt.gaussian_covariance(
+            cw, 0, 0, 2, 2, cl13, cl14, cl23, cl24, w12, w34, coupled=False
+        )
+    
+        mn1, mn2, mn3, mn4 = "0", "1", "2", "3"
+    
+        combinations = [
+            (f1, f2, f3, f4),
+            (f2, f1, f3, f4),
+            (f1, f2, f4, f3),
+            (f2, f1, f4, f3),
+            (f3, f4, f1, f2),
+            (f4, f3, f1, f2),
+            (f3, f4, f2, f1),
+            (f4, f3, f2, f1),
+        ]
+    
+        combinations_names = [
+            (mn1, mn2, mn3, mn4),
+            (mn2, mn1, mn3, mn4),
+            (mn1, mn2, mn4, mn3),
+            (mn2, mn1, mn4, mn3),
+            (mn3, mn4, mn1, mn2),
+            (mn4, mn3, mn1, mn2),
+            (mn3, mn4, mn2, mn1),
+            (mn4, mn3, mn2, mn1),
+        ]
+    
+        # Check only the first is written/computed created & that cw is correct
+    
+        for fields, masks_names in zip(combinations, combinations_names):
+>           spins = [fi.fl.spin for fi in fields]
+E           AttributeError: 'NmtField' object has no attribute 'fl'
+
+tests/test_covariance_fourier_gaussian_nmt.py:718: AttributeError
+____________________ test_get_covariance_workspace[kwargs1] ____________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e171730>
+kwargs = {'dl_band': 10, 'l_exact': 10, 'l_toeplitz': 10, 'n_iter': 0}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    )
+    def test_get_covariance_workspace(cov_fg_nmt, kwargs):
+        m1 = get_mask_from_dtype("galaxy_clustering")
+        m3 = get_mask_from_dtype("galaxy_shear")
+    
+        f1 = f2 = nmt.NmtField(m1, None, spin=0)
+        f3 = f4 = nmt.NmtField(m3, None, spin=2)
+    
+        cw = nmt.NmtCovarianceWorkspace()
+>       cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
+E       TypeError: NmtCovarianceWorkspace.compute_coupling_coefficients() got an unexpected keyword argument 'n_iter'
+
+tests/test_covariance_fourier_gaussian_nmt.py:675: TypeError
+_______________________ test_get_fields_dict[nmt_conf0] ________________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e172630>
+nmt_conf = {}
+
+    @pytest.mark.parametrize("nmt_conf", [{}, {"n_iter": 0}])
+    def test_get_fields_dict(cov_fg_nmt, nmt_conf):
+        tr = get_tracers_dict_for_cov()
+    
+        f = get_fields_dict_for_cov(**nmt_conf)
+>       f2 = cov_fg_nmt.get_fields_dict(tr, **nmt_conf)
+
+tests/test_covariance_fourier_gaussian_nmt.py:775: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e172630>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESwl__0', 4: 'DESwl__1'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESwl0', 4: 'mask_DESwl1'}
+spins = {1: 0, 2: 0, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_______________________ test_get_fields_dict[nmt_conf1] ________________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301211e2f90>
+nmt_conf = {'n_iter': 0}
+
+    @pytest.mark.parametrize("nmt_conf", [{}, {"n_iter": 0}])
+    def test_get_fields_dict(cov_fg_nmt, nmt_conf):
+        tr = get_tracers_dict_for_cov()
+    
+        f = get_fields_dict_for_cov(**nmt_conf)
+>       f2 = cov_fg_nmt.get_fields_dict(tr, **nmt_conf)
+
+tests/test_covariance_fourier_gaussian_nmt.py:775: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301211e2f90>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESwl__0', 4: 'DESwl__1'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {'n_iter': 0}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESwl0', 4: 'mask_DESwl1'}
+spins = {1: 0, 2: 0, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_________________________ test_get_workspace[kwargs0] __________________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301246e2d80>
+kwargs = {}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    )
+    def test_get_workspace(cov_fg_nmt, kwargs):
+        # Compute NmtBins
+        bins = get_nmt_bin()
+    
+        # Compute workspace
+        m1 = get_mask_from_dtype("galaxy_clustering")
+        m2 = get_mask_from_dtype("galaxy_shear")
+    
+        f1 = nmt.NmtField(m1, None, spin=0)
+        f2 = nmt.NmtField(m2, None, spin=2)
+    
+        w = nmt.NmtWorkspace()
+        w.compute_coupling_matrix(f1, f2, bins, **kwargs)
+    
+        # Compute workspace with cov_fg_nmt
+        s1 = 0
+        s2 = 2
+        mn1 = "mask_DESgc0"
+        mn2 = "mask_DESwl0"
+>       w_code = cov_fg_nmt.get_workspace(f1, f2, mn1, mn2, bins, **kwargs)
+
+tests/test_covariance_fourier_gaussian_nmt.py:991: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301246e2d80>
+f1 = <pymaster.field.NmtField object at 0x7301246e29c0>
+f2 = <pymaster.field.NmtField object at 0x7301246e2630>, m1 = 'mask_DESgc0'
+m2 = 'mask_DESwl0', bins = <pymaster.bins.NmtBin object at 0x7301246e28a0>
+kwargs = {}, outdir = './tests/tmp/'
+
+    def get_workspace(self, f1, f2, m1, m2, bins, **kwargs):
+        """Return the workspace of the fields f1, f2.
+    
+        Args:
+            f1 (:obj:`pymaster.field.NmtField`):  Field 1
+            f2 (:obj:`pymaster.field.NmtField`):  Field 2
+            m1 (str): Mask name assotiated to the field 1
+            m2 (str): Mask name assotiated to the field 2
+            bins (:obj:`pymaster.bins.NmtBin`):  NmtBin instance
+            mask_names (dict): Dictionary with tracer names as key and maks
+                names as values.
+            **kwargs:  Extra arguments to pass to w.compute_coupling_matrix.
+                In addition, if recompute=True is passed, the cw will be
+                recomputed even if found in the disk.
+    
+        Returns:
+             :obj:`pymaster.covariance.NmtCovarianceWorkspace`: Covariance
+             Workspace of the fields f1, f2, f3, f4
+        """
+        if not isinstance(bins, nmt.NmtBin):
+            raise ValueError(
+                "You must pass a NmtBin instance through the "
+                "cache or at initialization"
+            )
+    
+        outdir = self.io.outdir
+>       s1, s2 = f1.fl.spin, f2.fl.spin
+E       AttributeError: 'NmtField' object has no attribute 'fl'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:676: AttributeError
+_________________________ test_get_workspace[kwargs1] __________________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fda00b0>
+kwargs = {'dl_band': 10, 'l_exact': 10, 'l_toeplitz': 10, 'n_iter': 0}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    )
+    def test_get_workspace(cov_fg_nmt, kwargs):
+        # Compute NmtBins
+        bins = get_nmt_bin()
+    
+        # Compute workspace
+        m1 = get_mask_from_dtype("galaxy_clustering")
+        m2 = get_mask_from_dtype("galaxy_shear")
+    
+        f1 = nmt.NmtField(m1, None, spin=0)
+        f2 = nmt.NmtField(m2, None, spin=2)
+    
+        w = nmt.NmtWorkspace()
+>       w.compute_coupling_matrix(f1, f2, bins, **kwargs)
+E       TypeError: NmtWorkspace.compute_coupling_matrix() got an unexpected keyword argument 'n_iter'
+
+tests/test_covariance_fourier_gaussian_nmt.py:984: TypeError
+_______________________ test_get_workspace_dict[kwargs0] _______________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fda2420>
+kwargs = {}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    )
+    def test_get_workspace_dict(cov_fg_nmt, kwargs):
+        tracers = get_tracers_dict_for_cov()
+        bins = get_nmt_bin()
+    
+        w = get_workspaces_dict_for_cov(**kwargs)
+>       w2 = cov_fg_nmt.get_workspaces_dict(tracers, bins, **kwargs)
+
+tests/test_covariance_fourier_gaussian_nmt.py:1040: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:748: in get_workspaces_dict
+    fields = self.get_fields_dict(tracer_names, cache, masks=masks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011fda2420>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESwl__0', 4: 'DESwl__1'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESwl0', 4: 'mask_DESwl1'}
+spins = {1: 0, 2: 0, 3: 2, 4: 2}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+_______________________ test_get_workspace_dict[kwargs1] _______________________
+
+cov_fg_nmt = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x730121151910>
+kwargs = {'dl_band': 10, 'l_exact': 10, 'l_toeplitz': 10, 'n_iter': 0}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    )
+    def test_get_workspace_dict(cov_fg_nmt, kwargs):
+        tracers = get_tracers_dict_for_cov()
+        bins = get_nmt_bin()
+    
+>       w = get_workspaces_dict_for_cov(**kwargs)
+
+tests/test_covariance_fourier_gaussian_nmt.py:1039: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kwargs = {'dl_band': 10, 'l_exact': 10, 'l_toeplitz': 10, 'n_iter': 0}
+bins = <pymaster.bins.NmtBin object at 0x73011e13bb30>
+f = {1: <pymaster.field.NmtField object at 0x73011e1386b0>, 2: <pymaster.field.NmtField object at 0x73011e1386b0>, 3: <pymaster.field.NmtField object at 0x730121153cb0>, 4: <pymaster.field.NmtField object at 0x730121153830>}
+w12 = <pymaster.workspaces.NmtWorkspace object at 0x73011fdb76b0>
+
+    def get_workspaces_dict_for_cov(**kwargs):
+        bins = get_nmt_bin()
+        f = get_fields_dict_for_cov()
+    
+        w12 = nmt.NmtWorkspace()
+>       w12.compute_coupling_matrix(f[1], f[2], bins, **kwargs)
+E       TypeError: NmtWorkspace.compute_coupling_matrix() got an unexpected keyword argument 'n_iter'
+
+tests/test_covariance_fourier_gaussian_nmt.py:272: TypeError
+________________________ test_full_covariance_benchmark ________________________
+
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+    def test_full_covariance_benchmark():
+        config = get_config(INPUT_YML)
+        bins = get_nmt_bin()
+        config["tjpcov"]["binning_info"] = bins
+        # Load the coupled noise that we need for the benchmark covariance
+        cnmt = FourierGaussianNmt(config)
+        s_nlcp = cnmt.io.get_sacc_file().copy()
+        tracer_noise = {}
+        tracer_noise_cp = {}
+        for tr in s_nlcp.tracers.keys():
+            nl_cp = get_tracer_noise(tr, cp=True)
+            tracer_noise[tr] = get_tracer_noise(tr, cp=False)
+            tracer_noise_cp[tr] = nl_cp
+            s_nlcp.tracers[tr].metadata["n_ell_coupled"] = nl_cp
+    
+        cnmt.io.sacc_file = s_nlcp.copy()
+    
+>       cov = cnmt.get_covariance() + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:1141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x730121150e30>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+____________________________ test_txpipe_like_input ____________________________
+
+    def test_txpipe_like_input():
+        # We don't need to pass the bins because we have provided the workspaces
+        # through the cache in the configuration file
+        fname = "./tests/data/conf_covariance_gaussian_fourier_nmt_txpipe.yaml"
+        cnmt = FourierGaussianNmt(fname)
+    
+        # Add the coupled noise metadata information to the sacc file
+        s = cnmt.io.get_sacc_file()
+    
+>       cov = cnmt.get_covariance() + 1e-100
+
+tests/test_covariance_fourier_gaussian_nmt.py:1212: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011e135880>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.]), 2: array([0., 0., 0., ..., 0., 0., 0.]), 3: array([0., 0., 0., ..., 0., 0., 0.]), 4: array([0., 0., 0., ..., 0., 0., 0.])}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+_________________________ test_compute_all_blocks_nmt __________________________
+
+fg_nmt_cov = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301d58ff470>
+
+    def test_compute_all_blocks_nmt(fg_nmt_cov):
+        # FourierGaussianNmt has its own _compute_all_blocks
+>       blocks, tracers_blocks = fg_nmt_cov._compute_all_blocks()
+
+tests/test_mpi.py:123: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301d58ff470>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.]), 2: array([0., 0., 0., ..., 0., 0., 0.]), 3: array([0., 0., 0., ..., 0., 0., 0.]), 4: array([0., 0., 0., ..., 0., 0., 0.])}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+_____________________________ test_get_covariance ______________________________
+
+fg_nmt_cov = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011afb22d0>
+
+    def test_get_covariance(fg_nmt_cov):
+        # This checks that there is no problem during the gathering of blocks
+    
+        # The coupled noise metadata information is in the sacc file and the
+        # workspaces in the config file
+        s = fg_nmt_cov.io.get_sacc_file()
+    
+>       cov = fg_nmt_cov.get_covariance() + 1e-100
+
+tests/test_mpi.py:145: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x73011afb22d0>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.]), 2: array([0., 0., 0., ..., 0., 0., 0.]), 3: array([0., 0., 0., ..., 0., 0., 0.]), 4: array([0., 0., 0., ..., 0., 0., 0.])}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+__________________________ test_covariance_calculator __________________________
+
+cov_calc = <tjpcov.covariance_calculator.CovarianceCalculator object at 0x7301d5a46f90>
+cov_calc_mpi = <tjpcov.covariance_calculator.CovarianceCalculator object at 0x73011b9cca70>
+
+    def test_covariance_calculator(cov_calc, cov_calc_mpi):
+        # Test get_covariance_terms
+        cov = None
+>       cov_mpi = cov_calc_mpi.get_covariance_terms()
+
+tests/test_mpi.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_calculator.py:134: in get_covariance_terms
+    cov.append(cmat.get_covariance())
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:377: in get_covariance
+    blocks, tracers_cov = self._compute_all_blocks(**kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:86: in _compute_all_blocks
+    cov = self.get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:363: in get_covariance_block_for_sacc
+    return self._get_covariance_block_for_sacc(
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:660: in _get_covariance_block_for_sacc
+    cov = self.get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:306: in get_covariance_block
+    f = self.get_fields_dict(tr, cache, masks=m)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tjpcov.covariance_fourier_gaussian_nmt.FourierGaussianNmt object at 0x7301d5a47110>
+tracer_names = {1: 'DESgc__0', 2: 'DESgc__0', 3: 'DESgc__0', 4: 'DESgc__0'}
+cache = {'workspaces': {'00': {('mask_DESgc0', 'mask_DESgc0'): './tests/benchmarks/32_DES_tjpcov_bm/DESgc_DESgc/w__mask_DESgc_..., ('mask_DESwl1', 'mask_DESwl1'): './tests/benchmarks/32_DES_tjpcov_bm/DESwl_DESwl/w__mask_DESwl1__mask_DESwl1.fits'}}}
+masks = {1: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 2: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 3: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4'), 4: array([0., 0., 0., ..., 0., 0., 0.], dtype='>f4')}
+kwargs = {}
+mask_names = {1: 'mask_DESgc0', 2: 'mask_DESgc0', 3: 'mask_DESgc0', 4: 'mask_DESgc0'}
+spins = {1: 0, 2: 0, 3: 0, 4: 0}, nmt_conf = {'lmax_sht': -1, 'n_iter': 0}
+f = {}, f_by_mask_name = {}, i = 1, key = 'f1'
+
+    def get_fields_dict(self, tracer_names, cache=None, masks=None, **kwargs):
+        """Return a dictionary with the fields assotiated to the given tracers.
+    
+        Args:
+            tracer_names (dict):  Dictionary of the tracer names of the same
+                form as mask_name. It has to be given as {1: name1, 2: name2,
+                3: name3, 4: name4}, where 12 and 34 are the pair of tracers
+                that go into the first and second Cell you are computing the
+                covariance for; i.e. <Cell^12 Cell^34>.
+            cache (dict): Dictionary with cached variables. It will use the
+                cached field if found. The keys must be 'f1', 'f2', 'f3' or
+                'f4' and the values the corresponding NmtFields.
+            masks (dict): Dictionary of the masks of the fields correlated with
+                keys 1, 2, 3 or 4 and values the loaded masks.
+            **kwargs: Arguments to pass to NaMaster when computing the
+                field. They will override the ones passed in the configuration
+                file through nmt_conf['f'].
+    
+        Returns:
+            dict: Dictionary with the masks assotiated to the fields to be
+            correlated.
+        """
+        mask_names = self.get_mask_names_dict(tracer_names)
+        if masks is None:
+            masks = self.get_masks_dict(tracer_names, cache)
+        if cache is None:
+            cache = {}
+        spins = self.get_tracers_spin_dict(tracer_names)
+        nmt_conf = self.nmt_conf["f"].copy()
+        nmt_conf.update(kwargs)
+        f = {}
+        f_by_mask_name = {}
+        for i in [1, 2, 3, 4]:
+            key = f"f{i}"
+            if key in cache:
+                f[i] = cache[key]
+            else:
+                # We add the spin to make sure we distinguish fields of
+                # different types even though they share the same mask
+                k = mask_names[i] + str(spins[i])
+                if k not in f_by_mask_name:
+>                   f_by_mask_name[k] = nmt.NmtField(
+                        masks[i], None, spin=spins[i], **nmt_conf
+                    )
+E                   TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+
+../miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:485: TypeError
+----------------------------- Captured stdout call -----------------------------
+Computing independent covariance blocks
+Computing the blocks for independent workspaces
+('DESgc__0', 'DESgc__0') ('DESgc__0', 'DESgc__0')
+=============================== warnings summary ===============================
+tests/test_covariance_fourier_gaussian_nmt.py:416
+  /home/paul/TJPCov/tests/test_covariance_fourier_gaussian_nmt.py:416: PytestUnknownMarkWarning: Unknown pytest.mark.flaky - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+
+tests/test_covariance_fourier_gaussian_nmt.py:578
+  /home/paul/TJPCov/tests/test_covariance_fourier_gaussian_nmt.py:578: PytestUnknownMarkWarning: Unknown pytest.mark.flaky - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+
+tests/test_covariance_fourier_gaussian_nmt.py:1123
+  /home/paul/TJPCov/tests/test_covariance_fourier_gaussian_nmt.py:1123: PytestUnknownMarkWarning: Unknown pytest.mark.flaky - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.flaky(reruns=5, reruns_delay=1)
+
+tests/test_covariance_builder.py: 4 warnings
+tests/test_covariance_calculator.py: 3 warnings
+tests/test_covariance_fourier_base.py: 2 warnings
+tests/test_covariance_fourier_gaussian_nmt.py: 3 warnings
+tests/test_covariance_gaussian_fsky.py: 1 warning
+tests/test_covariance_real_base.py: 4 warnings
+tests/test_mpi.py: 4 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/sacc/sacc.py:378: UserWarning: Empty index selected - maybe you should check the tracer order?
+    warnings.warn("Empty index selected - maybe you "
+
+tests/test_covariance_fourier_base.py: 1 warning
+tests/test_covariance_fourier_gaussian_nmt.py: 5 warnings
+tests/test_covariance_fourier_ssc.py: 6 warnings
+tests/test_covariance_gaussian_fsky.py: 18 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:887: UserWarning: Missing n_ell_coupled info for some tracers in the sacc file. You will have to pass it withthe cache
+    warnings.warn(
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/sacc/sacc.py:989: UserWarning: No bandpower windows associated to these data
+    warnings.warn("No bandpower windows associated to these data")
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:621: UserWarning: The window functions in the sacc file are wrong:
+    warnings.warn(
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:624: UserWarning: 
+    warnings.warn(str(e))
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:638: UserWarning: Trying to circunvent this error: we will trywith nell = 3*nside
+    warnings.warn(
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:626: UserWarning: Trying to circunvent this error: we will usenell = lmax + 1 as given in the metadata
+    warnings.warn(
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_get_nell
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_fourier_gaussian_nmt.py:632: UserWarning: lmax is larger than 3*nside. We will use nell = 3*nside
+    warnings.warn(
+
+tests/test_covariance_fourier_gaussian_nmt.py::test_txpipe_like_input
+tests/test_mpi.py::test_compute_all_blocks
+tests/test_mpi.py::test_compute_all_blocks_nmt
+tests/test_mpi.py::test_get_covariance
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_builder.py:881: UserWarning: Missing noise for some tracers in file. You will have to pass it with the cache
+    warnings.warn(
+
+tests/test_covariance_fourier_ssc.py: 550 warnings
+tests/test_mpi.py: 1050 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/pyccl/halos/halo_model.py:85: DeprecationWarning: You are passing x=[ 8.          8.06299213  8.12598425  8.18897638  8.2519685   8.31496063
+    8.37795276  8.44094488  8.50393701  8.56692913  8.62992126  8.69291339
+    8.75590551  8.81889764  8.88188976  8.94488189  9.00787402  9.07086614
+    9.13385827  9.19685039  9.25984252  9.32283465  9.38582677  9.4488189
+    9.51181102  9.57480315  9.63779528  9.7007874   9.76377953  9.82677165
+    9.88976378  9.95275591 10.01574803 10.07874016 10.14173228 10.20472441
+   10.26771654 10.33070866 10.39370079 10.45669291 10.51968504 10.58267717
+   10.64566929 10.70866142 10.77165354 10.83464567 10.8976378  10.96062992
+   11.02362205 11.08661417 11.1496063  11.21259843 11.27559055 11.33858268
+   11.4015748  11.46456693 11.52755906 11.59055118 11.65354331 11.71653543
+   11.77952756 11.84251969 11.90551181 11.96850394 12.03149606 12.09448819
+   12.15748031 12.22047244 12.28346457 12.34645669 12.40944882 12.47244094
+   12.53543307 12.5984252  12.66141732 12.72440945 12.78740157 12.8503937
+   12.91338583 12.97637795 13.03937008 13.1023622  13.16535433 13.22834646
+   13.29133858 13.35433071 13.41732283 13.48031496 13.54330709 13.60629921
+   13.66929134 13.73228346 13.79527559 13.85826772 13.92125984 13.98425197
+   14.04724409 14.11023622 14.17322835 14.23622047 14.2992126  14.36220472
+   14.42519685 14.48818898 14.5511811  14.61417323 14.67716535 14.74015748
+   14.80314961 14.86614173 14.92913386 14.99212598 15.05511811 15.11811024
+   15.18110236 15.24409449 15.30708661 15.37007874 15.43307087 15.49606299
+   15.55905512 15.62204724 15.68503937 15.7480315  15.81102362 15.87401575
+   15.93700787 16.        ] as a positional argument. Please change your invocation to use keyword arguments. From SciPy 1.14, passing these as positional arguments will result in an error.
+    integ = self._integrator(self._mf*self._mass, self._lmass)
+
+tests/test_covariance_fourier_ssc.py: 550 warnings
+tests/test_mpi.py: 1050 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/pyccl/halos/halo_model.py:94: DeprecationWarning: You are passing x=[ 8.          8.06299213  8.12598425  8.18897638  8.2519685   8.31496063
+    8.37795276  8.44094488  8.50393701  8.56692913  8.62992126  8.69291339
+    8.75590551  8.81889764  8.88188976  8.94488189  9.00787402  9.07086614
+    9.13385827  9.19685039  9.25984252  9.32283465  9.38582677  9.4488189
+    9.51181102  9.57480315  9.63779528  9.7007874   9.76377953  9.82677165
+    9.88976378  9.95275591 10.01574803 10.07874016 10.14173228 10.20472441
+   10.26771654 10.33070866 10.39370079 10.45669291 10.51968504 10.58267717
+   10.64566929 10.70866142 10.77165354 10.83464567 10.8976378  10.96062992
+   11.02362205 11.08661417 11.1496063  11.21259843 11.27559055 11.33858268
+   11.4015748  11.46456693 11.52755906 11.59055118 11.65354331 11.71653543
+   11.77952756 11.84251969 11.90551181 11.96850394 12.03149606 12.09448819
+   12.15748031 12.22047244 12.28346457 12.34645669 12.40944882 12.47244094
+   12.53543307 12.5984252  12.66141732 12.72440945 12.78740157 12.8503937
+   12.91338583 12.97637795 13.03937008 13.1023622  13.16535433 13.22834646
+   13.29133858 13.35433071 13.41732283 13.48031496 13.54330709 13.60629921
+   13.66929134 13.73228346 13.79527559 13.85826772 13.92125984 13.98425197
+   14.04724409 14.11023622 14.17322835 14.23622047 14.2992126  14.36220472
+   14.42519685 14.48818898 14.5511811  14.61417323 14.67716535 14.74015748
+   14.80314961 14.86614173 14.92913386 14.99212598 15.05511811 15.11811024
+   15.18110236 15.24409449 15.30708661 15.37007874 15.43307087 15.49606299
+   15.55905512 15.62204724 15.68503937 15.7480315  15.81102362 15.87401575
+   15.93700787 16.        ] as a positional argument. Please change your invocation to use keyword arguments. From SciPy 1.14, passing these as positional arguments will result in an error.
+    integ = self._integrator(self._mf*self._bf*self._mass, self._lmass)
+
+tests/test_covariance_fourier_ssc.py: 550 warnings
+tests/test_mpi.py: 1050 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/pyccl/halos/halo_model.py:112: DeprecationWarning: You are passing x=[ 8.          8.06299213  8.12598425  8.18897638  8.2519685   8.31496063
+    8.37795276  8.44094488  8.50393701  8.56692913  8.62992126  8.69291339
+    8.75590551  8.81889764  8.88188976  8.94488189  9.00787402  9.07086614
+    9.13385827  9.19685039  9.25984252  9.32283465  9.38582677  9.4488189
+    9.51181102  9.57480315  9.63779528  9.7007874   9.76377953  9.82677165
+    9.88976378  9.95275591 10.01574803 10.07874016 10.14173228 10.20472441
+   10.26771654 10.33070866 10.39370079 10.45669291 10.51968504 10.58267717
+   10.64566929 10.70866142 10.77165354 10.83464567 10.8976378  10.96062992
+   11.02362205 11.08661417 11.1496063  11.21259843 11.27559055 11.33858268
+   11.4015748  11.46456693 11.52755906 11.59055118 11.65354331 11.71653543
+   11.77952756 11.84251969 11.90551181 11.96850394 12.03149606 12.09448819
+   12.15748031 12.22047244 12.28346457 12.34645669 12.40944882 12.47244094
+   12.53543307 12.5984252  12.66141732 12.72440945 12.78740157 12.8503937
+   12.91338583 12.97637795 13.03937008 13.1023622  13.16535433 13.22834646
+   13.29133858 13.35433071 13.41732283 13.48031496 13.54330709 13.60629921
+   13.66929134 13.73228346 13.79527559 13.85826772 13.92125984 13.98425197
+   14.04724409 14.11023622 14.17322835 14.23622047 14.2992126  14.36220472
+   14.42519685 14.48818898 14.5511811  14.61417323 14.67716535 14.74015748
+   14.80314961 14.86614173 14.92913386 14.99212598 15.05511811 15.11811024
+   15.18110236 15.24409449 15.30708661 15.37007874 15.43307087 15.49606299
+   15.55905512 15.62204724 15.68503937 15.7480315  15.81102362 15.87401575
+   15.93700787 16.        ] as a positional argument. Please change your invocation to use keyword arguments. From SciPy 1.14, passing these as positional arguments will result in an error.
+    i1 = self._integrator(self._mf * self._bf * array_2, self._lmass)
+
+tests/test_covariance_fourier_ssc.py: 300 warnings
+tests/test_mpi.py: 750 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/pyccl/halos/halo_model.py:107: DeprecationWarning: You are passing x=[ 8.          8.06299213  8.12598425  8.18897638  8.2519685   8.31496063
+    8.37795276  8.44094488  8.50393701  8.56692913  8.62992126  8.69291339
+    8.75590551  8.81889764  8.88188976  8.94488189  9.00787402  9.07086614
+    9.13385827  9.19685039  9.25984252  9.32283465  9.38582677  9.4488189
+    9.51181102  9.57480315  9.63779528  9.7007874   9.76377953  9.82677165
+    9.88976378  9.95275591 10.01574803 10.07874016 10.14173228 10.20472441
+   10.26771654 10.33070866 10.39370079 10.45669291 10.51968504 10.58267717
+   10.64566929 10.70866142 10.77165354 10.83464567 10.8976378  10.96062992
+   11.02362205 11.08661417 11.1496063  11.21259843 11.27559055 11.33858268
+   11.4015748  11.46456693 11.52755906 11.59055118 11.65354331 11.71653543
+   11.77952756 11.84251969 11.90551181 11.96850394 12.03149606 12.09448819
+   12.15748031 12.22047244 12.28346457 12.34645669 12.40944882 12.47244094
+   12.53543307 12.5984252  12.66141732 12.72440945 12.78740157 12.8503937
+   12.91338583 12.97637795 13.03937008 13.1023622  13.16535433 13.22834646
+   13.29133858 13.35433071 13.41732283 13.48031496 13.54330709 13.60629921
+   13.66929134 13.73228346 13.79527559 13.85826772 13.92125984 13.98425197
+   14.04724409 14.11023622 14.17322835 14.23622047 14.2992126  14.36220472
+   14.42519685 14.48818898 14.5511811  14.61417323 14.67716535 14.74015748
+   14.80314961 14.86614173 14.92913386 14.99212598 15.05511811 15.11811024
+   15.18110236 15.24409449 15.30708661 15.37007874 15.43307087 15.49606299
+   15.55905512 15.62204724 15.68503937 15.7480315  15.81102362 15.87401575
+   15.93700787 16.        ] as a positional argument. Please change your invocation to use keyword arguments. From SciPy 1.14, passing these as positional arguments will result in an error.
+    i1 = self._integrator(self._mf * array_2, self._lmass)
+
+tests/test_covariance_gaussian_fsky.py: 100 warnings
+tests/test_covariance_real_base.py: 1700 warnings
+tests/test_wigner_transform.py: 2276 warnings
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/multiprocessing/popen_fork.py:66: DeprecationWarning: This process (pid=275479) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+tests/test_covariance_io.py::test_create_sacc_cov
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_io.py:90: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    date = datetime.utcnow()
+
+tests/test_covariance_io.py::test_create_sacc_cov
+  /home/paul/miniconda3/envs/forecasting/lib/python3.12/site-packages/tjpcov/covariance_io.py:93: UserWarning: Output file ./tests/tmp/cls_cov.fits already exists. Appending the UTC time to the filename to avoid losing the covariance computation. Writing sacc file to {output_new}
+    warnings.warn(
+
+tests/test_covariance_io.py::test_create_sacc_cov
+  /home/paul/TJPCov/tests/test_covariance_io.py:73: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    date = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_covariance_calculator.py::test_get_covariance - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_calculator.py::test_get_covariance_terms - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_calculator.py::test_create_sacc_cov - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_cl_for_cov - AttributeError: 'NpzFile' object has no attribute 'shape'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb10-tracer_comb20] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb11-tracer_comb21] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb12-tracer_comb22] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb13-tracer_comb23] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb14-tracer_comb24] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block[tracer_comb15-tracer_comb25] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb10-tracer_comb20] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb11-tracer_comb21] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb12-tracer_comb22] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb13-tracer_comb23] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_block_cache[tracer_comb14-tracer_comb24] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_workspace[kwargs0] - AttributeError: 'NmtField' object has no attribute 'fl'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_covariance_workspace[kwargs1] - TypeError: NmtCovarianceWorkspace.compute_coupling_coefficients() got an unexpected keyword argument 'n_iter'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_fields_dict[nmt_conf0] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_fields_dict[nmt_conf1] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace[kwargs0] - AttributeError: 'NmtField' object has no attribute 'fl'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace[kwargs1] - TypeError: NmtWorkspace.compute_coupling_matrix() got an unexpected keyword argument 'n_iter'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace_dict[kwargs0] - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_get_workspace_dict[kwargs1] - TypeError: NmtWorkspace.compute_coupling_matrix() got an unexpected keyword argument 'n_iter'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_full_covariance_benchmark - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_covariance_fourier_gaussian_nmt.py::test_txpipe_like_input - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_mpi.py::test_compute_all_blocks_nmt - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_mpi.py::test_get_covariance - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+FAILED tests/test_mpi.py::test_covariance_calculator - TypeError: NmtField.__init__() got an unexpected keyword argument 'lmax_sht'
+========== 28 failed, 145 passed, 9993 warnings in 196.58s (0:03:16) ===========
