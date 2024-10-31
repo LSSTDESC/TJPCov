@@ -389,16 +389,16 @@ def test_get_cl_for_cov(cov_fg_nmt):
 
     with pytest.raises(ValueError):
         cov_fg_nmt.get_cl_for_cov(
-            cl_fid_Sh, cl["nl_cp"], m, m, w, nl_is_cp=True
+            cl_fid_Sh['cl'], cl["nl_cp"], m, m, w, nl_is_cp=True
         )
 
     with pytest.raises(ValueError):
         # Uncoupled binned noise
-        cov_fg_nmt.get_cl_for_cov(cl_fid, cl["nl"], m, m, w, nl_is_cp=True)
+        cov_fg_nmt.get_cl_for_cov(cl_fid['cl'], cl["nl"], m, m, w, nl_is_cp=True)
 
     with pytest.raises(ValueError):
         cov_fg_nmt.get_cl_for_cov(
-            cl_fid, cl["nl_cp"], m, m, wSh, nl_is_cp=True
+            cl_fid['cl'], cl["nl_cp"], m, m, wSh, nl_is_cp=True
         )
 
 
@@ -662,7 +662,7 @@ def test_get_covariance_block_cache(cov_fg_nmt, tracer_comb1, tracer_comb2):
 
 @pytest.mark.parametrize(
     "kwargs",
-    [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10}],
 )
 def test_get_covariance_workspace(cov_fg_nmt, kwargs):
     m1 = get_mask_from_dtype("galaxy_clustering")
@@ -715,7 +715,7 @@ def test_get_covariance_workspace(cov_fg_nmt, kwargs):
     # Check only the first is written/computed created & that cw is correct
 
     for fields, masks_names in zip(combinations, combinations_names):
-        spins = [fi.fl.spin for fi in fields]
+        spins = [fi.spin for fi in fields]
         cw_code = cov_fg_nmt.get_covariance_workspace(
             *fields, *masks_names, **kwargs
         )
@@ -967,7 +967,7 @@ def test_get_nell(cov_fg_nmt):
 
 @pytest.mark.parametrize(
     "kwargs",
-    [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10}],
 )
 def test_get_workspace(cov_fg_nmt, kwargs):
     # Compute NmtBins
@@ -1030,7 +1030,7 @@ def test_get_workspace(cov_fg_nmt, kwargs):
 
 @pytest.mark.parametrize(
     "kwargs",
-    [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10, "n_iter": 0}],
+    [{}, {"l_toeplitz": 10, "l_exact": 10, "dl_band": 10}],
 )
 def test_get_workspace_dict(cov_fg_nmt, kwargs):
     tracers = get_tracers_dict_for_cov()
