@@ -2,6 +2,8 @@ from .covariance_cluster_counts import CovarianceClusterCounts
 import numpy as np
 import pyccl as ccl
 from scipy.integrate import romb
+from scipy.integrate import simpson as simps
+
 
 
 class ClusterCountsSSC(CovarianceClusterCounts):
@@ -22,8 +24,10 @@ class ClusterCountsSSC(CovarianceClusterCounts):
                 parses it.
         """
         super().__init__(config)
-        self.romberg_num = 2**6 + 1
+        
+        self.ssc_total = None   # initialise the full ssc covariance
 
+        
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
@@ -39,6 +43,7 @@ class ClusterCountsSSC(CovarianceClusterCounts):
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
+    
     def _get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
@@ -58,45 +63,15 @@ class ClusterCountsSSC(CovarianceClusterCounts):
         richness_j = int(tracer_comb2[1].split("_")[-1])
         z_j = int(tracer_comb2[2].split("_")[-1])
 
-        # Create a redshift range grid
-        z_low_limit = max(
-            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_spacing
-        )
-        z_upper_limit = min(
-            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_spacing
-        )
-        z_range = np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
 
-        linear_growth_factor = np.array(
-            ccl.growth_factor(self.cosmo, 1 / (1 + z_range))
-        )
+        ## compute the full SSC covariance only once (full covariance, for all the richness and redshift bins)
+        ## the code is almost fully vectorized (~30 times faster)
+        if self.ssc_total is None:
+            self.ssc_total = self.super_sample_covariance() 
 
-        comoving_volume_elements = np.array(
-            [self.comoving_volume_element(z_ii, z_i) for z_ii in z_range]
-        )
-
-        mass_richness_prob_dist = np.array(
-            [self.mass_richness_integral(z_ii, richness_i) for z_ii in z_range]
-        )
-
-        partial_SSC = np.array(
-            [self.partial_SSC(z_ii, z_j, richness_j) for z_ii in z_range]
-        )
-
-        # Eqn 4.18
-        super_sample_covariance = (
-            partial_SSC
-            * comoving_volume_elements
-            * mass_richness_prob_dist
-            * linear_growth_factor
-        )
-
-        redshift_spacing = (z_range[-1] - z_range[0]) / (self.romberg_num - 1)
-        cov = (self.survey_area**2) * romb(
-            super_sample_covariance, dx=redshift_spacing
-        )
-
-        cov_full = np.array(cov)
+        ## read the single entries of the total SSC covariance to meet the format required by the code
+        ## ssc_total dim = [richness, richness, redshift, redshift]
+        cov_full = np.array(self.ssc_total[richness_i,richness_j,z_i,z_j])
 
         return cov_full
 
@@ -110,3 +85,4 @@ class ClusterCountsSSC(CovarianceClusterCounts):
             array_like: Covariance for a single block
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
+OB

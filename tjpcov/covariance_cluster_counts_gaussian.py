@@ -94,7 +94,7 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
         def integrand(z):
             return self.mass_richness_integral(
                 z, lbd_i, remove_bias=True
-            ) * self.comoving_volume_element(z, z_i)
+            ) * self.comoving_volume_element(z, z_i, self.sigma_0)
 
         result = self._quad_integrate(
             integrand, self.z_lower_limit, self.z_upper_limit
