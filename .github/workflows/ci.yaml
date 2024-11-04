@@ -122,6 +122,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
+          file: .coverage
 
   finish:
     needs: tests
