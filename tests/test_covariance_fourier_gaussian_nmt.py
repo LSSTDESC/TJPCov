@@ -389,16 +389,18 @@ def test_get_cl_for_cov(cov_fg_nmt):
 
     with pytest.raises(ValueError):
         cov_fg_nmt.get_cl_for_cov(
-            cl_fid_Sh['cl'], cl["nl_cp"], m, m, w, nl_is_cp=True
+            cl_fid_Sh["cl"], cl["nl_cp"], m, m, w, nl_is_cp=True
         )
 
     with pytest.raises(ValueError):
         # Uncoupled binned noise
-        cov_fg_nmt.get_cl_for_cov(cl_fid['cl'], cl["nl"], m, m, w, nl_is_cp=True)
+        cov_fg_nmt.get_cl_for_cov(
+            cl_fid["cl"], cl["nl"], m, m, w, nl_is_cp=True
+        )
 
     with pytest.raises(ValueError):
         cov_fg_nmt.get_cl_for_cov(
-            cl_fid['cl'], cl["nl_cp"], m, m, wSh, nl_is_cp=True
+            cl_fid["cl"], cl["nl_cp"], m, m, wSh, nl_is_cp=True
         )
 
 
