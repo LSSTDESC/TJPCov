@@ -121,7 +121,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
-          path: coverage.lcov
+          path-to-lcov: coverage.lcov
 
   finish:
     needs: tests
