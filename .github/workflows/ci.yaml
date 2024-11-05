@@ -62,7 +62,6 @@ jobs:
           use-mamba: true
           activate-environment: tjpcov
           miniforge-version: latest
-          miniforge-variant: Miniforge
       
       - name: Cache Date
         id: get-date
