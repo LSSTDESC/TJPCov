@@ -84,6 +84,7 @@ jobs:
         run: |
           export MAMBA_NO_BANNER=1
           mamba env update --file ${{ env.CONDA_ENV }}
+          pip install -U pip
 
       - name: Install TJPCov
         run: | 
