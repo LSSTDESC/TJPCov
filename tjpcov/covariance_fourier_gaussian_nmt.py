@@ -319,7 +319,6 @@ class FourierGaussianNmt(CovarianceFourier):
                     mn[2],
                     mn[3],
                     mn[4],
-                    # lmax=int(ell[-1]),  # Not available in NaMaster v2
                     **self.nmt_conf["cw"],
                 )
 
@@ -481,7 +480,6 @@ class FourierGaussianNmt(CovarianceFourier):
                 # We add the spin to make sure we distinguish fields of
                 # different types even though they share the same mask
                 k = mask_names[i] + str(spins[i])
-                print(nmt_conf)
                 if k not in f_by_mask_name:
                     f_by_mask_name[k] = nmt.NmtField(
                         masks[i], None, spin=spins[i], **nmt_conf
