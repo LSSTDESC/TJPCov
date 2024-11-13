@@ -62,22 +62,21 @@ jobs:
           use-mamba: true
           activate-environment: tjpcov
           miniforge-version: latest
-          miniforge-variant: Mambaforge
       
-      - name: Cache Date
-        id: get-date
-        run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
-        
-      - name: Check for cached environment
-        uses: actions/cache@v3
-        id: cache
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ${{env.CONDA}}/envs
-          key:
-            ${{runner.os}}.${{runner.arch}}.mamba-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}.${{hashFiles('environment.yml')}}.${{steps.get-date.outputs.today}}.${{env.CACHE_NUMBER}}
+      # - name: Cache Date
+      #   id: get-date
+      #   run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
+      #   
+      # - name: Check for cached environment
+      #   uses: actions/cache@v3
+      #   id: cache
+      #   env:
+      #     # Increase this value to reset cache if etc/example-environment.yml has not changed
+      #     CACHE_NUMBER: 0
+      #   with:
+      #     path: ${{env.CONDA}}/envs
+      #     key:
+      #       ${{runner.os}}.${{runner.arch}}.mamba-py.${{matrix.python-version}}.${{hashFiles('pyproject.toml')}}.${{hashFiles('environment.yml')}}.${{steps.get-date.outputs.today}}.${{env.CACHE_NUMBER}}
 
       - name: Install environment packages
         if: steps.cache.outputs.cache-hit != 'true'
@@ -97,7 +96,7 @@ jobs:
           pip install -U mpi4py --no-cache-dir --no-deps
 
       - name: Run Tests
-        run: coverage run --source=tjpcov -m pytest -vv tests/ 
+        run: coverage run --source=tjpcov -m pytest -vv tests && coverage lcov
           
       - name: Run MPI Tests (OpenMPI)
         run: |
@@ -122,6 +121,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
+          path-to-lcov: coverage.lcov
 
   finish:
     needs: tests
