@@ -102,12 +102,15 @@ class FouriercNGHaloModel(CovarianceFourier):
         # Array of a.
         # Use the a's in the pk spline
         na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
-        a, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
+        a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
         # Cut the array for efficiency
-        sel = 1 / a < z_max + 1
+        sel = 1 / a_arr < z_max + 1
         # Include the next node so that z_max is in the range
         sel[np.sum(~sel) - 1] = True
-        a = a[sel]
+        a_arr = a_arr[sel]
+
+        # Array of k
+        lk_arr = cosmo.cosmo.get_pk_spline_lk()
 
         bias1 = self.bias_lens.get(tr[1], 1)
         bias2 = self.bias_lens.get(tr[2], 1)
@@ -123,10 +126,6 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
-        if lk_arr is None:
-            lk_arr = cosmo.get_pk_spline_lk()
-        if a_arr is None:
-            a_arr = cosmo.get_pk_spline_a()
 
 
         tkk = ccl.halos.halomod_trispectrum_1h(cosmo, hmc, np.exp(lk_arr),
