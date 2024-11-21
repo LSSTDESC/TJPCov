@@ -116,13 +116,6 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         ccl_tracers, _ = self.get_tracer_info()
 
-        s = self.io.get_sacc_file()
-        isnc = {}
-        for i in range(1, 5):
-            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or (
-                "lens" in tr[i]
-            )
-
         masks = self.get_masks_dict(tr, {})
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
