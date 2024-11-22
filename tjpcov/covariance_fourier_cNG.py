@@ -3,6 +3,7 @@ import os
 # import healpy as hp
 import numpy as np
 import pyccl as ccl
+import warnings
 
 from .covariance_builder import CovarianceFourier
 
@@ -125,13 +126,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
 
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
-
-
-
-        tkk = ccl.halos.halomod_trispectrum_1h(cosmo, hmc, np.exp(lk_arr),
-                                               a_arr, prof=nfw)
-
-        tkk += ccl.halos.halomod_trispectrum_2h_22(cosmo, hmc, np.exp(lk_arr),
+        tkk = ccl.halos.halomod_trispectrum_2h_22(cosmo, hmc, np.exp(lk_arr),
                                                    a_arr, prof=nfw)
 
         tkk += ccl.halos.halomod_trispectrum_2h_13(cosmo, hmc, np.exp(lk_arr),
@@ -140,15 +135,27 @@ class FouriercNGHaloModel(CovarianceFourier):
         tkk += ccl.halos.halomod_trispectrum_3h(cosmo, hmc, np.exp(lk_arr),
                                                 a_arr, prof=nfw)
 
+        # tkk *= bias1 * bias2 * bias3 * bias4
+
+        tkk += ccl.halos.halomod_trispectrum_4h(cosmo, hmc, np.exp(lk_arr),
+                                                a_arr, prof=nfw)
+
+
+        # TODO: Use HOD for the 1h term when using galaxy clustering
+        tkk += ccl.halos.halomod_trispectrum_1h(cosmo, hmc, np.exp(lk_arr),
+                                               a_arr, prof=nfw)
+
         tkk *= bias1 * bias2 * bias3 * bias4
 
-        # TODO: Commented out for now to avoid having to specify HOD params
-        # tkk += halomod_trispectrum_4h(cosmo, hmc, np.exp(lk_arr), a_arr,
-        #                               prof=prof,
-        #                               prof2=prof2,
-        #                               prof3=prof3,
-        #                               prof4=prof4,
-        #                               p_of_k_a=None)
+        s = self.io.get_sacc_file()
+        isnc = []
+        for i in range(1, 5):
+            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or (
+                "lens" in tr[i]
+            )
+        if any(isnc):
+            warnings.warn("Using linear galaxy bias with 1h term. This should "
+                          "be checked. HOD version need implementation.")
 
         tk3D = ccl.tk3d.Tk3D(a_arr=a_arr, lk_arr=lk_arr, tkk_arr=tkk)
 
