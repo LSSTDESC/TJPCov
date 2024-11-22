@@ -135,17 +135,15 @@ class FouriercNGHaloModel(CovarianceFourier):
         tkk += ccl.halos.halomod_trispectrum_3h(cosmo, hmc, np.exp(lk_arr),
                                                 a_arr, prof=nfw)
 
-        # tkk *= bias1 * bias2 * bias3 * bias4
 
         tkk += ccl.halos.halomod_trispectrum_4h(cosmo, hmc, np.exp(lk_arr),
                                                 a_arr, prof=nfw)
 
+        tkk *= bias1 * bias2 * bias3 * bias4
 
         # TODO: Use HOD for the 1h term when using galaxy clustering
         tkk += ccl.halos.halomod_trispectrum_1h(cosmo, hmc, np.exp(lk_arr),
                                                a_arr, prof=nfw)
-
-        tkk *= bias1 * bias2 * bias3 * bias4
 
         s = self.io.get_sacc_file()
         isnc = []
