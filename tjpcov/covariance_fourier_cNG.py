@@ -111,7 +111,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         a_arr = a_arr[sel]
 
         # Array of k
-        lk_arr = cosmo.cosmo.get_pk_spline_lk()
+        lk_arr = cosmo.get_pk_spline_lk()
 
         bias1 = self.bias_lens.get(tr[1], 1)
         bias2 = self.bias_lens.get(tr[2], 1)
