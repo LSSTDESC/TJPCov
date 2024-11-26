@@ -25,6 +25,33 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         self.cNG_conf = self.config.get("cNG", {})
 
+        self.HOD_dict = {
+            "log10Mmin_0": None,
+            "log10Mmin_p": None,
+            "siglnM_0": None,
+            "siglnM_p": None,
+            "log10M0_0": None,
+            "log10M0_p": None,
+            "log10M1_0": None,
+            "log10M1_p": None,
+            "alpha_0": None,
+            "alpha_p": None,
+            "fc_0": None,
+            "fc_p": None,
+            "bg_0": None,
+            "bg_p": None,
+            "bmax_0": None,
+            "bmax_p": None,
+            "a_pivot": None,
+            "ns_independent": None,
+            "is_number_counts": None
+        }
+
+        for key in HOD_dict.keys():
+            self.HOD_dict[key] = self.config["HOD"].get(key, None)
+            if self.HOD_dict[key] is None:
+                raise ValueError("You need to set "+key+" in the HOD header for cNG calculation")
+
     def get_covariance_block(
         self,
         tracer_comb1,
@@ -57,7 +84,7 @@ class FouriercNGHaloModel(CovarianceFourier):
                 covariance. Defaults to True.
 
         Returns:
-            array:  Super sample covariance matrix for a pair of C_ell.
+            array:  Connected NG covariance matrix for a pair of C_ell.
         """
         fname = "cng_{}_{}_{}_{}.npz".format(*tracer_comb1, *tracer_comb2)
         fname = os.path.join(self.io.outdir, fname)
@@ -84,6 +111,29 @@ class FouriercNGHaloModel(CovarianceFourier):
         )
         hmc = ccl.halos.HMCalculator(
             mass_function=hmf, halo_bias=hbf, mass_def=mass_def
+        )
+
+        hod = ccl.halos.HaloProfileHOD(
+            mass_def=mass_def, concentration=cM, 
+            log10Mmin_0=self.HOD_dict["log10Mmin_0"],
+            log10Mmin_p=self.HOD_dict["log10Mmin_p"],
+            siglnM_0=self.HOD_dict["siglnM_0"],
+            siglnM_p=self.HOD_dict["siglnM_p"],
+            log10M0_0=self.HOD_dict["log10M0_0"],
+            log10M0_p=self.HOD_dict["log10M0_p"],
+            log10M1_0=self.HOD_dict["log10M1_0"],
+            log10M1_p=self.HOD_dict["log10M1_p"],
+            alpha_0=self.HOD_dict["alpha_0"],
+            alpha_p=self.HOD_dict["alpha_p"],
+            fc_0=self.HOD_dict["fc_0"],
+            fc_p=self.HOD_dict["fc_p"],
+            bg_0=self.HOD_dict["bg_0"],
+            bg_p=self.HOD_dict["bg_p"],
+            bmax_0=self.HOD_dict["bmax_0"],
+            bmax_p=self.HOD_dict["bmax_p"],
+            a_pivot=self.HOD_dict["a_pivot"],
+            ns_independent=self.HOD_dict["ns_independent"],
+            is_number_counts=self.HOD_dict["is_number_counts"]
         )
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
@@ -141,9 +191,8 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         tkk *= bias1 * bias2 * bias3 * bias4
 
-        # TODO: Use HOD for the 1h term when using galaxy clustering
         tkk += ccl.halos.halomod_trispectrum_1h(cosmo, hmc, np.exp(lk_arr),
-                                               a_arr, prof=nfw)
+                                               a_arr, prof=hod)
 
         s = self.io.get_sacc_file()
         isnc = []
