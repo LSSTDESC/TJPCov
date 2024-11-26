@@ -23,7 +23,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-    "scipy",
+    "scipy<1.12", # <1.12 to avoid bug in CCL<3.1 (not in pypy) with simpson integration
     "numpy",
     "Jinja2",
     "pyyaml",
@@ -47,13 +47,13 @@ doc = [
     "sphinx-book-theme",
 ]
 nmt = [
-    "pymaster>=1.4.0"
+    "pymaster>=2"
 ]
 mpi = [
     "mpi4py"
 ]
 full = [
-    "pymaster>=1.4.0",
+    "pymaster>=2",
     "mpi4py",
     "sphinx",
     "sphinx-autoapi",
