@@ -41,7 +41,7 @@ def sacc_file():
 
 @pytest.fixture
 def cov_fssc():
-    return FourierSSCHaloModel(INPUT_YML_SSC)
+    return FourierSSCHaloModelFsky(INPUT_YML_SSC)
 
 
 def get_config():
@@ -68,7 +68,7 @@ def get_NFW_profile():
 
 
 def test_smoke():
-    FourierSSCHaloModel(INPUT_YML_SSC)
+    FourierSSCHaloModelFsky(INPUT_YML_SSC)
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     cosmo = cov_fssc.get_cosmology()
     s = cov_fssc.io.get_sacc_file()
     ell, _ = s.get_ell_cl("cl_00", "DESgc__0", "DESgc__0")
-
+    fsky = cov_fssc.fsky
     cov_ssc = cov_fssc.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
@@ -146,7 +146,7 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
         is_number_counts4=is_nc4,
     )
 
-    sigma2_B = ccl.sigma2_B_disc(cosmo, a_arr=a, fsky=self.fsky)
+    sigma2_B = ccl.sigma2_B_disc(cosmo, a_arr=a_arr, fsky=fsky)
 
     ccl_tracers, _ = cov_fssc.get_tracer_info()
     tr1 = ccl_tracers[tracer_comb1[0]]
