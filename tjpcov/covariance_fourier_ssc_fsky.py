@@ -29,7 +29,9 @@ class FourierSSCHaloModelFsky(CovarianceFourier):
         self.ssc_conf = self.config.get("SSC", {})
         self.fsky = self.config["GaussianFsky"].get("fsky", None)
         if self.fsky is None:
-            raise ValueError("You need to set fsky for FourierSSCHaloModelFsky")
+            raise ValueError(
+                "You need to set fsky for FourierSSCHaloModelFsky"
+            )
 
     def get_covariance_block(
         self,
