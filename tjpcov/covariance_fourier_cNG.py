@@ -47,7 +47,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             "is_number_counts": None
         }
 
-        for key in HOD_dict.keys():
+        for key in self.HOD_dict.keys():
             self.HOD_dict[key] = self.config["HOD"].get(key, None)
             if self.HOD_dict[key] is None:
                 raise ValueError("You need to set "+key+" in the HOD header for cNG calculation")
@@ -176,7 +176,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
 
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
-        tkk = ccl.halos.halomod_trispectrum_2h_22(cosmo, hmc, np.exp(lk_arr),
+        tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(cosmo, hmc, np.exp(lk_arr),
                                                    a_arr, prof=nfw)
 
         tkk += ccl.halos.halomod_trispectrum_2h_13(cosmo, hmc, np.exp(lk_arr),

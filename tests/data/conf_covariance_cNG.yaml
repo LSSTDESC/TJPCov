@@ -43,3 +43,24 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
+HOD:
+  # automatically creates massdef and concentration objects 
+  log10Mmin_0: 12.0
+  log10Mmin_p: 0.0
+  siglnM_0: 0.4
+  siglnM_p: 0.0
+  log10M0_0: 7.0
+  log10M0_p: 0.0
+  log10M1_0: 13.3
+  log10M1_p: 0.0
+  alpha_0: 1.0
+  alpha_p: 0.0
+  fc_0: 1.0
+  fc_p: 0.0
+  bg_0: 1.0
+  bg_p: 0.0
+  bmax_0: 1.0
+  bmax_p: 0.0
+  a_pivot: 1.0
+  ns_independent: False
+  is_number_counts: True
