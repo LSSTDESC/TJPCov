@@ -71,7 +71,8 @@ def get_fsky(tr1, tr2, tr3, tr4):
     config = get_config()
     mf = config["tjpcov"]["mask_file"]
 
-    area = hp.nside2pixarea(32)
+    # TODO: do we need the hp area?
+    # area = hp.nside2pixarea(32)
     m1 = hp.read_map(mf[tr1])
     m2 = hp.read_map(mf[tr2])
     m3 = hp.read_map(mf[tr3])
@@ -119,6 +120,10 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
     a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
 
+    # TODO: Need to make 1h TK3D object with HOD
+    # & weight non-HOD TK3D object with gbias factors
+    # & combine together before call to 
+    # angular_cl_cov_cNG for proper comparison
     bias1 = bias2 = bias3 = bias4 = 1
     if "gc" in tracer_comb1[0]:
         bias1 = cov_fcNG.bias_lens[tracer_comb1[0]]
@@ -131,7 +136,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
 
     if "gc" in tracer_comb2[0]:
         bias4 = cov_fcNG.bias_lens[tracer_comb2[1]]
-
+    
     hmc = get_halo_model(cosmo)
     nfw_profile = get_NFW_profile()
     tkk_cNG = ccl.halos.halomod_Tk3D_cNG(
