@@ -193,7 +193,6 @@ class FouriercNGHaloModel(CovarianceFourier):
             cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
         )
 
-
         tkk += ccl.halos.halomod_trispectrum_4h(
             cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
         )
