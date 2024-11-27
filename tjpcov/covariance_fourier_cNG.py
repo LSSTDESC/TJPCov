@@ -44,13 +44,17 @@ class FouriercNGHaloModel(CovarianceFourier):
             "bmax_p": None,
             "a_pivot": None,
             "ns_independent": None,
-            "is_number_counts": None
+            "is_number_counts": None,
         }
 
         for key in self.HOD_dict.keys():
             self.HOD_dict[key] = self.config["HOD"].get(key, None)
             if self.HOD_dict[key] is None:
-                raise ValueError("You need to set "+key+" in the HOD header for cNG calculation")
+                raise ValueError(
+                    "You need to set "
+                    + key
+                    + " in the HOD header for cNG calculation"
+                )
 
     def get_covariance_block(
         self,
@@ -114,7 +118,8 @@ class FouriercNGHaloModel(CovarianceFourier):
         )
 
         hod = ccl.halos.HaloProfileHOD(
-            mass_def=mass_def, concentration=cM, 
+            mass_def=mass_def,
+            concentration=cM,
             log10Mmin_0=self.HOD_dict["log10Mmin_0"],
             log10Mmin_p=self.HOD_dict["log10Mmin_p"],
             siglnM_0=self.HOD_dict["siglnM_0"],
@@ -133,7 +138,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             bmax_p=self.HOD_dict["bmax_p"],
             a_pivot=self.HOD_dict["a_pivot"],
             ns_independent=self.HOD_dict["ns_independent"],
-            is_number_counts=self.HOD_dict["is_number_counts"]
+            is_number_counts=self.HOD_dict["is_number_counts"],
         )
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
@@ -176,23 +181,28 @@ class FouriercNGHaloModel(CovarianceFourier):
         fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
 
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
-        tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(cosmo, hmc, np.exp(lk_arr),
-                                                   a_arr, prof=nfw)
+        tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+        )
 
-        tkk += ccl.halos.halomod_trispectrum_2h_13(cosmo, hmc, np.exp(lk_arr),
-                                                   a_arr, prof=nfw)
+        tkk += ccl.halos.halomod_trispectrum_2h_13(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+        )
 
-        tkk += ccl.halos.halomod_trispectrum_3h(cosmo, hmc, np.exp(lk_arr),
-                                                a_arr, prof=nfw)
+        tkk += ccl.halos.halomod_trispectrum_3h(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+        )
 
 
-        tkk += ccl.halos.halomod_trispectrum_4h(cosmo, hmc, np.exp(lk_arr),
-                                                a_arr, prof=nfw)
+        tkk += ccl.halos.halomod_trispectrum_4h(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+        )
 
         tkk *= bias1 * bias2 * bias3 * bias4
 
-        tkk += ccl.halos.halomod_trispectrum_1h(cosmo, hmc, np.exp(lk_arr),
-                                               a_arr, prof=hod)
+        tkk += ccl.halos.halomod_trispectrum_1h(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=hod
+        )
 
         s = self.io.get_sacc_file()
         isnc = []
@@ -201,11 +211,12 @@ class FouriercNGHaloModel(CovarianceFourier):
                 "lens" in tr[i]
             )
         if any(isnc):
-            warnings.warn("Using linear galaxy bias with 1h term. This should "
-                          "be checked. HOD version need implementation.")
+            warnings.warn(
+                "Using linear galaxy bias with 1h term. This should "
+                "be checked. HOD version need implementation."
+            )
 
         tk3D = ccl.tk3d.Tk3D(a_arr=a_arr, lk_arr=lk_arr, tkk_arr=tkk)
-
 
         ell = self.get_ell_eff()
         cov_cng = ccl.covariances.angular_cl_cov_cNG(

@@ -66,6 +66,7 @@ def get_NFW_profile():
 
     return pNFW
 
+
 def get_fsky(tr1, tr2, tr3, tr4):
     config = get_config()
     mf = config["tjpcov"]["mask_file"]
@@ -76,7 +77,7 @@ def get_fsky(tr1, tr2, tr3, tr4):
     m3 = hp.read_map(mf[tr3])
     m4 = hp.read_map(mf[tr4])
 
-    return np.mean(m1*m2*m3*m4)
+    return np.mean(m1 * m2 * m3 * m4)
 
 
 def test_smoke():
@@ -155,10 +156,10 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         tracer4=tr4,
         ell=ell,
         t_of_kk_a=tkk_cNG,
-        fsky=fsky
+        fsky=fsky,
     )
 
-    assert np.max(np.fabs(np.diag(cov_cNG/ cov_ccl - 1))) < 1e-5
+    assert np.max(np.fabs(np.diag(cov_cNG / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_cNG / cov_ccl - 1)) < 1e-3
 
     # Check you get zeroed B-modes
