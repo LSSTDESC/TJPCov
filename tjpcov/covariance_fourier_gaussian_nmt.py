@@ -319,7 +319,6 @@ class FourierGaussianNmt(CovarianceFourier):
                     mn[2],
                     mn[3],
                     mn[4],
-                    lmax=int(ell[-1]),
                     **self.nmt_conf["cw"],
                 )
 
@@ -385,10 +384,10 @@ class FourierGaussianNmt(CovarianceFourier):
         """
         outdir = self.io.outdir
         spins = {
-            m1: f1.fl.spin,
-            m2: f2.fl.spin,
-            m3: f3.fl.spin,
-            m4: f4.fl.spin,
+            m1: f1.spin,
+            m2: f2.spin,
+            m3: f3.spin,
+            m4: f4.spin,
         }
 
         # Any other symmetry?
@@ -673,7 +672,7 @@ class FourierGaussianNmt(CovarianceFourier):
             )
 
         outdir = self.io.outdir
-        s1, s2 = f1.fl.spin, f2.fl.spin
+        s1, s2 = f1.spin, f2.spin
 
         # Currently, outdir will be always not None. If not specified, it
         # will be the current directory. I leave this for now since we might
@@ -763,7 +762,7 @@ class FourierGaussianNmt(CovarianceFourier):
             if key in cache:
                 w[i] = cache[key]
             else:
-                s1, s2 = fields[i1].fl.spin, fields[i2].fl.spin
+                s1, s2 = fields[i1].spin, fields[i2].spin
                 # In this case you have to check for m1 x m2 and m2 x m1
                 k = (mask_names[i1], mask_names[i2])
                 sk = "".join(sorted(f"{s1}{s2}"))
