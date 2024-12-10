@@ -5,7 +5,7 @@ class MassRichnessRelation(object):
     """Helper class to hold different mass richness relations"""
 
     @staticmethod
-    def MurataCostanzi(ln_true_mass, h0):
+    def MurataCostanzi(ln_true_mass, h0,alpha,beta,sigma_zero,q,m_pivot):
         """Uses constants from Murata et al - ArxIv 1707.01907 and Costanzi
         et al ArxIv 1810.09456v1 to derive the log-normal mass-richness
         relation
@@ -18,11 +18,11 @@ class MassRichnessRelation(object):
             log-normal mass-richness relation
         """
 
-        alpha = 3.207  # Murata
-        beta = 0.75  # Costanzi
-        sigma_zero = 2.68  # Costanzi
-        q = 0.54  # Costanzi
-        m_pivot = 3.0e14 / h0  # in solar masses , Murata and Costanzi use it
+        #alpha = 3.207  # Murata
+        #beta = 0.75  # Costanzi
+        #sigma_zero = 2.68  # Costanzi
+        #q = 0.54  # Costanzi
+        #m_pivot = 3.0e14 / h0  # in solar masses , Murata and Costanzi use it
 
         sigma_lambda = sigma_zero + q * (ln_true_mass - np.log(m_pivot))
         average = alpha + beta * (ln_true_mass - np.log(m_pivot))
