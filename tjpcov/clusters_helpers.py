@@ -142,7 +142,7 @@ class FFTHelper(object):
             print(
                 err,
                 f"""\n
-                    Value you tried to interpolate: {max(r1,r2)} Mpc,
+                    Value you tried to interpolate: {max(r1,r2)} Mpc, 
                     Input r {r1}, {r2}
                     Valid range range:
                     [{self.r_grid[self.idx_min]}, {self.r_grid[self.idx_max]}]
