@@ -50,6 +50,37 @@ def get_config():
     return config
 
 
+def get_hod_model():
+    obj = FouriercNGHaloModel(INPUT_YML_cNG)
+    mass_def = ccl.halos.MassDef200m
+    cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
+    hod = ccl.halos.HaloProfileHOD(
+        mass_def=mass_def,
+        concentration=cM,
+        log10Mmin_0=obj.HOD_dict["log10Mmin_0"],
+        log10Mmin_p=obj.HOD_dict["log10Mmin_p"],
+        siglnM_0=obj.HOD_dict["siglnM_0"],
+        siglnM_p=obj.HOD_dict["siglnM_p"],
+        log10M0_0=obj.HOD_dict["log10M0_0"],
+        log10M0_p=obj.HOD_dict["log10M0_p"],
+        log10M1_0=obj.HOD_dict["log10M1_0"],
+        log10M1_p=obj.HOD_dict["log10M1_p"],
+        alpha_0=obj.HOD_dict["alpha_0"],
+        alpha_p=obj.HOD_dict["alpha_p"],
+        fc_0=obj.HOD_dict["fc_0"],
+        fc_p=obj.HOD_dict["fc_p"],
+        bg_0=obj.HOD_dict["bg_0"],
+        bg_p=obj.HOD_dict["bg_p"],
+        bmax_0=obj.HOD_dict["bmax_0"],
+        bmax_p=obj.HOD_dict["bmax_p"],
+        a_pivot=obj.HOD_dict["a_pivot"],
+        ns_independent=obj.HOD_dict["ns_independent"],
+        is_number_counts=obj.HOD_dict["is_number_counts"],
+    )
+
+    return hod
+
+
 def get_halo_model(cosmo):
     md = ccl.halos.MassDef200m
     mf = ccl.halos.MassFuncTinker08(mass_def=md)
@@ -115,15 +146,29 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         np.max(np.abs((covf["cov_nob"] + 1e-100) / (cov_cNG + 1e-100) - 1))
         < 1e-10
     )
-
     # CCL covariance
     na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
     a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
+    tr = {}
+    tr[1], tr[2] = tracer_comb1
+    tr[3], tr[4] = tracer_comb2
+    z_max = []
+    for i in range(4):
+        tr_sacc = s.tracers[tr[i + 1]]
+        z = tr_sacc.z
+        z_max.append(z.max())
+    # Divide by zero errors happen when default a_arr used for 1h term
+    z_max = np.min(z_max)
 
-    # TODO: Need to make 1h TK3D object with HOD
-    # & weight non-HOD TK3D object with gbias factors
-    # & combine together before call to 
-    # angular_cl_cov_cNG for proper comparison
+    # Array of a.
+    # Use the a's in the pk spline
+    na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
+    a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
+    # Cut the array for efficiency
+    sel = 1 / a_arr < z_max + 1
+    # Include the next node so that z_max is in the range
+    sel[np.sum(~sel) - 1] = True
+    a_arr = a_arr[sel]
     bias1 = bias2 = bias3 = bias4 = 1
     if "gc" in tracer_comb1[0]:
         bias1 = cov_fcNG.bias_lens[tracer_comb1[0]]
@@ -136,13 +181,34 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
 
     if "gc" in tracer_comb2[0]:
         bias4 = cov_fcNG.bias_lens[tracer_comb2[1]]
-    
+
+    biases = bias1 * bias2 * bias3 * bias4
+
     hmc = get_halo_model(cosmo)
     nfw_profile = get_NFW_profile()
+    hod = get_hod_model()
+    prof_2pt = ccl.halos.profiles_2pt.Profile2ptHOD()
+
     tkk_cNG = ccl.halos.halomod_Tk3D_cNG(
         cosmo,
         hmc,
         prof=nfw_profile,
+        separable_growth=True,
+        a_arr=a_arr,
+    )
+    tkk_1h_nfw = ccl.halos.halomod_Tk3D_1h(
+        cosmo,
+        hmc,
+        prof=nfw_profile,
+        a_arr=a_arr,
+    )
+    tkk_1h_hod = ccl.halos.halomod_Tk3D_1h(
+        cosmo,
+        hmc,
+        prof=hod,
+        prof12_2pt=prof_2pt,
+        prof34_2pt=prof_2pt,
+        a_arr=a_arr,
     )
 
     ccl_tracers, _ = cov_fcNG.get_tracer_info()
@@ -151,7 +217,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     tr3 = ccl_tracers[tracer_comb2[0]]
     tr4 = ccl_tracers[tracer_comb2[1]]
 
-    fsky = get_fsky(tr1, tr2, tr3, tr4)
+    fsky = get_fsky(*tracer_comb1, *tracer_comb2)
 
     cov_ccl = ccl.covariances.angular_cl_cov_cNG(
         cosmo,
@@ -163,6 +229,32 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         t_of_kk_a=tkk_cNG,
         fsky=fsky,
     )
+
+    cov_ccl_1h_nfw = ccl.covariances.angular_cl_cov_cNG(
+        cosmo,
+        tracer1=tr1,
+        tracer2=tr2,
+        tracer3=tr3,
+        tracer4=tr4,
+        ell=ell,
+        t_of_kk_a=tkk_1h_nfw,
+        fsky=fsky,
+    )
+
+    cov_ccl_1h_hod = ccl.covariances.angular_cl_cov_cNG(
+        cosmo,
+        tracer1=tr1,
+        tracer2=tr2,
+        tracer3=tr3,
+        tracer4=tr4,
+        ell=ell,
+        t_of_kk_a=tkk_1h_hod,
+        fsky=fsky,
+    )
+    # An unfortunately messy way to to calculate the 234h terms
+    # with an NFW Profile and only the 1h term with an HOD
+    # using current CCL infrastructure.
+    cov_ccl = biases * (cov_ccl - cov_ccl_1h_nfw) + cov_ccl_1h_hod
 
     assert np.max(np.fabs(np.diag(cov_cNG / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_cNG / cov_ccl - 1)) < 1e-3

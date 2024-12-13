@@ -3,7 +3,6 @@ import os
 # import healpy as hp
 import numpy as np
 import pyccl as ccl
-import warnings
 
 from .covariance_builder import CovarianceFourier
 
@@ -104,17 +103,19 @@ class FouriercNGHaloModel(CovarianceFourier):
         tr = {}
         tr[1], tr[2] = tracer_comb1
         tr[3], tr[4] = tracer_comb2
-
         cosmo = self.get_cosmology()
         mass_def = ccl.halos.MassDef200m
         hmf = ccl.halos.MassFuncTinker08(mass_def=mass_def)
         hbf = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
         cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
+        prof_2pt = ccl.halos.profiles_2pt.Profile2ptHOD()
         nfw = ccl.halos.HaloProfileNFW(
             mass_def=mass_def, concentration=cM, fourier_analytic=True
         )
         hmc = ccl.halos.HMCalculator(
-            mass_function=hmf, halo_bias=hbf, mass_def=mass_def
+            mass_function=hmf,
+            halo_bias=hbf,
+            mass_def=mass_def,
         )
 
         hod = ccl.halos.HaloProfileHOD(
@@ -148,10 +149,8 @@ class FouriercNGHaloModel(CovarianceFourier):
         for i in range(4):
             tr_sacc = sacc_file.tracers[tr[i + 1]]
             z = tr_sacc.z
-            # z, nz = tr_sacc.z, tr_sacc.nz
-            # z_min.append(z[np.where(nz > 0)[0][0]])
-            # z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
             z_max.append(z.max())
+        # Divide by zero errors happen when default a_arr used for 1h term
 
         z_max = np.min(z_max)
 
@@ -179,10 +178,10 @@ class FouriercNGHaloModel(CovarianceFourier):
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
         fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
-
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
+
         tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
         )
 
         tkk += ccl.halos.halomod_trispectrum_2h_13(
@@ -190,33 +189,28 @@ class FouriercNGHaloModel(CovarianceFourier):
         )
 
         tkk += ccl.halos.halomod_trispectrum_3h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
         )
 
         tkk += ccl.halos.halomod_trispectrum_4h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
         )
 
         tkk *= bias1 * bias2 * bias3 * bias4
 
         tkk += ccl.halos.halomod_trispectrum_1h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=hod
+            cosmo,
+            hmc,
+            np.exp(lk_arr),
+            a_arr,
+            prof=hod,
+            prof12_2pt=prof_2pt,
+            prof34_2pt=prof_2pt,
         )
 
-        s = self.io.get_sacc_file()
-        isnc = []
-        for i in range(1, 5):
-            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or (
-                "lens" in tr[i]
-            )
-        if any(isnc):
-            warnings.warn(
-                "Using linear galaxy bias with 1h term. This should "
-                "be checked. HOD version need implementation."
-            )
-
-        tk3D = ccl.tk3d.Tk3D(a_arr=a_arr, lk_arr=lk_arr, tkk_arr=tkk)
-
+        tk3D = ccl.tk3d.Tk3D(
+            a_arr=a_arr, lk_arr=lk_arr, tkk_arr=tkk, is_logt=False
+        )
         ell = self.get_ell_eff()
         cov_cng = ccl.covariances.angular_cl_cov_cNG(
             cosmo,
@@ -236,7 +230,6 @@ class FouriercNGHaloModel(CovarianceFourier):
         cov_full = np.zeros((nbpw, ncell1, nbpw, ncell2))
         cov_full[:, 0, :, 0] = cov_cng
         cov_full = cov_full.reshape((nbpw * ncell1, nbpw * ncell2))
-
         np.savez_compressed(fname, cov=cov_full, cov_nob=cov_cng)
 
         if not include_b_modes:
