@@ -136,6 +136,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
+        integration_method="spline",
     )
 
     # Check saved file
@@ -228,6 +229,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         ell=ell,
         t_of_kk_a=tkk_cNG,
         fsky=fsky,
+        integration_method="spline",
     )
 
     cov_ccl_1h_nfw = ccl.covariances.angular_cl_cov_cNG(
@@ -239,6 +241,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         ell=ell,
         t_of_kk_a=tkk_1h_nfw,
         fsky=fsky,
+        integration_method="spline",
     )
 
     cov_ccl_1h_hod = ccl.covariances.angular_cl_cov_cNG(
@@ -250,6 +253,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         ell=ell,
         t_of_kk_a=tkk_1h_hod,
         fsky=fsky,
+        integration_method="spline",
     )
     # An unfortunately messy way to to calculate the 234h terms
     # with an NFW Profile and only the 1h term with an HOD
