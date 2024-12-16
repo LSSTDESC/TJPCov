@@ -131,12 +131,12 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     cosmo = cov_fcNG.get_cosmology()
     s = cov_fcNG.io.get_sacc_file()
     ell, _ = s.get_ell_cl("cl_00", "DESgc__0", "DESgc__0")
-
+    integration_method = "spline"
     cov_cNG = cov_fcNG.get_covariance_block(
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
-        integration_method="spline",
+        integration_method=integration_method,
     )
 
     # Check saved file
@@ -229,7 +229,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         ell=ell,
         t_of_kk_a=tkk_cNG,
         fsky=fsky,
-        integration_method="spline",
+        integration_method=integration_method,
     )
 
     cov_ccl_1h_nfw = ccl.covariances.angular_cl_cov_cNG(
@@ -241,7 +241,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         ell=ell,
         t_of_kk_a=tkk_1h_nfw,
         fsky=fsky,
-        integration_method="spline",
+        integration_method=integration_method,
     )
 
     cov_ccl_1h_hod = ccl.covariances.angular_cl_cov_cNG(
@@ -253,7 +253,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         ell=ell,
         t_of_kk_a=tkk_1h_hod,
         fsky=fsky,
-        integration_method="spline",
+        integration_method=integration_method,
     )
     # An unfortunately messy way to to calculate the 234h terms
     # with an NFW Profile and only the 1h term with an HOD
@@ -268,6 +268,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=True,
+        integration_method=integration_method,
     )
     # Check saved
     assert (
@@ -303,6 +304,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=False,
+        integration_method=integration_method,
     )
     assert np.all(covf["cov_nob"] == cov_cNG)
 
@@ -310,6 +312,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         tracer_comb1=tracer_comb1,
         tracer_comb2=tracer_comb2,
         include_b_modes=True,
+        integration_method=integration_method,
     )
 
     assert np.all(covf["cov"] == cov_cNG_zb)
