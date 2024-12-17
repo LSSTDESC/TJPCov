@@ -189,7 +189,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         masks = self.get_masks_dict(tr, {})
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
-        fsky = self._get_fsky(self, masks=masks)
+        fsky = self._get_fsky(masks=masks)
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
         tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
