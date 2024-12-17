@@ -1,5 +1,4 @@
 import os
-
 import healpy as hp
 import numpy as np
 import pyccl as ccl
@@ -27,6 +26,38 @@ class FourierSSCHaloModel(CovarianceFourier):
         super().__init__(config)
 
         self.ssc_conf = self.config.get("SSC", {})
+
+    def _get_sigma2_B(self, cosmo, a_arr, masks={}):
+        """Returns the variance of the projected linear density field,
+            for the case when a survey mask is provided.
+
+        Args:
+            cosmo (:class:`~pyccl.cosmology.Cosmology`): a Cosmology object.
+            a_arr (:obj:`float`, `array` or :obj:`None`): an array of
+                scale factor values at which to evaluate
+                the projected variance.
+            masks (:obj:`dict`): dictionary containing the survey
+                masks of the relevant tracers.
+
+        Returns:
+            - (:obj:`float` or `array`): projected variance.
+        """
+
+        # TODO: Optimize this, avoid computing the mask_wl for all blocks.
+        # Note that this is correct for same footprint cross-correlations. In
+        # case of multisurvey analyses this approximation might break.
+        m12 = masks[1] * masks[2]
+        m34 = masks[3] * masks[4]
+        area = hp.nside2pixarea(hp.npix2nside(m12.size))
+
+        alm = hp.map2alm(m12)
+        blm = hp.map2alm(m34)
+
+        mask_wl = hp.alm2cl(alm, blm)
+        mask_wl *= 2 * np.arange(mask_wl.size) + 1
+        mask_wl /= np.sum(m12) * np.sum(m34) * area**2
+
+        return ccl.sigma2_B_from_mask(cosmo, a_arr=a_arr, mask_wl=mask_wl)
 
     def get_covariance_block(
         self,
@@ -142,22 +173,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         )
 
         masks = self.get_masks_dict(tr, {})
-        # TODO: Optimize this, avoid computing the mask_wl for all blocks.
-        # Note that this is correct for same footprint cross-correlations. In
-        # case of multisurvey analyses this approximation might break.
-        m12 = masks[1] * masks[2]
-        m34 = masks[3] * masks[4]
-        area = hp.nside2pixarea(hp.npix2nside(m12.size))
-
-        alm = hp.map2alm(m12)
-        blm = hp.map2alm(m34)
-
-        mask_wl = hp.alm2cl(alm, blm)
-        mask_wl *= 2 * np.arange(mask_wl.size) + 1
-        mask_wl /= np.sum(m12) * np.sum(m34) * area**2
-
-        # TODO: Allow using fsky instead of the masks?
-        sigma2_B = ccl.sigma2_B_from_mask(cosmo, a_arr=a, mask_wl=mask_wl)
+        sigma2_B = self._get_sigma2_B(cosmo, a, masks=masks)
 
         ell = self.get_ell_eff()
         cov_ssc = ccl.covariances.angular_cl_cov_SSC(
