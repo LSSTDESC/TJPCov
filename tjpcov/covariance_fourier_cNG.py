@@ -55,6 +55,18 @@ class FouriercNGHaloModel(CovarianceFourier):
                     + " in the HOD header for cNG calculation"
                 )
 
+    def _get_fsky(self, masks={}):
+        """Returns the fractional sky area from the mean survey masks.
+
+        Args:
+            masks (:obj:`dict`): dictionary containing the survey
+                masks of the relevant tracers.
+        Returns:
+            - (:obj:`float`): fractional sky area.
+        """
+        fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
+        return fsky
+
     def get_covariance_block(
         self,
         tracer_comb1,
@@ -177,7 +189,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         masks = self.get_masks_dict(tr, {})
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
-        fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
+        fsky = self._get_fsky(self, masks=masks)
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
         tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
