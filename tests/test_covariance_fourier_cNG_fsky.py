@@ -11,7 +11,7 @@ import yaml
 from tjpcov.covariance_fourier_cNG_fsky import FouriercNGHaloModelFsky
 
 ROOT = "./tests/benchmarks/32_DES_tjpcov_bm/"
-INPUT_YML_cNG = "./tests/data/conf_covariance_cNG.yaml"
+INPUT_YML_cNG = "./tests/data/conf_covariance_cNG_fsky.yaml"
 OUTDIR = "./tests/tmp/"
 NSIDE = 32
 
