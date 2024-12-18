@@ -27,7 +27,7 @@ class FourierSSCHaloModel(CovarianceFourier):
 
         self.ssc_conf = self.config.get("SSC", {})
 
-    def _get_sigma2_B(self, cosmo, a_arr, masks={}):
+    def _get_sigma2_B(self, cosmo, a_arr, tr=None):
         """Returns the variance of the projected linear density field,
             for the case when a survey mask is provided.
 
@@ -36,8 +36,8 @@ class FourierSSCHaloModel(CovarianceFourier):
             a_arr (:obj:`float`, `array` or :obj:`None`): an array of
                 scale factor values at which to evaluate
                 the projected variance.
-            masks (:obj:`dict`): dictionary containing the survey
-                masks of the relevant tracers.
+            tr (:obj:`dict`): dictionary containing the
+                tracer name combinations.
 
         Returns:
             - (:obj:`float` or `array`): projected variance.
@@ -46,6 +46,8 @@ class FourierSSCHaloModel(CovarianceFourier):
         # TODO: Optimize this, avoid computing the mask_wl for all blocks.
         # Note that this is correct for same footprint cross-correlations. In
         # case of multisurvey analyses this approximation might break.
+        masks = self.get_masks_dict(tr, {})
+
         m12 = masks[1] * masks[2]
         m34 = masks[3] * masks[4]
         area = hp.nside2pixarea(hp.npix2nside(m12.size))
@@ -172,8 +174,7 @@ class FourierSSCHaloModel(CovarianceFourier):
             is_number_counts4=isnc[4],
         )
 
-        masks = self.get_masks_dict(tr, {})
-        sigma2_B = self._get_sigma2_B(cosmo, a, masks=masks)
+        sigma2_B = self._get_sigma2_B(cosmo, a, tr=tr)
 
         ell = self.get_ell_eff()
         cov_ssc = ccl.covariances.angular_cl_cov_SSC(

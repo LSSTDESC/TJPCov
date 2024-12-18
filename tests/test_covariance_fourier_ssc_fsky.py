@@ -260,6 +260,8 @@ def test_get_covariance_block_WL_benchmark(cov_fssc):
 
     # Modify tjpcov instance
     cov_fssc.io.sacc_file = s
+    # Create an empty mask dict since there are no input mask files in the yaml
+    cov_fssc.mask_files = {}
     cov_fssc.mask_files["DESwl__0"] = mask
     cov_fssc.cosmo = cosmo
 
