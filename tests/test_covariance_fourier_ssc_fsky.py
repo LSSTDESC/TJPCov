@@ -2,7 +2,6 @@
 import os
 import shutil
 
-import healpy as hp
 import numpy as np
 import pyccl as ccl
 import pytest
