@@ -250,19 +250,10 @@ def test_get_covariance_block_WL_benchmark(cov_fssc):
     for dt in ["cl_ee", "cl_eb", "cl_be", "cl_bb"]:
         s.add_ell_cl(dt, "DESwl__0", "DESwl__0", ell, np.ones_like(ell))
 
-    # Generate also a disc mask that covers fsky = 0.05. sigma2_B agrees up to
-    # ~1%
-    radius = 0.455
-    nside = 128
-    ix = hp.query_disc(nside=nside, vec=(0, -60, 0), radius=radius)
-    mask = np.zeros(hp.nside2npix(nside))
-    mask[ix] = 10  # Use 10 to check the normalization of the masks
-
     # Modify tjpcov instance
     cov_fssc.io.sacc_file = s
-    # Create an empty mask dict since there are no input mask files in the yaml
-    cov_fssc.mask_files = {}
-    cov_fssc.mask_files["DESwl__0"] = mask
+    # Pass fsky to generate a disc mask.
+    cov_fssc.fksy = 0.05
     cov_fssc.cosmo = cosmo
 
     trs = ("DESwl__0", "DESwl__0")
