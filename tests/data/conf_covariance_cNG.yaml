@@ -63,4 +63,3 @@ HOD:
   bmax_p: 0.0
   a_pivot: 1.0
   ns_independent: False
-  is_number_counts: True

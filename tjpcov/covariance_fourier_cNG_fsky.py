@@ -22,12 +22,12 @@ class FouriercNGHaloModelFsky(FouriercNGHaloModel):
                 "You need to set fsky for FouriercNGHaloModelFsky"
             )
 
-    def _get_fsky(self, masks={}):
+    def _get_fsky(self, tr=None):
         """Returns the fractional sky area from user input.
 
         Args:
             masks (:obj:`dict`): dictionary containing the survey
-                masks of the relevant tracers (empty in this case).
+                tracers to obtain the survey mask (irrelevant in this case).
         Returns:
             - (:obj:`float`): fractional sky area.
         """

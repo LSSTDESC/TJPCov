@@ -43,7 +43,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             "bmax_p": None,
             "a_pivot": None,
             "ns_independent": None,
-            "is_number_counts": None,
+            "is_number_counts": True,
         }
 
         for key in self.HOD_dict.keys():
@@ -55,15 +55,16 @@ class FouriercNGHaloModel(CovarianceFourier):
                     + " in the HOD header for cNG calculation"
                 )
 
-    def _get_fsky(self, masks={}):
+    def _get_fsky(self, tr=None):
         """Returns the fractional sky area from the mean survey masks.
 
         Args:
             masks (:obj:`dict`): dictionary containing the survey
-                masks of the relevant tracers.
+                tracers to obtain the survey mask.
         Returns:
             - (:obj:`float`): fractional sky area.
         """
+        masks = self.get_masks_dict(tr, {})
         fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
         return fsky
 
@@ -153,6 +154,29 @@ class FouriercNGHaloModel(CovarianceFourier):
             ns_independent=self.HOD_dict["ns_independent"],
             is_number_counts=self.HOD_dict["is_number_counts"],
         )
+        hod_no_numbercounts = ccl.halos.HaloProfileHOD(
+            mass_def=mass_def,
+            concentration=cM,
+            log10Mmin_0=self.HOD_dict["log10Mmin_0"],
+            log10Mmin_p=self.HOD_dict["log10Mmin_p"],
+            siglnM_0=self.HOD_dict["siglnM_0"],
+            siglnM_p=self.HOD_dict["siglnM_p"],
+            log10M0_0=self.HOD_dict["log10M0_0"],
+            log10M0_p=self.HOD_dict["log10M0_p"],
+            log10M1_0=self.HOD_dict["log10M1_0"],
+            log10M1_p=self.HOD_dict["log10M1_p"],
+            alpha_0=self.HOD_dict["alpha_0"],
+            alpha_p=self.HOD_dict["alpha_p"],
+            fc_0=self.HOD_dict["fc_0"],
+            fc_p=self.HOD_dict["fc_p"],
+            bg_0=self.HOD_dict["bg_0"],
+            bg_p=self.HOD_dict["bg_p"],
+            bmax_0=self.HOD_dict["bmax_0"],
+            bmax_p=self.HOD_dict["bmax_p"],
+            a_pivot=self.HOD_dict["a_pivot"],
+            ns_independent=self.HOD_dict["ns_independent"],
+            is_number_counts=False,
+        )
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
@@ -186,10 +210,9 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         ccl_tracers, _ = self.get_tracer_info()
 
-        masks = self.get_masks_dict(tr, {})
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
-        fsky = self._get_fsky(masks=masks)
+        fsky = self._get_fsky(tr=tr)
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
         tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
@@ -210,12 +233,28 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         tkk *= bias1 * bias2 * bias3 * bias4
 
+        isnc = {}
+        for i in range(1, 5):
+            isnc[i] = (
+                sacc_file.tracers[tr[i]].quantity == "galaxy_density"
+            ) or ("lens" in tr[i])
+
+        # Choose using the HOD with or without number_counts = True
+        # based on the results of isnc
+
+        prof1 = hod if isnc[1] else hod_no_numbercounts
+        prof2 = hod if isnc[2] else hod_no_numbercounts
+        prof3 = hod if isnc[3] else hod_no_numbercounts
+        prof4 = hod if isnc[4] else hod_no_numbercounts
         tkk += ccl.halos.halomod_trispectrum_1h(
             cosmo,
             hmc,
             np.exp(lk_arr),
             a_arr,
-            prof=hod,
+            prof=prof1,
+            prof2=prof2,
+            prof3=prof3,
+            prof4=prof4,
             prof12_2pt=prof_2pt,
             prof34_2pt=prof_2pt,
         )

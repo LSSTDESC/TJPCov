@@ -74,7 +74,7 @@ def get_hod_model():
         bmax_p=obj.HOD_dict["bmax_p"],
         a_pivot=obj.HOD_dict["a_pivot"],
         ns_independent=obj.HOD_dict["ns_independent"],
-        is_number_counts=obj.HOD_dict["is_number_counts"],
+        is_number_counts=True,
     )
 
     return hod
