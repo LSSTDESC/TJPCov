@@ -98,7 +98,7 @@ def get_NFW_profile():
 
 def get_fsky(tr1, tr2, tr3, tr4):
     config = get_config()
-    fsky = config["GaussianFsky"].get("fsky", None)
+    fsky = config["tjpcov"].get("fsky", None)
     return fsky
 
 

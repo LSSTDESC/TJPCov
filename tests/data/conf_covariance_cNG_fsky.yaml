@@ -5,17 +5,6 @@ tjpcov:
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set'
 
-  # Setting mask OR fsky approximation
-  mask_file:
-    DESgc__0: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/mask_DESgc__0.fits.gz
-    DESwl__0: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DESwlMETACAL_mask_zbin0_ns32.fits.gz
-    DESwl__1: ./tests/benchmarks/32_DES_tjpcov_bm/catalogs/DESwlMETACAL_mask_zbin1_ns32.fits.gz
-
-  mask_names:
-    DESgc__0: mask_DESgc0
-    DESwl__0: mask_DESwl0
-    DESwl__1: mask_DESwl1
-
   outdir: ./tests/tmp/
 
   # Survey params:
@@ -32,6 +21,7 @@ tjpcov:
   bias_DESgc__0: 1.48
 
   # IA: 0.5
+  fsky: 0.05
 
 parameters:
   # Not used for while (read by ccl.cosmo):
@@ -63,6 +53,3 @@ HOD:
   bmax_p: 0.0
   a_pivot: 1.0
   ns_independent: False
-
-GaussianFsky:
-  fsky: 0.05

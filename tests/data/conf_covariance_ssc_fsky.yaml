@@ -21,6 +21,7 @@ tjpcov:
   bias_DESgc__0: 1.48
 
   # IA: 0.5
+  fsky: 0.05
 
 parameters:
   # Not used for while (read by ccl.cosmo):
@@ -32,6 +33,3 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
-
-GaussianFsky:
-  fsky: 0.05
