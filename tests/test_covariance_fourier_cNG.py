@@ -75,7 +75,6 @@ def get_hod_model():
         bmax_p=obj.HOD_dict["bmax_p"],
         a_pivot=obj.HOD_dict["a_pivot"],
         ns_independent=obj.HOD_dict["ns_independent"],
-        is_number_counts=True,
     )
 
     return hod
@@ -171,44 +170,40 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     sel[np.sum(~sel) - 1] = True
     a_arr = a_arr[sel]
     bias1 = bias2 = bias3 = bias4 = 1
-    if "gc" in tracer_comb1[0]:
-        bias1 = cov_fcNG.bias_lens[tracer_comb1[0]]
-
-    if "gc" in tracer_comb1[1]:
-        bias2 = cov_fcNG.bias_lens[tracer_comb1[1]]
-
-    if "gc" in tracer_comb2[0]:
-        bias3 = cov_fcNG.bias_lens[tracer_comb2[0]]
-
-    if "gc" in tracer_comb2[0]:
-        bias4 = cov_fcNG.bias_lens[tracer_comb2[1]]
-
-    biases = bias1 * bias2 * bias3 * bias4
 
     hmc = get_halo_model(cosmo)
     nfw_profile = get_NFW_profile()
     hod = get_hod_model()
-    prof_2pt = ccl.halos.profiles_2pt.Profile2ptHOD()
+    prof1 = prof2 = prof3 = prof4 = nfw_profile
+
+    calculate_with_hod = False
+    if "gc" in tracer_comb1[0]:
+        bias1 = cov_fcNG.bias_lens[tracer_comb1[0]]
+        prof1 = hod
+        calculate_with_hod = True
+
+    if "gc" in tracer_comb1[1]:
+        bias2 = cov_fcNG.bias_lens[tracer_comb1[1]]
+        prof2 = hod
+        calculate_with_hod = True
+
+    if "gc" in tracer_comb2[0]:
+        bias3 = cov_fcNG.bias_lens[tracer_comb2[0]]
+        prof3 = hod
+        calculate_with_hod = True
+
+    if "gc" in tracer_comb2[0]:
+        bias4 = cov_fcNG.bias_lens[tracer_comb2[1]]
+        prof4 = hod
+        calculate_with_hod = True
+
+    biases = bias1 * bias2 * bias3 * bias4
 
     tkk_cNG = ccl.halos.halomod_Tk3D_cNG(
         cosmo,
         hmc,
         prof=nfw_profile,
         separable_growth=True,
-        a_arr=a_arr,
-    )
-    tkk_1h_nfw = ccl.halos.halomod_Tk3D_1h(
-        cosmo,
-        hmc,
-        prof=nfw_profile,
-        a_arr=a_arr,
-    )
-    tkk_1h_hod = ccl.halos.halomod_Tk3D_1h(
-        cosmo,
-        hmc,
-        prof=hod,
-        prof12_2pt=prof_2pt,
-        prof34_2pt=prof_2pt,
         a_arr=a_arr,
     )
 
@@ -232,33 +227,49 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         integration_method=integration_method,
     )
 
-    cov_ccl_1h_nfw = ccl.covariances.angular_cl_cov_cNG(
-        cosmo,
-        tracer1=tr1,
-        tracer2=tr2,
-        tracer3=tr3,
-        tracer4=tr4,
-        ell=ell,
-        t_of_kk_a=tkk_1h_nfw,
-        fsky=fsky,
-        integration_method=integration_method,
-    )
+    if calculate_with_hod:
+        tkk_1h_nfw = ccl.halos.halomod_Tk3D_1h(
+            cosmo,
+            hmc,
+            prof=nfw_profile,
+            a_arr=a_arr,
+        )
+        tkk_1h_hod = ccl.halos.halomod_Tk3D_1h(
+            cosmo,
+            hmc,
+            prof=prof1,
+            prof2=prof2,
+            prof3=prof3,
+            prof4=prof4,
+            a_arr=a_arr,
+        )
+        cov_ccl_1h_nfw = ccl.covariances.angular_cl_cov_cNG(
+            cosmo,
+            tracer1=tr1,
+            tracer2=tr2,
+            tracer3=tr3,
+            tracer4=tr4,
+            ell=ell,
+            t_of_kk_a=tkk_1h_nfw,
+            fsky=fsky,
+            integration_method=integration_method,
+        )
 
-    cov_ccl_1h_hod = ccl.covariances.angular_cl_cov_cNG(
-        cosmo,
-        tracer1=tr1,
-        tracer2=tr2,
-        tracer3=tr3,
-        tracer4=tr4,
-        ell=ell,
-        t_of_kk_a=tkk_1h_hod,
-        fsky=fsky,
-        integration_method=integration_method,
-    )
-    # An unfortunately messy way to to calculate the 234h terms
-    # with an NFW Profile and only the 1h term with an HOD
-    # using current CCL infrastructure.
-    cov_ccl = biases * (cov_ccl - cov_ccl_1h_nfw) + cov_ccl_1h_hod
+        cov_ccl_1h_hod = ccl.covariances.angular_cl_cov_cNG(
+            cosmo,
+            tracer1=tr1,
+            tracer2=tr2,
+            tracer3=tr3,
+            tracer4=tr4,
+            ell=ell,
+            t_of_kk_a=tkk_1h_hod,
+            fsky=fsky,
+            integration_method=integration_method,
+        )
+        # An unfortunately messy way to to calculate the 234h terms
+        # with an NFW Profile and only the 1h term with an HOD
+        # using current CCL infrastructure.
+        cov_ccl = biases * (cov_ccl - cov_ccl_1h_nfw) + cov_ccl_1h_hod
 
     assert np.max(np.fabs(np.diag(cov_cNG / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_cNG / cov_ccl - 1)) < 1e-3

@@ -1,0 +1,83 @@
+tjpcov:
+  sacc_file: ./new_sacc.sacc
+
+  cosmo: ./tjpcov_ymls/fid_cov.yaml
+
+  cov_type: [FourierGaussianFsky]
+  
+  # Survey params:
+  # 5 lens bins
+  Ngal_lens0: 2.25
+  Ngal_lens1: 3.098
+  Ngal_lens2: 3.071
+  Ngal_lens3: 2.595
+  Ngal_lens4: 1.998
+  
+  # 5 source bins
+  # {% for i in range(5) %} 
+  # Ngal_src{{ i }}: {{2}} # arc_min^2
+  # {% endfor %}
+  Ngal_src0: 2.036
+  Ngal_src1: 1.964
+  Ngal_src2: 1.973
+  Ngal_src3: 1.987
+  Ngal_src4: 2.023
+
+  # constant bin sigma_z
+  {% for i in range(5) %} 
+  sigma_z_lens{{ i }}: {{ 0.03 }}
+  {% endfor %}
+
+
+
+  # constant bin sigma_z
+  {% for i in range(5) %} 
+  sigma_z_src{{ i }}: {{ 0.05 }}
+  {% endfor %}
+
+
+  # constant bin sigma_e
+  {% for i in range(5) %} 
+  sigma_e_src{{ i }}: {{ 0.26 }}
+  {% endfor %}
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  
+  {% for i, val in [(0, 1.23885511), (1, 1.3781005), (2, 1.52472019), (3, 1.67665752), (4, 1.83243479)] %}     
+  bias_lens{{ i }}: {{ val }}
+  {% endfor %}
+
+  IA: 1.0
+  
+  lmax: 2000
+  lmin: 20
+  binning_scheme: log
+  nonlimber: False
+
+GaussianFsky:
+  fsky: 0.42
+
+# includes some default values from CCL
+# https://ccl.readthedocs.io/en/latest/api/pyccl.halos.profiles.hod.html
+HOD:
+  # automatically creates massdef and concentration objects 
+  log10Mmin_0: 12.0
+  log10Mmin_p: 0.0
+  siglnM_0: 0.4
+  siglnM_p: 0.0
+  log10M0_0: 7.0
+  log10M0_p: 0.0
+  log10M1_0: 13.3
+  log10M1_p: 0.0
+  alpha_0: 1.0
+  alpha_p: 0.0
+  fc_0: 1.0
+  fc_p: 0.0
+  bg_0: 1.0
+  bg_p: 0.0
+  bmax_0: 1.0
+  bmax_p: 0.0
+  a_pivot: 1.0
+  ns_independent: False
+  is_number_counts: True
+
