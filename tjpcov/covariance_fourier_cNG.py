@@ -120,7 +120,6 @@ class FouriercNGHaloModel(CovarianceFourier):
         hmf = ccl.halos.MassFuncTinker08(mass_def=mass_def)
         hbf = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
         cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
-        prof_2pt = ccl.halos.profiles_2pt.Profile2ptHOD()
         nfw = ccl.halos.HaloProfileNFW(
             mass_def=mass_def, concentration=cM, fourier_analytic=True
         )
@@ -221,6 +220,20 @@ class FouriercNGHaloModel(CovarianceFourier):
         prof2 = hod if isnc[2] else nfw
         prof3 = hod if isnc[3] else nfw
         prof4 = hod if isnc[4] else nfw
+
+        prof_2pt_hod = ccl.halos.profiles_2pt.Profile2ptHOD()
+        prof_2pt_avg = ccl.halos.profiles_2pt.Profile2pt()
+        HOD = ccl.halos.HaloProfileHOD
+        if isinstance(prof1, HOD) and isinstance(prof2, HOD):
+            prof12_2pt = prof_2pt_hod
+        else:
+            prof12_2pt = prof_2pt_avg
+
+        if isinstance(prof3, HOD) and isinstance(prof4, HOD):
+            prof34_2pt = prof_2pt_hod
+        else:
+            prof34_2pt = prof_2pt_avg
+
         tkk += ccl.halos.halomod_trispectrum_1h(
             cosmo,
             hmc,
@@ -230,8 +243,8 @@ class FouriercNGHaloModel(CovarianceFourier):
             prof2=prof2,
             prof3=prof3,
             prof4=prof4,
-            prof12_2pt=prof_2pt,
-            prof34_2pt=prof_2pt,
+            prof12_2pt=prof12_2pt,
+            prof34_2pt=prof34_2pt,
         )
 
         tk3D = ccl.tk3d.Tk3D(

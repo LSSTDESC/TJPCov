@@ -219,6 +219,20 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     )
 
     if calculate_with_hod:
+
+        prof_2pt_hod = ccl.halos.profiles_2pt.Profile2ptHOD()
+        prof_2pt_avg = ccl.halos.profiles_2pt.Profile2pt()
+        HOD = ccl.halos.HaloProfileHOD
+        if isinstance(prof1, HOD) and isinstance(prof2, HOD):
+            prof12_2pt = prof_2pt_hod
+        else:
+            prof12_2pt = prof_2pt_avg
+
+        if isinstance(prof3, HOD) and isinstance(prof4, HOD):
+            prof34_2pt = prof_2pt_hod
+        else:
+            prof34_2pt = prof_2pt_avg
+
         tkk_1h_nfw = ccl.halos.halomod_Tk3D_1h(
             cosmo,
             hmc,
@@ -232,6 +246,8 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
             prof2=prof2,
             prof3=prof3,
             prof4=prof4,
+            prof12_2pt=prof12_2pt,
+            prof34_2pt=prof34_2pt,
             a_arr=a_arr,
         )
         cov_ccl_1h_nfw = ccl.covariances.angular_cl_cov_cNG(
