@@ -18,6 +18,7 @@ NSIDE = 32
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
+
 def setup_module():
     os.makedirs(OUTDIR, exist_ok=True)
 
@@ -116,7 +117,9 @@ def test_smoke():
     FouriercNGHaloModel(INPUT_YML_cNG)
 
 
-@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test too slow for Github Actions.")
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS, reason="Test too slow for Github Actions."
+)
 @pytest.mark.parametrize(
     "tracer_comb1,tracer_comb2",
     [
