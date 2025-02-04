@@ -58,7 +58,7 @@ def test_smoke():
 
     # Check it raises an error if fsky is not given
     config = get_config()
-    config["GaussianFsky"] = {}
+    config["tjpcov"].pop("fsky")
     with pytest.raises(ValueError):
         FourierGaussianFsky(config)
 

@@ -24,7 +24,7 @@ class FourierGaussianFsky(CovarianceFourier):
         """
         super().__init__(config)
 
-        self.fsky = self.config["GaussianFsky"].get("fsky", None)
+        self.fsky = self.config["tjpcov"].get("fsky", None)
         if self.fsky is None:
             raise ValueError("You need to set fsky for FourierGaussianFsky")
 

@@ -15,6 +15,12 @@ def covariance_from_name(name):
         from .covariance_fourier_gaussian_nmt import FourierGaussianNmt as Cov
     elif name == "FourierSSCHaloModel":
         from .covariance_fourier_ssc import FourierSSCHaloModel as Cov
+    elif name == "FouriercNGHaloModel":
+        from .covariance_fourier_cNG import FouriercNGHaloModel as Cov
+    elif name == "FourierSSCHaloModelFsky":
+        from .covariance_fourier_ssc_fsky import FourierSSCHaloModelFsky as Cov
+    elif name == "FouriercNGHaloModelFsky":
+        from .covariance_fourier_cNG_fsky import FouriercNGHaloModelFsky as Cov
     elif name == "ClusterCountsSSC":
         from .covariance_cluster_counts_ssc import ClusterCountsSSC as Cov
     elif name == "ClusterCountsGaussian":

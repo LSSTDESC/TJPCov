@@ -26,8 +26,6 @@ tjpcov:
   {% endfor %}
 
   IA: 0.5
-
-GaussianFsky:
   fsky: 0.3
 
 ProjectedReal:
