@@ -58,13 +58,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         # bettere to define these variables in a gonfig file?
         mass_def = ccl.halos.MassDef200m
-        self.mass_func = ccl.halos.MassFuncTinker08(
-            mass_def=mass_def
-        )
+        self.mass_func = ccl.halos.MassFuncTinker08(mass_def=mass_def)
 
-        self.hbias = ccl.halos.HaloBiasTinker10(
-            mass_def=mass_def
-        )
+        self.hbias = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
 
         self.fullsky = False
 
