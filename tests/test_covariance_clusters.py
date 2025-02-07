@@ -64,12 +64,12 @@ def setup_module():
     survey_name = "mock_survey"
     s.add_tracer("survey", survey_name, survey_area)
 
-    tracer_combos = list(itertools.product(richness_tracers,z_tracers))
+    tracer_combos = list(itertools.product(richness_tracers, z_tracers))
     cluster_counts = np.linspace(1, 1e4, len(tracer_combos))
 
     counts_and_edges = zip(cluster_counts.flatten(), tracer_combos)
 
-    for counts, (richness_tracers,z_tracers) in counts_and_edges:
+    for counts, (richness_tracers, z_tracers) in counts_and_edges:
         s.add_data_point(
             sacc.standard_types.cluster_counts,
             (survey_name, richness_tracers, z_tracers),
@@ -79,7 +79,6 @@ def setup_module():
     s.to_canonical_order()
     os.makedirs(OUTDIR, exist_ok=True)
     s.save_fits(os.path.join(OUTDIR, "test_cl_sacc.fits"), overwrite=True)
-
 
 
 @pytest.fixture
@@ -159,7 +158,7 @@ def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
     "z, ref_val",
     [
         (0.3, 1.535576971814782e-05),
-        (0.35, 1.4966733247622803e-05), 
+        (0.35, 1.4966733247622803e-05),
     ],
 )
 def test_integral_mass_no_bias(
@@ -228,8 +227,11 @@ def test_calc_dv(
     mock_covariance_gauss: CovarianceClusterCounts, z_i, reference_val
 ):
     z_true = 0.8
-    sigma_0 = 0.05 # use large scatter here to have more non-zero values
-    test = mock_covariance_gauss.comoving_volume_element(z_true, z_i, sigma_0) / 1e4
+    sigma_0 = 0.05  # use large scatter here to have more non-zero values
+    test = (
+        mock_covariance_gauss.comoving_volume_element(z_true, z_i, sigma_0)
+        / 1e4
+    )
     assert test == pytest.approx(reference_val / 1e4)
 
 
