@@ -19,3 +19,18 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
+
+
+
+photo-z:
+  # from DES Y1
+  sigma_0: 0.005
+
+
+mor_parameters:
+  #richness-mass relation parameters (from Murata-Costanzi):
+  alpha: 3.207
+  beta: 0.75
+  sigma_zero: 2.68
+  q: 0.54
+  m_pivot: 3.0e14
