@@ -18,9 +18,6 @@ tjpcov:
 
   outdir: ./tests/tmp/
 
-  # Ngal & sigma_e are not needed in nmt if the coupled noise is provided
-  # through the cache or sacc file. These are here to test that one can also
-  # use them to estimate the noise if requested.
   # Survey params:
   # 5 lens bins
   Ngal_DESgc__0: 26
@@ -36,24 +33,8 @@ tjpcov:
 
   # IA: 0.5
 
-NaMaster:
-  module: pymaster
-  f:
-    n_iter: 0
-    lmax: null
-    lmax_mask: null 
-  w:
-    l_toeplitz: -1
-    l_exact: -1
-    dl_band: -1
-    recompute: True
-  cw:
-    l_toeplitz: -1
-    l_exact: -1
-    dl_band: -1
-    recompute: True
-
 parameters:
+  # Not used for while (read by ccl.cosmo):
   Omega_c: 0.2640
   Omega_b: 0.0493
   h: 0.6736
@@ -62,3 +43,23 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
+HOD:
+  # automatically creates massdef and concentration objects 
+  log10Mmin_0: 12.0
+  log10Mmin_p: 0.0
+  siglnM_0: 0.4
+  siglnM_p: 0.0
+  log10M0_0: 7.0
+  log10M0_p: 0.0
+  log10M1_0: 13.3
+  log10M1_p: 0.0
+  alpha_0: 1.0
+  alpha_p: 0.0
+  fc_0: 1.0
+  fc_p: 0.0
+  bg_0: 1.0
+  bg_p: 0.0
+  bmax_0: 1.0
+  bmax_p: 0.0
+  a_pivot: 1.0
+  ns_independent: False

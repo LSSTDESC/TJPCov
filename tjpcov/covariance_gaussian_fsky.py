@@ -24,7 +24,7 @@ class FourierGaussianFsky(CovarianceFourier):
         """
         super().__init__(config)
 
-        self.fsky = self.config["GaussianFsky"].get("fsky", None)
+        self.fsky = self.config["tjpcov"].get("fsky", None)
         if self.fsky is None:
             raise ValueError("You need to set fsky for FourierGaussianFsky")
 
@@ -43,7 +43,7 @@ class FourierGaussianFsky(CovarianceFourier):
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
         # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67a
-        out = self.get_binning_info()
+        out = super().get_binning_info()
         if out is not None:
             ell = out[0]
             ell_eff = out[1]
