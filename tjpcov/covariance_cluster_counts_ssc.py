@@ -1,9 +1,5 @@
 from .covariance_cluster_counts import CovarianceClusterCounts
 import numpy as np
-import pyccl as ccl
-from scipy.integrate import romb
-from scipy.integrate import simpson as simps
-
 
 
 class ClusterCountsSSC(CovarianceClusterCounts):
@@ -24,10 +20,9 @@ class ClusterCountsSSC(CovarianceClusterCounts):
                 parses it.
         """
         super().__init__(config)
-        
-        self.ssc_total = None   # initialise the full ssc covariance
 
-        
+        self.ssc_total = None  # initialise the full ssc covariance
+
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
@@ -43,7 +38,6 @@ class ClusterCountsSSC(CovarianceClusterCounts):
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
 
-    
     def _get_covariance_cluster_counts(self, tracer_comb1, tracer_comb2):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
@@ -63,15 +57,16 @@ class ClusterCountsSSC(CovarianceClusterCounts):
         richness_j = int(tracer_comb2[1].split("_")[-1])
         z_j = int(tracer_comb2[2].split("_")[-1])
 
-
-        ## compute the full SSC covariance only once (full covariance, for all the richness and redshift bins)
-        ## the code is almost fully vectorized (~30 times faster)
+        # compute the full SSC covariance only once
+        # (full covariance, for all the richness and redshift bins)
+        # the code is almost fully vectorized (~30 times faster)
         if self.ssc_total is None:
-            self.ssc_total = self.super_sample_covariance() 
+            self.ssc_total = self.super_sample_covariance()
 
-        ## read the single entries of the total SSC covariance to meet the format required by the code
-        ## ssc_total dim = [richness, richness, redshift, redshift]
-        cov_full = np.array(self.ssc_total[richness_i,richness_j,z_i,z_j])
+        # read the single entries of the total SSC covariance
+        # to meet the format required by the code
+        # ssc_total dim = [richness, richness, redshift, redshift]
+        cov_full = np.array(self.ssc_total[richness_i, richness_j, z_i, z_j])
 
         return cov_full
 
@@ -85,4 +80,3 @@ class ClusterCountsSSC(CovarianceClusterCounts):
             array_like: Covariance for a single block
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-OB
