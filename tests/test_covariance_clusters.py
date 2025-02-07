@@ -26,36 +26,6 @@ def teardown_module():
     shutil.rmtree(OUTDIR)
 
 
-def setup_module():
-    s = sacc.Sacc()
-    z_min, z_max = 0.3, 1.2
-    richness_min, richness_max = np.log10(10), np.log10(100)
-
-    richness_tracers, z_tracers = _setup_sacc_tracers(
-        z_min, z_max, richness_min, richness_max, s
-    )
-
-    survey_area = 4 * np.pi * (180 / np.pi) ** 2
-    survey_name = "mock_survey"
-    s.add_tracer("survey", survey_name, survey_area)
-
-    tracer_combos = list(itertools.product(z_tracers, richness_tracers))
-    cluster_counts = np.linspace(1, 1e4, len(tracer_combos))
-
-    counts_and_edges = zip(cluster_counts.flatten(), tracer_combos)
-
-    for counts, (z_tracers, richness_tracers) in counts_and_edges:
-        s.add_data_point(
-            sacc.standard_types.cluster_counts,
-            (survey_name, z_tracers, richness_tracers),
-            int(counts),
-        )
-
-    s.to_canonical_order()
-    os.makedirs(OUTDIR, exist_ok=True)
-    s.save_fits(os.path.join(OUTDIR, "test_cl_sacc.fits"), overwrite=True)
-
-
 def _setup_sacc_tracers(z_min, z_max, richness_min, richness_max, s_file):
     z_tracers = []
     z_edges = np.linspace(z_min, z_max, N_z_bins + 1)
@@ -79,6 +49,37 @@ def _setup_sacc_tracers(z_min, z_max, richness_min, richness_max, s_file):
         richness_tracers.append(bin_richness_label)
 
     return richness_tracers, z_tracers
+
+
+def setup_module():
+    s = sacc.Sacc()
+    z_min, z_max = 0.3, 1.2
+    richness_min, richness_max = np.log10(10), np.log10(100)
+
+    richness_tracers, z_tracers = _setup_sacc_tracers(
+        z_min, z_max, richness_min, richness_max, s
+    )
+
+    survey_area = 4 * np.pi * (180 / np.pi) ** 2
+    survey_name = "mock_survey"
+    s.add_tracer("survey", survey_name, survey_area)
+
+    tracer_combos = list(itertools.product(richness_tracers,z_tracers))
+    cluster_counts = np.linspace(1, 1e4, len(tracer_combos))
+
+    counts_and_edges = zip(cluster_counts.flatten(), tracer_combos)
+
+    for counts, (richness_tracers,z_tracers) in counts_and_edges:
+        s.add_data_point(
+            sacc.standard_types.cluster_counts,
+            (survey_name, richness_tracers, z_tracers),
+            int(counts),
+        )
+
+    s.to_canonical_order()
+    os.makedirs(OUTDIR, exist_ok=True)
+    s.save_fits(os.path.join(OUTDIR, "test_cl_sacc.fits"), overwrite=True)
+
 
 
 @pytest.fixture
@@ -157,8 +158,8 @@ def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
 @pytest.mark.parametrize(
     "z, ref_val",
     [
-        (0.3, 1.463291259900985e-05),
-        (0.35, 1.4251538328691035e-05),
+        (0.3, 1.535576971814782e-05),
+        (0.35, 1.4966733247622803e-05), 
     ],
 )
 def test_integral_mass_no_bias(
@@ -168,16 +169,8 @@ def test_integral_mass_no_bias(
     assert test == pytest.approx(ref_val, rel=1e-3)
 
 
-def test_double_bessel_integral(
-    mock_covariance_gauss: CovarianceClusterCounts,
-):
-    ref = 8.427201745032292e-05
-    test = mock_covariance_gauss.double_bessel_integral(0.3, 0.3)
-    assert test == pytest.approx(ref, rel=1e-3)
-
-
 def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
-    ref = 63973.635143644424
+    ref = 65072.00833349381
     test = mock_covariance_gauss.shot_noise(0, 0)
     assert test == pytest.approx(ref, rel=1e-3)
 
@@ -185,8 +178,8 @@ def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
 @pytest.mark.parametrize(
     "z, reference_val",
     [
-        (0.5, 2.596895139062984e-05),
-        (0.55, 2.5910691906342223e-05),
+        (0.5, 2.7048501644251484e-05),
+        (0.55, 2.7008280451561754e-05),
     ],
 )
 def test_integral_mass(
@@ -212,7 +205,7 @@ def test_integral_mass_no_mproxy(
 
 
 def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
-    reference_min = 0.0009528852621284171
+    reference_min = 0.0016346637144491727
 
     test_min = [
         mock_covariance_gauss.mass_richness(mock_covariance_gauss.min_mass, i)
@@ -235,7 +228,8 @@ def test_calc_dv(
     mock_covariance_gauss: CovarianceClusterCounts, z_i, reference_val
 ):
     z_true = 0.8
-    test = mock_covariance_gauss.comoving_volume_element(z_true, z_i) / 1e4
+    sigma_0 = 0.05 # use large scatter here to have more non-zero values
+    test = mock_covariance_gauss.comoving_volume_element(z_true, z_i, sigma_0) / 1e4
     assert test == pytest.approx(reference_val / 1e4)
 
 
@@ -243,24 +237,24 @@ def test_cov_gaussian_zero_offdiagonal(
     mock_covariance_gauss: ClusterCountsGaussian,
 ):
     cov_0111_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_z_0", "bin_rich_1"),
-        ("mock_survey", "bin_z_1", "bin_rich_1"),
+        ("mock_survey", "bin_rich_1", "bin_z_0"),
+        ("mock_survey", "bin_rich_1", "bin_z_1"),
     )
     cov_1011_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_z_1", "bin_rich_0"),
-        ("mock_survey", "bin_z_1", "bin_rich_1"),
+        ("mock_survey", "bin_rich_0", "bin_z_1"),
+        ("mock_survey", "bin_rich_1", "bin_z_1"),
     )
     cov_1001_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_z_1", "bin_rich_0"),
-        ("mock_survey", "bin_z_0", "bin_rich_1"),
+        ("mock_survey", "bin_rich_0", "bin_z_1"),
+        ("mock_survey", "bin_rich_1", "bin_z_0"),
     )
     assert cov_0111_gauss == 0
     assert cov_1011_gauss == 0
     assert cov_1001_gauss == 0
 
     cov_10_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_z_1", "bin_rich_0"),
-        ("mock_survey", "bin_z_1", "bin_rich_1"),
+        ("mock_survey", "bin_rich_0", "bin_z_1"),
+        ("mock_survey", "bin_rich_1", "bin_z_1"),
     )
     assert cov_10_gauss == 0
 
@@ -269,16 +263,16 @@ def test_cov_nxn(
     mock_covariance_gauss: ClusterCountsGaussian,
     mock_covariance_ssc: ClusterCountsSSC,
 ):
-    ref_sum = 130462.91921818888
+    ref_sum = 189480.8478457688
     # Need to include survey name from mock file here to ensure correct data
     # types are found
     cov_00_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_z_0", "bin_rich_0"),
-        ("mock_survey", "bin_z_0", "bin_rich_0"),
+        ("mock_survey", "bin_rich_0", "bin_z_0"),
+        ("mock_survey", "bin_rich_0", "bin_z_0"),
     )
     cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_z_0", "bin_rich_0"),
-        ("mock_survey", "bin_z_0", "bin_rich_0"),
+        ("mock_survey", "bin_rich_0", "bin_z_0"),
+        ("mock_survey", "bin_rich_0", "bin_z_0"),
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
 

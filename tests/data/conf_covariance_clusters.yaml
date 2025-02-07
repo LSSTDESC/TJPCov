@@ -1,7 +1,7 @@
 tjpcov:
   use_mpi: False
   do_xi: False
-  cov_type: [ClusterCounts]
+  cov_type: [ClusterCountsGaussian, ClusterCountsSSC] #[ClusterCounts]
   # sacc input file 
   sacc_file: ./tests/tmp/test_cl_sacc.fits
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
@@ -11,11 +11,11 @@ tjpcov:
 
 parameters:
   # Not used for while (read by ccl.cosmo):
-  Omega_c: 0.2640
-  Omega_b: 0.0493
-  h: 0.6736
-  n_s: 0.9649
-  sigma8: 0.8111
+  Omega_c: 0.26
+  Omega_b: 0.04
+  h: 0.67
+  n_s: 0.96
+  A_s: 2.1e-9
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
