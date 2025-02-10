@@ -359,7 +359,11 @@ class CovarianceClusterCounts(CovarianceBuilder):
         """
 
         # harmonic expansion coefficeints
-        theta_sky = np.arccos(1 - self.survey_area / (2 * np.pi))
+        arccos_arg = 1 - self.survey_area / (2 * np.pi)
+        if arccos_arg<-1:   # may happen due to numerical inaccuracy
+            arccos_arg  = -1 
+        theta_sky = np.arccos(arccos_arg)
+        
         KL = self.Kl_func(L, theta_sky)
 
         # redshift-dependent quantities
