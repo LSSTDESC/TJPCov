@@ -1,0 +1,59 @@
+tjpcov:
+  # input datavector
+  # this will be used to dictate the n(z) distributions and ell-binning scheme.
+  # The file here is the DESY1 fourier-space equivalent used in TJPCov testing.
+  # Note that the C_ell values of this file are never used in the computation.
+  sacc_file: ../tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits
+
+  # yaml file dictating the fiducial cosmology of the covariance matrix.
+  # alternatively, this cosmology can be set as another header in this file.
+  cosmo: ./3x2pt_cov_cosmology.yaml
+
+  # The list given in cov_type tells TJPCov which components to compute
+  # and whether to use a skymask to calculate mode coupling.
+  # Components ending in Fsky use the f_sky approximation, as in this example,
+  # where fsky needs to be defined below.
+  cov_type: [FourierGaussianFsky, FourierSSCHaloModelFsky, FouriercNGHaloModelFsky]
+
+  # Parameters that dictate the number density, galaxy bias, fractionaly sky area, etc.
+  # necessary to compute the covariance matrix. 
+  Ngal_DESgc__0: 26
+
+  Ngal_DESwl__0: 26
+  Ngal_DESwl__1: 26
+  # # constant bin sigma_e
+  sigma_e_DESwl__0: 0.26
+  sigma_e_DESwl__1: 0.26
+
+  # linear bias for lenses constant for redshift bin (example notebook)
+  bias_DESgc__0: 1.48
+
+  # IA: 0.5
+  fsky: 0.05
+
+  # flag indicating whether to use mpi to calculate the covariance
+  use_mpi: True
+
+# Defining an HOD is necessary to calculate cNG terms.
+# You define them here generally. Documentation at
+# https://ccl.readthedocs.io/en/latest/api/pyccl.halos.profiles.hod.html#pyccl.halos.profiles.hod.HaloProfileHOD
+HOD:
+  # automatically creates massdef and concentration objects 
+  log10Mmin_0: 12.0
+  log10Mmin_p: 0.0
+  siglnM_0: 0.4
+  siglnM_p: 0.0
+  log10M0_0: 7.0
+  log10M0_p: 0.0
+  log10M1_0: 13.3
+  log10M1_p: 0.0
+  alpha_0: 1.0
+  alpha_p: 0.0
+  fc_0: 1.0
+  fc_p: 0.0
+  bg_0: 1.0
+  bg_p: 0.0
+  bmax_0: 1.0
+  bmax_p: 0.0
+  a_pivot: 1.0
+  ns_independent: False
