@@ -140,7 +140,8 @@ class FourierGaussianNmt(CovarianceFourier):
         elif nl_is_cp:
             cl_cp = (w.couple_cell(clab) + nlab) / mean_mamb
         else:
-            cl_cp = (w.couple_cell(clab) + np.mean(ma) * nlab) / mean_mamb
+            # nlab_coupled = mean_mamb * nlab, so we can cancel it out
+            cl_cp = w.couple_cell(clab) / mean_mamb + nlab
 
         return cl_cp
 
