@@ -1,9 +1,11 @@
 from .covariance_builder import CovarianceBuilder
-from .clusters_helpers import MassRichnessRelation, FFTHelper
+from .clusters_helpers import MassRichnessRelation
 import numpy as np
 import pyccl as ccl
-from scipy.integrate import quad, romb
+from scipy.integrate import quad
+from scipy.integrate import simpson as simps
 from sacc import standard_types
+from scipy.special import spherical_jn, eval_legendre
 
 
 class CovarianceClusterCounts(CovarianceBuilder):
@@ -33,15 +35,10 @@ class CovarianceClusterCounts(CovarianceBuilder):
                 + " points were not included in the sacc file."
             )
 
-        self.hbias = ccl.halos.HaloBiasTinker10()
-        self.h0 = float(self.config["parameters"].get("h"))
         self.load_from_sacc(sacc_file, min_halo_mass)
 
         cosmo = self.get_cosmology()
         self.load_from_cosmology(cosmo)
-        self.fft_helper = FFTHelper(
-            cosmo, self.z_lower_limit, self.z_upper_limit
-        )
 
         # Quick key to skip P(Richness|M)
         self.has_mproxy = self.config.get("has_mproxy", True)
@@ -56,9 +53,34 @@ class CovarianceClusterCounts(CovarianceBuilder):
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
         """
         self.cosmo = cosmo
-        mass_def = ccl.halos.MassDef200m
         self.c = ccl.physical_constants.CLIGHT / 1000
+        self.h0 = float(self.config["parameters"].get("h"))
+
+        # bettere to define these variables in a gonfig file?
+        mass_def = ccl.halos.MassDef200m
         self.mass_func = ccl.halos.MassFuncTinker08(mass_def=mass_def)
+
+        self.hbias = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
+
+        self.fullsky = False
+
+        # photo-z scatter
+        self.sigma_0 = float(self.config["photo-z"].get("sigma_0"))
+
+        # mass-observable relation parameters
+        self.mor_alpha = float(self.config["mor_parameters"].get("alpha"))
+        self.mor_beta = float(self.config["mor_parameters"].get("beta"))
+        self.mor_sigma_zero = float(
+            self.config["mor_parameters"].get("sigma_zero")
+        )
+
+        self.mor_q = float(self.config["mor_parameters"].get("q"))
+
+        # Msun (convert units using a fiducial value for h,
+        # if the self.h0 is used this would add an extra dependence on h)
+        self.mor_m_pivot = (
+            float(self.config["mor_parameters"].get("m_pivot")) / 0.7
+        )
 
     def load_from_sacc(self, sacc_file, min_halo_mass):
         """Set class attributes based on data from the SACC file.
@@ -107,8 +129,9 @@ class CovarianceClusterCounts(CovarianceBuilder):
         )
         self.z_bin_spacing = (self.z_max - self.z_min) / self.num_z_bins
         self.z_lower_limit = max(0.02, self.z_bins[0] - 4 * self.z_bin_spacing)
-        # Set upper limit to be 40% higher than max redshift
-        self.z_upper_limit = self.z_bins[-1] + 0.4 * self.z_bins[-1]
+        self.z_upper_limit = (
+            self.z_bins[-1] + 0.4 * self.z_bins[-1]
+        )  # Set upper limit to be 40% higher than max redshift
 
         # Setup richness bins
         richness_bins = [
@@ -146,19 +169,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         integral_value = quad(argument, from_lim, to_lim)
         return integral_value[0]
 
-    def _romb_integrate(self, kernel, spacing):
-        """Numerically integrate arguments between bounds using scipy romberg.
-
-        Args:
-            kernel (array_like): Vector of equally spaced samples of a function
-            spacing (float): Sample spacing
-
-        Returns:
-            float: Value of the integral
-        """
-        return romb(kernel, dx=spacing)
-
-    def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
+    def observed_photo_z(self, z_true, z_i, sigma_0):
         """Implementation of the photometric redshift uncertainty distribution.
 
         We don't assume that redshift can be measured exactly, so we include
@@ -171,8 +182,6 @@ class CovarianceClusterCounts(CovarianceBuilder):
         Args:
             z_true (float): True redshift
             z_i (float): Photometric redshift bin index
-            sigma_0 (float): Spread in the uncertainty of the photo-z
-                distribution, defaults to 0.05 (DES Y1)
         Returns:
             float: Probability weighted photo-z
         """
@@ -192,7 +201,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         return numerator / denominator
 
-    def comoving_volume_element(self, z_true, z_i):
+    def comoving_volume_element(self, z_true, z_i, sigma_0):
         """Calculates the volume element for this bin.
 
         Given a true redshift, and a redshift bin, this will give the
@@ -210,7 +219,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
             self.c
             * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z_true)) ** 2)
             / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z_true)))
-            * (self.observed_photo_z(z_true, z_i))
+            * (self.observed_photo_z(z_true, z_i, sigma_0))
         )
         return dV
 
@@ -234,8 +243,15 @@ class CovarianceClusterCounts(CovarianceBuilder):
         richness_bin = self.richness_bins[richness_i]
         richness_bin_next = self.richness_bins[richness_i + 1]
 
+        # mass-obs relation params to be added as input params
         std_deviation, average = MassRichnessRelation.MurataCostanzi(
-            ln_true_mass, self.h0
+            ln_true_mass,
+            self.h0,
+            self.mor_alpha,
+            self.mor_beta,
+            self.mor_sigma_zero,
+            self.mor_q,
+            self.mor_m_pivot,
         )
 
         def integrand(richness):
@@ -295,70 +311,146 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         return self._quad_integrate(integrand, m_integ_lower, m_integ_upper)
 
-    def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
-        """Calculate the SSC contribution to the covariance integrand.
+    # spherical harmonics coefficients
+    def Kl_func(self, L, theta):
+        """Harmonic expansion coefficients.
 
-        Calculate part of the super sample covariance, or the non-diagonal
-        correlation between two point functions whose observed modes are larger
-        than the survey size.
+        Coefficients for the redshift-slice window function
+        See Costanzi+19 (arXiv:1810.09456v1)
+        and Fumagalli+21 (arXiv:2102.08914v1).
+        For L=0 full-sky approximation.
 
         Args:
-            z (float): redshift
-            bin_z_j (int): redshift bin j
-            bin_lbd_j (int): richness bin j
-            approx (bool, optional): Will only calculate the mass richness
-            integral once and multiply at end. Defaults to True.
+            L (int): number of multipoles for the expansion
+                     (suggested for partial-sky: L=20)
+            theta (float): angular aperture of the lightcone
         Returns:
-            float: SSC covariance contribution.
-
+            array: L coefficients
         """
-        # Nelson tested and found convergence at 5 iterations
-        romb_k = 5
-        num_samples = 2 ** (romb_k - 1) + 1
 
-        # Build an equally sampled redshift array based on input and bounds
-        if z <= np.average(self.z_bins):
-            min_z = max(self.z_lower_limit, z - 6 * self.z_bin_spacing)
-            vec_left = np.linspace(min_z, z, num_samples)
-            vec_right = np.linspace(z, z + (z - vec_left[0]), num_samples)
-        else:
-            max_z = min(self.z_upper_limit, z + 0.4 * z)
-            vec_right = np.linspace(z, max_z, num_samples)
-            vec_left = np.linspace(z - (vec_right[-1] - z), z, num_samples)
+        Kl = np.array(
+            [
+                np.sqrt(np.pi / (2.0 * ell + 1.0))
+                * (
+                    eval_legendre(ell - 1, np.cos(theta))
+                    - eval_legendre(ell + 1, np.cos(theta))
+                )
+                / (2.0 * np.pi * (1 - np.cos(theta)))
+                for ell in range(L + 1)
+            ]
+        )
+        Kl[0] = 1 / (2.0 * np.sqrt(np.pi))
+        return Kl
 
-        z_values = np.append(vec_left, vec_right[1:])
-        romb_range = (z_values[-1] - z_values[0]) / (2**romb_k)
-        fn_values = np.zeros(2**romb_k + 1)
+    # window function
+    def window_redshift_bin(self, k_arr, z_arr, iz, L, sigma_0):
+        """Redshift-slice window function
 
-        for i in range(2**romb_k + 1):
-            fn_values[i] = (
-                self.comoving_volume_element(z_values[i], bin_z_j)
-                * ccl.growth_factor(self.cosmo, 1 / (1 + z_values[i]))
-                * self.double_bessel_integral(z, z_values[i])
+        Window function of the lightcone redshift slice.
+
+        Args:
+            k_arr (array): wavenumbers in 1/Mpc
+            z_arr (array): true redshift
+            iz (int): photometric redshift bin
+            L (int): number of multipoles for the expansion
+                     (suggested for partial-sky: L=20)
+        Returns:
+            array: growth factor times window function of the redshift slice
+        """
+
+        # harmonic expansion coefficeints
+        arccos_arg = 1 - self.survey_area / (2 * np.pi)
+        if arccos_arg < -1:  # may happen due to numerical inaccuracy
+            arccos_arg = -1
+        theta_sky = np.arccos(arccos_arg)
+
+        KL = self.Kl_func(L, theta_sky)
+
+        # redshift-dependent quantities
+        rz = ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z_arr))  # Mpc
+
+        dVdzob = np.array(
+            [self.comoving_volume_element(z, iz, sigma_0) for z in z_arr]
+        )
+        Vz = simps(dVdzob, x=z_arr)
+        D = ccl.growth_factor(self.cosmo, 1 / (1 + z_arr))
+
+        # integral over redshift
+        jl_kz = np.array(
+            [spherical_jn(ell, k_arr[:, None] * rz) for ell in range(L + 1)]
+        ).T
+        rint = simps((dVdzob * D)[:, None, None] * jl_kz, x=z_arr, axis=0) / Vz
+
+        return 4 * np.pi * rint * KL
+
+    def super_sample_covariance(self):
+        """super-sample covariance
+
+        super sample covariance term of the number counts covariance
+        """
+
+        # number of multipoles for the expansion
+        # (suggested for partial-sky: L=20)
+        L = 20
+        if self.fullsky is True:
+            L = 0
+
+        k_arr = np.geomspace(1e-4, 2e1, 700)  # 1/Mpc
+
+        # number counts*bias and window function
+        Nb_lob_zob = np.zeros((self.num_richness_bins, self.num_z_bins))
+        Wi_l = np.zeros((self.num_z_bins, len(k_arr), L + 1))
+
+        for iz in range(self.num_z_bins):
+
+            # true redshift for integration
+            z_tr = np.linspace(
+                max(self.z_bins[iz] - 0.3, 0.02),
+                min(self.z_bins[iz + 1] + 0.3, 0.91),
+                200,
             )
 
-            if approx:
-                continue
+            # observed volume element
+            dVdzob = np.array(
+                [
+                    self.comoving_volume_element(z, iz, self.sigma_0)
+                    for z in z_tr
+                ]
+            )
 
-            fn_values[i] *= self.mass_richness_integral(z_values[i], bin_lbd_j)
+            # number counts and bias in observed redshift and richness bins
+            for il in range(self.num_richness_bins):
 
-        integral_val = self._romb_integrate(fn_values, romb_range)
+                Nb_lob_z = np.array(
+                    [
+                        self.mass_richness_integral(z, il, remove_bias=False)
+                        for z in z_tr
+                    ]
+                )
 
-        factor_approx = 1
-        if approx:
-            factor_approx = self.mass_richness_integral(z, bin_lbd_j)
+                Nb_lob_zob[il, iz] = simps(dVdzob * Nb_lob_z, x=z_tr, axis=0)
 
-        return integral_val * factor_approx
+            # window function of the i-th redshift bin
+            Wi_l[iz] = self.window_redshift_bin(
+                k_arr, z_tr, iz, L, self.sigma_0
+            )
 
-    def double_bessel_integral(self, z1, z2):
-        """Calculates the double bessel integral using 2-FAST algorithm.
+        # sum over ell of W_i * W_j
+        WiWj_sum = np.sum(Wi_l[:, None, :, :] * Wi_l[None, :, :, :], axis=-1)
 
-        See section 7.1, 7.2 of N. Ferreira dissertation.
+        # sample covariance
+        pk0 = ccl.linear_matter_power(self.cosmo, k_arr, 1.0)  # Mpc^3
+        sigma2_zizj = (
+            1
+            / (2 * np.pi) ** 3
+            * simps(k_arr**2 * pk0 * WiWj_sum, x=k_arr, axis=-1)
+        )
 
-        Args:
-            z1 (float): redshift lower bound
-            z2 (float): redshift upper bound
-        Returns:
-            float: Numerical approximation of integral.
-        """
-        return self.fft_helper.two_fast_algorithm(z1, z2)
+        # SSC, dim=[richness,richness,redshift,redshift]
+        SSC = self.survey_area**2 * (
+            Nb_lob_zob.reshape(1, self.num_richness_bins, 1, self.num_z_bins)
+            * Nb_lob_zob.reshape(self.num_richness_bins, 1, self.num_z_bins, 1)
+            * sigma2_zizj.reshape(1, 1, self.num_z_bins, self.num_z_bins)
+        )
+
+        return SSC
