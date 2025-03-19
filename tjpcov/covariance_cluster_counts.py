@@ -6,7 +6,7 @@ from scipy.integrate import quad
 from scipy.integrate import simpson as simps
 from sacc import standard_types
 from scipy.special import spherical_jn, eval_legendre
-
+from firecrown.models.cluster.mass_proxy import MurataBinned
 
 class CovarianceClusterCounts(CovarianceBuilder):
     """Class to calculate covariance of cluster counts."""
@@ -17,7 +17,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         standard_types.cluster_counts,
     )
 
-    def __init__(self, config, min_halo_mass=1e13):
+    def __init__(self, config):
         """Class to calculate covariance of cluster counts.
 
         Args:
@@ -35,11 +35,10 @@ class CovarianceClusterCounts(CovarianceBuilder):
                 + " points were not included in the sacc file."
             )
 
-        self.load_from_sacc(sacc_file, min_halo_mass)
-
         cosmo = self.get_cosmology()
         self.load_from_cosmology(cosmo)
-
+        
+        self.load_from_sacc(sacc_file)
         # Quick key to skip P(Richness|M)
         self.has_mproxy = self.config.get("has_mproxy", True)
         self.covariance_block_data_type = standard_types.cluster_counts
@@ -55,12 +54,43 @@ class CovarianceClusterCounts(CovarianceBuilder):
         self.cosmo = cosmo
         self.c = ccl.physical_constants.CLIGHT / 1000
         self.h0 = float(self.config["parameters"].get("h"))
+        mass_func_name = self.config["mor_parameters"].get("mass_func")
+        halo_bias_name = self.config["mor_parameters"].get("halo_bias")
+        mass_def = self.config["mor_parameters"].get("mass_def")
+        self.min_halo_mass = float(self.config["mor_parameters"].get("min_halo_mass"))
+        self.max_halo_mass = float(self.config["mor_parameters"].get("max_halo_mass")) 
+        # Map mass function name to actual function
+        mass_func_map = {
+            'Tinker08': ccl.halos.MassFuncTinker08,
+            'Tinker10': ccl.halos.MassFuncTinker10,
+            'Bocquet16': ccl.halos.MassFuncBocquet16,
+            'Bocquet20': ccl.halos.MassFuncBocquet20,
+            'Despali16': ccl.halos.MassFuncDespali16,
+            'Jenkins01': ccl.halos.MassFuncJenkins01,
+            'Nishimichi19': ccl.halos.MassFuncNishimichi19,
+            'Press74': ccl.halos.MassFuncPress74,
+            'Sheth99': ccl.halos.MassFuncSheth99,
+            'Watson13': ccl.halos.MassFuncWatson13,
+            'Angulo12': ccl.halos.MassFuncAngulo12,
+        }
 
-        # bettere to define these variables in a gonfig file?
-        mass_def = ccl.halos.MassDef200m
-        self.mass_func = ccl.halos.MassFuncTinker08(mass_def=mass_def)
+        # Map halo bias name to actual function
+        halo_bias_map = {
+            'Tinker10': ccl.halos.HaloBiasTinker10,
+            'Bhattacharya11': ccl.halos.HaloBiasBhattacharya11,
+            'Sheth01': ccl.halos.HaloBiasSheth01,
+            'Sheth99': ccl.halos.HaloBiasSheth99,
+        }
 
-        self.hbias = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
+        # Map mass definition to the corresponding ccl option
+        if mass_func_name not in mass_func_map:
+            raise ValueError(f"Invalid mass function: {mass_func_name}")
+        if halo_bias_name not in halo_bias_map:
+            raise ValueError(f"Invalid halo bias: {halo_bias_name}")
+        
+        # Create the mass definition, mass function, and halo bias objects
+        self.mass_func = mass_func_map[mass_func_name](mass_def=mass_def)
+        self.hbias = halo_bias_map[halo_bias_name](mass_def=mass_def)
 
         self.fullsky = False
 
@@ -78,11 +108,18 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         # Msun (convert units using a fiducial value for h,
         # if the self.h0 is used this would add an extra dependence on h)
-        self.mor_m_pivot = (
-            float(self.config["mor_parameters"].get("m_pivot")) / 0.7
-        )
+        self.mor_m_pivot = float(self.config["mor_parameters"].get("m_pivot"))
+        self.mor_mu_p0 = float(self.config["mor_parameters"].get("mu_p0"))
+        self.mor_mu_p1 = float(self.config["mor_parameters"].get("mu_p1"))
+        self.mor_mu_p2 = float(self.config["mor_parameters"].get("mu_p2"))
+        self.mor_sigma_p0 = float(self.config["mor_parameters"].get("sigma_p0"))
+        self.mor_sigma_p1 = float(self.config["mor_parameters"].get("sigma_p1"))
+        self.mor_sigma_p2 = float(self.config["mor_parameters"].get("sigma_p2"))
+        # Msun (convert units using a fiducial value for h,
+        # if the self.h0 is used this would add an extra dependence on h)
+        self.mor_z_pivot = (float(self.config["mor_parameters"].get("z_pivot")))
 
-    def load_from_sacc(self, sacc_file, min_halo_mass):
+    def load_from_sacc(self, sacc_file):
         """Set class attributes based on data from the SACC file.
 
         Cluster covariance has special parameters set in the SACC file. This
@@ -151,8 +188,8 @@ class CovarianceClusterCounts(CovarianceBuilder):
             2,
         )
 
-        self.min_mass = np.log(min_halo_mass)
-        self.max_mass = np.log(1e16)
+        self.min_mass = np.log(self.min_halo_mass)
+        self.max_mass = np.log(self.max_halo_mass)
 
     def _quad_integrate(self, argument, from_lim, to_lim):
         """Numerically integrate argument between bounds using scipy quad.
@@ -223,7 +260,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         )
         return dV
 
-    def mass_richness(self, ln_true_mass, richness_i):
+    def mass_richness(self, ln_true_mass, z, richness_i):
         """Log-normal mass-richness relation without observational scatter.
 
         The probability that we observe richness given the true mass M, is
@@ -239,31 +276,20 @@ class CovarianceClusterCounts(CovarianceBuilder):
             float: The probability that the true mass ln(ln_true_mass)
             is observed within the richness bin i and richness bin i+1
         """
-
-        richness_bin = self.richness_bins[richness_i]
-        richness_bin_next = self.richness_bins[richness_i + 1]
-
+        richness_lower = np.log10(self.richness_bins[richness_i])
+        richness_upper = np.log10(self.richness_bins[richness_i + 1])
+        rich_bin = (richness_lower, richness_upper)
+        mass_richness_prob = MurataBinned(np.log10(self.mor_m_pivot), self.mor_z_pivot)
         # mass-obs relation params to be added as input params
-        std_deviation, average = MassRichnessRelation.MurataCostanzi(
-            ln_true_mass,
-            self.h0,
-            self.mor_alpha,
-            self.mor_beta,
-            self.mor_sigma_zero,
-            self.mor_q,
-            self.mor_m_pivot,
-        )
+        mass_richness_prob.mu_p0 = self.mor_mu_p0
+        mass_richness_prob.mu_p1 = self.mor_mu_p1
+        mass_richness_prob.mu_p2 = self.mor_mu_p2
+        mass_richness_prob.sigma_p0 = self.mor_sigma_p0
+        mass_richness_prob.sigma_p1 = self.mor_sigma_p1
+        mass_richness_prob.sigma_p2 = self.mor_sigma_p2
+        result = mass_richness_prob.distribution(ln_true_mass / np.log(10), z, rich_bin)
 
-        def integrand(richness):
-            prefactor = 1.0 / (
-                richness * (np.sqrt(2.0 * np.pi) * std_deviation)
-            )
-            distribution = np.exp(
-                -(1 / 2) * ((np.log(richness) - average) / std_deviation) ** 2
-            )
-            return prefactor * distribution
-
-        return self._quad_integrate(integrand, richness_bin, richness_bin_next)
+        return result
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
         """Integrates the HMF weighted by mass-richness relation.
@@ -299,7 +325,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
                 argument *= halo_bias
 
             if self.has_mproxy:
-                argument *= self.mass_richness(ln_m, richness_i)
+                argument *= self.mass_richness(np.array([ln_m]), np.array([z]), np.array([richness_i]))
 
             return argument
 
@@ -310,7 +336,6 @@ class CovarianceClusterCounts(CovarianceBuilder):
             m_integ_upper = np.log(10) * self.richness_bins[richness_i + 1]
 
         return self._quad_integrate(integrand, m_integ_lower, m_integ_upper)
-
     # spherical harmonics coefficients
     def Kl_func(self, L, theta):
         """Harmonic expansion coefficients.
