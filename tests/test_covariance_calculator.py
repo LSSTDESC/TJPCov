@@ -2,6 +2,9 @@
 from tjpcov.covariance_calculator import CovarianceCalculator
 from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
+from tjpcov.__init__ import covariance_from_name
+
+
 import os
 import pytest
 import numpy as np
@@ -29,20 +32,53 @@ def mock_cov_calc():
 def test_smoke():
     CovarianceCalculator(INPUT_YML)
 
+def test_covariance_from_name():
+    # Test valid covariance names
+    valid_names = [
+        "FourierGaussianNmt",
+        "FourierSSCHaloModel",
+        "FouriercNGHaloModel",
+        "FourierSSCHaloModelFsky",
+        "FouriercNGHaloModelFsky",
+        "ClusterCountsSSC",
+        "ClusterCountsGaussian",
+        "ClusterMass",
+        "FourierGaussianFsky",
+        "RealGaussianFsky",
+    ]
+
+    for name in valid_names:
+        # Call the function and check if the returned object is a class
+        CovClass = covariance_from_name(name)
+        assert isinstance(CovClass, type), f"Expected a class for {name}, got {CovClass}"
+
+    # Test invalid covariance name
+    invalid_name = "InvalidCovarianceName"
+    with pytest.raises(ValueError, match=f"Unknown covariance {invalid_name}"):
+        covariance_from_name(invalid_name)
 
 # TODO: Test with "clxN" when clusters are implemented
-def test_get_covariance_classes(mock_cov_calc):
-    classes = mock_cov_calc.get_covariance_classes()
 
+def test_get_covariance_classes(mock_cov_calc):
+    # Test the default case where cov_type is a list
+    classes = mock_cov_calc.get_covariance_classes()
     assert isinstance(classes["gauss"], dict)
     assert isinstance(classes["SSC"], dict)
     assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
     assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
+    # Test the case where cov_type is a string (single covariance type)
+    config = mock_cov_calc.config.copy()
+    config["tjpcov"]["cov_type"] = "FourierGaussianNmt"  # Set cov_type as a string
+    cc = CovarianceCalculator(config)
+    classes = cc.get_covariance_classes()
+    assert isinstance(classes["gauss"], dict)
+    assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
+
     # Test it raises an error if two gauss contributions are requested
     config = mock_cov_calc.config.copy()
     config["tjpcov"]["cov_type"] = ["FourierGaussianFsky"] * 2
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Covariance type gauss for .* is already set"):
         cc = CovarianceCalculator(config)
         cc.get_covariance_classes()
 
@@ -52,10 +88,32 @@ def test_get_covariance_classes(mock_cov_calc):
         "FourierGaussianFsky",
         "RealGaussianFsky",
     ]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Mixing configuration and Fourier space covariances"):
         cc = CovarianceCalculator(config)
         cc.get_covariance_classes()
 
+    # Test that it raises an error if the same covariance type is requested for the same tracer types
+    config = mock_cov_calc.config.copy()
+    config["tjpcov"]["cov_type"] = [
+        "FourierGaussianNmt",
+        "FourierGaussianNmt",  # Duplicate covariance type
+    ]
+    with pytest.raises(ValueError, match="Covariance type gauss for .* is already set"):
+        cc = CovarianceCalculator(config)
+        cc.get_covariance_classes()
+
+    # Test that it updates the cov_classes dictionary correctly for multiple tracer types
+    config = mock_cov_calc.config.copy()
+    config["tjpcov"]["cov_type"] = [
+        "FourierGaussianNmt",
+        "FourierSSCHaloModel",
+    ]
+    cc = CovarianceCalculator(config)
+    classes = cc.get_covariance_classes()
+    assert isinstance(classes["gauss"], dict)
+    assert isinstance(classes["SSC"], dict)
+    assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
+    assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
 def test_get_covariance(mock_cov_calc):
     cov = mock_cov_calc.get_covariance() + 1e-100
@@ -108,3 +166,11 @@ def test_create_sacc_cov(mock_cov_calc):
     # Test the different terms are not saved
     assert not os.path.isfile(OUTDIR + "test_gauss.fits")
     assert not os.path.isfile(OUTDIR + "test_SSC.fits")
+    
+    # Test early return when rank is not 0
+    mock_cov_calc.rank = 1  # Set rank to a non-zero value
+    result = mock_cov_calc.create_sacc_cov()
+    assert result is None  # Ensure the function returns early
+
+    # Reset rank to None or 0 for other tests
+    mock_cov_calc.rank = 0

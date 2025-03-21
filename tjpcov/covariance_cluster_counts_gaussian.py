@@ -1,4 +1,5 @@
 from .covariance_cluster_counts import CovarianceClusterCounts
+from .clusters_helpers import extract_indices_rich_z
 import numpy as np
 
 
@@ -41,20 +42,17 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_richness_1', 'bin_z_0')
-            tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_richness_0', 'bin_z_0')
+            tracer_comb1 (`tuple` of str): e.g. ('survey', 'bin_richness_1', 'bin_z_0')
+                                        or ('clusters_0_1',)
+            tracer_comb2 (`tuple` of str): e.g. ('survey', 'bin_richness_0', 'bin_z_0')
+                                        or ('clusters_0_0',)
 
         Returns:
-            float: Covariance for a single block
+            array_like: Covariance for a single block
         """
-
-        richness_i = int(tracer_comb1[1].split("_")[-1])
-        z_i = int(tracer_comb1[2].split("_")[-1])
-
-        richness_j = int(tracer_comb2[1].split("_")[-1])
-        z_j = int(tracer_comb2[2].split("_")[-1])
+        # Extract richness and redshift indices for both tracer combinations
+        richness_i, z_i = extract_indices_rich_z(tracer_comb1)
+        richness_j, z_j = extract_indices_rich_z(tracer_comb2)
 
         if richness_i != richness_j or z_i != z_j:
             return np.array(0)

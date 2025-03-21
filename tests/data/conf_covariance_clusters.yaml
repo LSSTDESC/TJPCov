@@ -28,9 +28,22 @@ photo-z:
 
 
 mor_parameters:
+  #halo mass function parameters
+  mass_func: 'Tinker08'
+  mass_def: '200m'
+  halo_bias: 'Tinker10'
+  min_halo_mass: 1.0e13
+  max_halo_mass: 1.0e16
   #richness-mass relation parameters (from Murata-Costanzi):
   alpha: 3.207
   beta: 0.75
-  sigma_zero: 2.68
+  sigma_zero: 2.68 
   q: 0.54
-  m_pivot: 3.0e14
+  m_pivot: 428571428571428.6
+  z_pivot: 0.5
+  mu_p0: 3.207
+  mu_p1: 0.75
+  mu_p2: 0.
+  sigma_p0: 2.68
+  sigma_p1: 0.54
+  sigma_p2: 0.  

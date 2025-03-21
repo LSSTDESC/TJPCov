@@ -5,7 +5,7 @@ import sacc
 from tjpcov.covariance_cluster_counts import CovarianceClusterCounts
 from tjpcov.covariance_cluster_counts_gaussian import ClusterCountsGaussian
 from tjpcov.covariance_cluster_counts_ssc import ClusterCountsSSC
-from tjpcov.clusters_helpers import FFTHelper
+from tjpcov.clusters_helpers import FFTHelper, extract_indices_rich_z
 import pyccl.halos.hmfunc as hmf
 import pytest
 import os
@@ -136,6 +136,23 @@ def test_is_not_null():
     cc_cov = ClusterCountsGaussian(INPUT_YML)
     assert cc_cov is not None
 
+def test_extract_indices():
+    bincomb1 = ("mock_survey", "bin_rich_0", "bin_z_1")
+    bincomb2 = ("mock_survey", "bin_rich_1", "bin_z_0")
+    richness_i, z_i = extract_indices_rich_z(bincomb1)
+    richness_j, z_j = extract_indices_rich_z(bincomb2)
+    assert richness_i == 0
+    assert richness_j == 1
+    assert z_i == 1
+    assert z_j == 0
+    bincomb3 = ("clusters_0_1",)
+    bincomb4 = ("clusters_1_0",)
+    richness_i, z_i = extract_indices_rich_z(bincomb3)
+    richness_j, z_j = extract_indices_rich_z(bincomb4)
+    assert richness_i == 0
+    assert richness_j == 1
+    assert z_i == 1
+    assert z_j == 0
 
 def test_load_from_sacc(mock_covariance_gauss: CovarianceClusterCounts):
     assert mock_covariance_gauss.min_mass == np.log(1e13)
@@ -207,7 +224,7 @@ def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
     reference_min = 0.0016346637144491727
 
     test_min = [
-        mock_covariance_gauss.mass_richness(mock_covariance_gauss.min_mass, i)
+        mock_covariance_gauss.mass_richness(mock_covariance_gauss.min_mass,1.0, i)
         for i in range(mock_covariance_gauss.num_richness_bins)
     ]
     assert np.sum(test_min) == pytest.approx(reference_min)
@@ -278,6 +295,21 @@ def test_cov_nxn(
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
 
+
+def test_get_covariance_block(
+    mock_covariance_gauss: ClusterCountsGaussian,
+    mock_covariance_ssc: ClusterCountsSSC,
+):
+    ref_sum = 189480.8478457688
+    cov_00_gauss = mock_covariance_gauss.get_covariance_block(
+        ('clusters_0_0',),
+        ('clusters_0_0',),
+    )
+    cov_00_ssc = mock_covariance_ssc.get_covariance_block(
+        ('clusters_0_0',),
+        ('clusters_0_0',),
+    )
+    assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
 
 def test_cluster_count_tracer_missing_throws():
     # Create a mock sacc file without any cluster count data points

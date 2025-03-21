@@ -1,34 +1,24 @@
 import numpy as np
 
-
-class MassRichnessRelation(object):
-    """Helper class to hold different mass richness relations"""
-
-    @staticmethod
-    def MurataCostanzi(ln_true_mass, h0, alpha, beta, sigma_zero, q, m_pivot):
-        """Uses constants from Murata et al - ArxIv 1707.01907 and Costanzi
-        et al ArxIv 1810.09456v1 to derive the log-normal mass-richness
-        relation
-
-        Args:
-            ln_true_mass (float): True mass
-            h0 (float): Hubble's constant
-        Returns:
-            `tuple` of float: The parameterized average and spread of the
-            log-normal mass-richness relation
-        """
-
-        # alpha = 3.207  # Murata
-        # beta = 0.75  # Costanzi
-        # sigma_zero = 2.68  # Costanzi
-        # q = 0.54  # Costanzi
-        # m_pivot = 3.0e14 / h0  # in solar masses , Murata and Costanzi use it
-
-        sigma_lambda = sigma_zero + q * (ln_true_mass - np.log(m_pivot))
-        average = alpha + beta * (ln_true_mass - np.log(m_pivot))
-
-        return sigma_lambda, average
-
+def extract_indices_rich_z(tracer_comb):
+    """Helper function to extract richness and redshift indices from a tracer combination."""
+    if len(tracer_comb) == 1:
+        # Handle input type 2: ('clusters_0_1',)
+        parts = tracer_comb[0].split("_")
+        richness = int(parts[-2])  # Second-to-last part is richness
+        z = int(parts[-1])         # Last part is redshift
+    else:
+        # Handle input type 1: ('survey', 'bin_richness_1', 'bin_z_0')
+        richness = None
+        z = None
+        for part in tracer_comb:
+            if part.startswith("bin_richness_") or part.startswith("bin_rich_"):  # Handle both prefixes
+                richness = int(part.split("_")[-1])
+            elif part.startswith("bin_z_"):
+                z = int(part.split("_")[-1])
+        if richness is None or z is None:
+            raise ValueError(f"Could not extract richness or z from tracer combination: {tracer_comb}")
+    return richness, z
 
 class FFTHelper(object):
     """Cluster covariance needs to use fast fourier transforms in combination
@@ -137,7 +127,7 @@ class FFTHelper(object):
             kind="cubic",
         )
         try:
-            return interpolation(max(r1, r2))
+            return float(interpolation(max(r1, r2)))
         except Exception as err:
             print(
                 err,

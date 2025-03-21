@@ -1,5 +1,5 @@
 from .covariance_builder import CovarianceBuilder
-from .clusters_helpers import FFTHelper
+from .clusters_helpers import FFTHelper, extract_indices_rich_z
 import numpy as np
 import pyccl as ccl
 from sacc import standard_types
@@ -155,10 +155,8 @@ class ClusterMass(CovarianceBuilder):
         """Compute a single covariance entry 'cluster_mean_log_mass'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_richness_1', 'bin_z_0')
-            tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_richness_0', 'bin_z_0')
+            tracer_comb1 (`tuple` of str): e.g. ('clusters_0_0',)
+            tracer_comb2 (`tuple` of str): e.g. ('clusters_0_1',)
         Returns:
             array_like: Covariance for a single block
         """
@@ -177,11 +175,8 @@ class ClusterMass(CovarianceBuilder):
             float: Covariance for a single block
         """
 
-        z_i = int(tracer_comb1[1].split("_")[-1])
-        richness_i = int(tracer_comb1[2].split("_")[-1])
-
-        z_j = int(tracer_comb2[1].split("_")[-1])
-        richness_j = int(tracer_comb2[2].split("_")[-1])
+        richness_i, z_i = extract_indices_rich_z(tracer_comb1)
+        richness_j, z_j = extract_indices_rich_z(tracer_comb2)
 
         if richness_i != richness_j or z_i != z_j:
             return np.array(0)

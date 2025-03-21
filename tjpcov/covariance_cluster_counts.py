@@ -1,5 +1,4 @@
 from .covariance_builder import CovarianceBuilder
-from .clusters_helpers import MassRichnessRelation
 import numpy as np
 import pyccl as ccl
 from scipy.integrate import quad
@@ -159,8 +158,8 @@ class CovarianceClusterCounts(CovarianceBuilder):
             if v.tracer_type == z_tracer_type
         ]
         self.num_z_bins = len(z_bins)
-        self.z_min = z_bins[0].lower
-        self.z_max = z_bins[-1].upper
+        self.z_min = np.min([zbin.lower for zbin in z_bins])
+        self.z_max = np.max([zbin.upper for zbin in z_bins])
         self.z_bins = np.round(
             np.linspace(self.z_min, self.z_max, self.num_z_bins + 1), 2
         )
@@ -177,8 +176,8 @@ class CovarianceClusterCounts(CovarianceBuilder):
             if v.tracer_type == richness_tracer_type
         ]
         self.num_richness_bins = len(richness_bins)
-        self.min_richness = 10 ** richness_bins[0].lower
-        self.max_richness = 10 ** richness_bins[-1].upper
+        self.min_richness = 10 ** np.min([rbin.lower for rbin in richness_bins])
+        self.max_richness = 10 ** np.max([rbin.upper for rbin in richness_bins])
         self.richness_bins = np.round(
             np.logspace(
                 np.log10(self.min_richness),
@@ -271,6 +270,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         Args:
             ln_true_mass (float): True mass
+            z (float): Redshift
             richness_bin (int): Richness bin i
         Returns:
             float: The probability that the true mass ln(ln_true_mass)
@@ -287,6 +287,8 @@ class CovarianceClusterCounts(CovarianceBuilder):
         mass_richness_prob.sigma_p0 = self.mor_sigma_p0
         mass_richness_prob.sigma_p1 = self.mor_sigma_p1
         mass_richness_prob.sigma_p2 = self.mor_sigma_p2
+        ln_true_mass = np.atleast_1d(ln_true_mass).astype(np.float64)
+        z = np.atleast_1d(z).astype(np.float64)
         result = mass_richness_prob.distribution(ln_true_mass / np.log(10), z, rich_bin)
 
         return result
@@ -299,7 +301,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         Args:
             z (float): Redshift
-            lbd_i (int): Richness bin
+            richness_i (int): Richness bin
             remove_bias (bool, optional): If TRUE, will remove halo_bias from
             the mass integral. Used for calculating the shot noise.
         Returns:
