@@ -43,10 +43,10 @@ class ClusterCountsSSC(CovarianceClusterCounts):
         """Compute a single covariance entry 'clusters_redshift_richness'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('survey', 'bin_richness_1', 'bin_z_0')
-                                        or ('clusters_0_1',)
-            tracer_comb2 (`tuple` of str): e.g. ('survey', 'bin_richness_0', 'bin_z_0')
-                                        or ('clusters_0_0',)
+            tracer_comb1 (`tuple` of str): e.g.
+            ('survey', 'bin_richness_1', 'bin_z_0') or ('clusters_0_1',)
+            tracer_comb2 (`tuple` of str): e.g.
+            ('survey', 'bin_richness_0', 'bin_z_0') or ('clusters_0_0',)
 
         Returns:
             array_like: Covariance for a single block

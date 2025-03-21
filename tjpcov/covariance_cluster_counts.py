@@ -43,9 +43,6 @@ class CovarianceClusterCounts(CovarianceBuilder):
         self.has_mproxy = self.config.get("has_mproxy", True)
         self.covariance_block_data_type = standard_types.cluster_counts
 
-    def load_cluster_parameters(self):
-        pass
-
     def load_from_cosmology(self, cosmo):
         """Load parameters from a CCL cosmology object.
 

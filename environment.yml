@@ -11,6 +11,7 @@ dependencies:
   - pytest-rerunfailures
   - coveralls
   - numpy
+  - firecrown
     # - scipy
   - scipy<1.12 # <1.12 to avoid bug in CCL<3.1 (not in pypy) with simpson integration
   - pyyaml

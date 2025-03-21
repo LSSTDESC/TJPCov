@@ -132,10 +132,10 @@ class ClusterMass(CovarianceBuilder):
         """Compute a single covariance entry 'cluster_mean_log_mass'
 
         Args:
-            tracer_comb1 (`tuple` of str): e.g. ('survey', 'bin_richness_1', 'bin_z_0')
-                                        or ('clusters_0_1',)
-            tracer_comb2 (`tuple` of str): e.g. ('survey', 'bin_richness_0', 'bin_z_0')
-                                        or ('clusters_0_0',)
+            tracer_comb1 (`tuple` of str): e.g.
+            ('survey', 'bin_richness_1', 'bin_z_0') or ('clusters_0_1',)
+            tracer_comb2 (`tuple` of str): e.g.
+            ('survey', 'bin_richness_0', 'bin_z_0') or ('clusters_0_0',)
 
         Returns:
             float: Covariance for a single block
