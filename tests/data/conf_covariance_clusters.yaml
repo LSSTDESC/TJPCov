@@ -34,11 +34,7 @@ mor_parameters:
   halo_bias: 'Tinker10'
   min_halo_mass: 1.0e13
   max_halo_mass: 1.0e16
-  #richness-mass relation parameters (from Murata-Costanzi):
-  alpha: 3.207
-  beta: 0.75
-  sigma_zero: 2.68 
-  q: 0.54
+  #richness-mass relation parameters (from eq (14) in https://arxiv.org/pdf/1904.07524):
   m_pivot: 428571428571428.6
   z_pivot: 0.5
   mu_p0: 3.207

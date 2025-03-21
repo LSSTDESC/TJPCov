@@ -55,11 +55,10 @@ class ClusterCountsSSC(CovarianceClusterCounts):
         # Extract richness and redshift indices for both tracer combinations
         richness_i, z_i = extract_indices_rich_z(tracer_comb1)
         richness_j, z_j = extract_indices_rich_z(tracer_comb2)
-        
+
         # Compute the full SSC covariance only once
         if self.ssc_total is None:
             self.ssc_total = self.super_sample_covariance()
-
 
         # Read the single entries of the total SSC covariance
         # ssc_total dim = [richness, richness, redshift, redshift]

@@ -129,6 +129,29 @@ def test_is_not_null():
     assert cc_cov is not None
 
 
+def test_load_cluster_parameters(mock_covariance_mass: ClusterMass):
+    """Test that the cluster parameters are loaded correctly."""
+    # Test with valid parameters
+    mock_covariance_mass.load_cluster_parameters()
+
+    # Check that the parameters are loaded correctly
+    assert mock_covariance_mass.mass_def == "200m"
+    assert mock_covariance_mass.min_halo_mass == 1.0e13
+    assert mock_covariance_mass.max_halo_mass == 1.0e16
+    assert mock_covariance_mass.mass_func is not None
+
+    # Test with invalid mass function
+    invalid_mass_func = "InvalidMassFunc"
+    config_copy = mock_covariance_mass.config.copy()
+    config_copy["mor_parameters"]["mass_func"] = invalid_mass_func
+    mock_covariance_mass.config = config_copy
+    with pytest.raises(
+        ValueError,
+        match=f"Invalid mass function: {invalid_mass_func}",
+    ):
+        mock_covariance_mass.load_cluster_parameters()
+
+
 def test_cluster_count_tracer_missing_throws():
     # Create a mock sacc file without any cluster count data points
 

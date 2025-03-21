@@ -1,27 +1,148 @@
+"""Helper functions and classes for cluster covariance calculations."""
+
 import numpy as np
+import pyccl as ccl
+
+# Map mass function name to actual function
+mass_func_map = {
+    "Tinker08": ccl.halos.MassFuncTinker08,
+    "Tinker10": ccl.halos.MassFuncTinker10,
+    "Bocquet16": ccl.halos.MassFuncBocquet16,
+    "Bocquet20": ccl.halos.MassFuncBocquet20,
+    "Despali16": ccl.halos.MassFuncDespali16,
+    "Jenkins01": ccl.halos.MassFuncJenkins01,
+    "Nishimichi19": ccl.halos.MassFuncNishimichi19,
+    "Press74": ccl.halos.MassFuncPress74,
+    "Sheth99": ccl.halos.MassFuncSheth99,
+    "Watson13": ccl.halos.MassFuncWatson13,
+    "Angulo12": ccl.halos.MassFuncAngulo12,
+}
+
+# Map halo bias name to actual function
+halo_bias_map = {
+    "Tinker10": ccl.halos.HaloBiasTinker10,
+    "Bhattacharya11": ccl.halos.HaloBiasBhattacharya11,
+    "Sheth01": ccl.halos.HaloBiasSheth01,
+    "Sheth99": ccl.halos.HaloBiasSheth99,
+}
+
+
+def _load_from_sacc(sacc_file, min_halo_mass, max_halo_mass):
+    """Extract and compute attributes from a SACC file.
+
+    Args:
+        sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already loaded.
+        min_halo_mass (float): Minimum halo mass.
+        max_halo_mass (float): Maximum halo mass.
+
+    Returns:
+        dict: A dictionary containing all computed attributes.
+    """
+    z_tracer_type = "bin_z"
+    survey_tracer_type = "survey"
+    richness_tracer_type = "bin_richness"
+
+    # Extract survey tracer
+    survey_tracer = [
+        x
+        for x in sacc_file.tracers.values()
+        if x.tracer_type == survey_tracer_type
+    ]
+    if len(survey_tracer) == 0:
+        survey_area = 4 * np.pi
+        print(
+            "Survey tracer not provided in sacc file.\n"
+            + "We will use the default value.",
+            flush=True,
+        )
+    else:
+        survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
+
+    # Setup redshift bins
+    z_bins = [
+        v for v in sacc_file.tracers.values() if v.tracer_type == z_tracer_type
+    ]
+    num_z_bins = len(z_bins)
+    z_min = np.min([zbin.lower for zbin in z_bins])
+    z_max = np.max([zbin.upper for zbin in z_bins])
+    z_bins = np.round(np.linspace(z_min, z_max, num_z_bins + 1), 2)
+    z_bin_spacing = (z_max - z_min) / num_z_bins
+    z_lower_limit = max(0.02, z_bins[0] - 4 * z_bin_spacing)
+    z_upper_limit = (
+        z_bins[-1] + 0.4 * z_bins[-1]
+    )  # Set upper limit to be 40% higher than max redshift
+
+    # Setup richness bins
+    richness_bins = [
+        v
+        for v in sacc_file.tracers.values()
+        if v.tracer_type == richness_tracer_type
+    ]
+    num_richness_bins = len(richness_bins)
+    min_richness = 10 ** np.min([rbin.lower for rbin in richness_bins])
+    max_richness = 10 ** np.max([rbin.upper for rbin in richness_bins])
+    richness_bins = np.round(
+        np.logspace(
+            np.log10(min_richness),
+            np.log10(max_richness),
+            num_richness_bins + 1,
+        ),
+        2,
+    )
+
+    # Compute mass-related attributes
+    min_mass = np.log(min_halo_mass)
+    max_mass = np.log(max_halo_mass)
+
+    # Return all computed attributes as a dictionary
+    return {
+        "survey_area": survey_area,
+        "num_z_bins": num_z_bins,
+        "z_min": z_min,
+        "z_max": z_max,
+        "z_bins": z_bins,
+        "z_bin_spacing": z_bin_spacing,
+        "z_lower_limit": z_lower_limit,
+        "z_upper_limit": z_upper_limit,
+        "num_richness_bins": num_richness_bins,
+        "min_richness": min_richness,
+        "max_richness": max_richness,
+        "richness_bins": richness_bins,
+        "min_mass": min_mass,
+        "max_mass": max_mass,
+    }
+
 
 def extract_indices_rich_z(tracer_comb):
-    """Helper function to extract richness and redshift indices from a tracer combination."""
+    """Extract richness and redshift indices from a tracer combination."""
     if len(tracer_comb) == 1:
         # Handle input type 2: ('clusters_0_1',)
         parts = tracer_comb[0].split("_")
         richness = int(parts[-2])  # Second-to-last part is richness
-        z = int(parts[-1])         # Last part is redshift
+        z = int(parts[-1])  # Last part is redshift
     else:
         # Handle input type 1: ('survey', 'bin_richness_1', 'bin_z_0')
         richness = None
         z = None
         for part in tracer_comb:
-            if part.startswith("bin_richness_") or part.startswith("bin_rich_"):  # Handle both prefixes
+            if part.startswith("bin_richness_") or part.startswith(
+                "bin_rich_"
+            ):  # Handle both prefixes
                 richness = int(part.split("_")[-1])
             elif part.startswith("bin_z_"):
                 z = int(part.split("_")[-1])
         if richness is None or z is None:
-            raise ValueError(f"Could not extract richness or z from tracer combination: {tracer_comb}")
+            raise ValueError(
+                "Could not extract richness or z from tracer combination: "
+                f"{tracer_comb}"
+            )
     return richness, z
 
+
 class FFTHelper(object):
-    """Cluster covariance needs to use fast fourier transforms in combination
+    """Fft helper class.
+
+    Cluster covariance needs to use fast fourier transforms in combination
     with numerical approximations to evaluate rapidly oscillating integrals
     that appear in the calculation of the covariance.  These are stored in this
     helper class.
@@ -33,7 +154,7 @@ class FFTHelper(object):
     N = 1024
 
     def __init__(self, cosmo, z_min, z_max):
-        """Constructor for the FFTHelper class
+        """Constructor for the FFTHelper class.
 
         Args:
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
@@ -44,7 +165,9 @@ class FFTHelper(object):
         self._set_fft_params(z_min, z_max)
 
     def _set_fft_params(self, z_min, z_max):
-        """The numerical implementation of the FFT needs some values
+        """Function to set fft parameters.
+
+        The numerical implementation of the FFT needs some values
         set by some simple calculations.  Those are performed here.
 
         See Eqn 7.16 N. Ferreira disseration.

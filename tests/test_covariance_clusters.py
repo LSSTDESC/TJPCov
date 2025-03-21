@@ -13,6 +13,7 @@ import shutil
 import itertools
 import jinja2
 import yaml
+import copy
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 OUTDIR = "./tests/tmp/"
@@ -136,6 +137,7 @@ def test_is_not_null():
     cc_cov = ClusterCountsGaussian(INPUT_YML)
     assert cc_cov is not None
 
+
 def test_extract_indices():
     bincomb1 = ("mock_survey", "bin_rich_0", "bin_z_1")
     bincomb2 = ("mock_survey", "bin_rich_1", "bin_z_0")
@@ -154,6 +156,7 @@ def test_extract_indices():
     assert z_i == 1
     assert z_j == 0
 
+
 def test_load_from_sacc(mock_covariance_gauss: CovarianceClusterCounts):
     assert mock_covariance_gauss.min_mass == np.log(1e13)
     assert mock_covariance_gauss.num_richness_bins == 3
@@ -169,6 +172,50 @@ def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
     mock_covariance_gauss.load_from_cosmology(cosmo)
 
     assert mock_covariance_gauss.cosmo == cosmo
+
+
+def test_load_cluster_parameters(
+    mock_covariance_gauss: CovarianceClusterCounts,
+):
+    # Test with valid parameters
+    mock_covariance_gauss.load_cluster_parameters()
+
+    # Check that the parameters are loaded correctly
+    assert mock_covariance_gauss.mass_def == "200m"
+    assert mock_covariance_gauss.min_halo_mass == 1.0e13
+    assert mock_covariance_gauss.max_halo_mass == 1.0e16
+    assert mock_covariance_gauss.mass_func is not None
+    assert mock_covariance_gauss.hbias is not None
+    assert mock_covariance_gauss.sigma_0 == 0.005
+    assert mock_covariance_gauss.mor_m_pivot == 428571428571428.6
+    assert mock_covariance_gauss.mor_mu_p0 == 3.207
+    assert mock_covariance_gauss.mor_mu_p1 == 0.75
+    assert mock_covariance_gauss.mor_mu_p2 == 0.0
+    assert mock_covariance_gauss.mor_sigma_p0 == 2.68
+    assert mock_covariance_gauss.mor_sigma_p1 == 0.54
+    assert mock_covariance_gauss.mor_sigma_p2 == 0.0
+    assert mock_covariance_gauss.mor_z_pivot == 0.5
+
+    # Test with invalid mass function
+    invalid_mass_func = "InvalidMassFunc"
+    config_copy = copy.deepcopy(mock_covariance_gauss.config)
+    config_copy["mor_parameters"]["mass_func"] = invalid_mass_func
+    with pytest.raises(
+        ValueError,
+        match=f"Invalid mass function: {invalid_mass_func}",
+    ):
+        ClusterCountsGaussian(config_copy)
+
+    # Test with invalid halo bias
+    invalid_halo_bias = "InvalidHaloBias"
+    config_copy = copy.deepcopy(mock_covariance_gauss.config)
+    config_copy["mor_parameters"]["halo_bias"] = invalid_halo_bias
+
+    with pytest.raises(
+        ValueError,
+        match=f"Invalid halo bias: {invalid_halo_bias}",
+    ):
+        ClusterCountsGaussian(config_copy)
 
 
 @pytest.mark.parametrize(
@@ -224,7 +271,9 @@ def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
     reference_min = 0.0016346637144491727
 
     test_min = [
-        mock_covariance_gauss.mass_richness(mock_covariance_gauss.min_mass,1.0, i)
+        mock_covariance_gauss.mass_richness(
+            mock_covariance_gauss.min_mass, 1.0, i
+        )
         for i in range(mock_covariance_gauss.num_richness_bins)
     ]
     assert np.sum(test_min) == pytest.approx(reference_min)
@@ -302,14 +351,15 @@ def test_get_covariance_block(
 ):
     ref_sum = 189480.8478457688
     cov_00_gauss = mock_covariance_gauss.get_covariance_block(
-        ('clusters_0_0',),
-        ('clusters_0_0',),
+        ("clusters_0_0",),
+        ("clusters_0_0",),
     )
     cov_00_ssc = mock_covariance_ssc.get_covariance_block(
-        ('clusters_0_0',),
-        ('clusters_0_0',),
+        ("clusters_0_0",),
+        ("clusters_0_0",),
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
+
 
 def test_cluster_count_tracer_missing_throws():
     # Create a mock sacc file without any cluster count data points
