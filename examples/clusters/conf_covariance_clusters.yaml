@@ -5,10 +5,10 @@ tjpcov:
   #cov_type: [ClusterMass, ClusterCountsGaussian, ClusterCountsSSC]
   cov_type: [ClusterCountsGaussian, ClusterCountsSSC]
   # sacc input file 
-  sacc_file: ../tests/data/clusters/cluster_redshift_richness.sacc
+  sacc_file: ./clusters/cluster_redshift_richness.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
-  outdir: ../tests/data/clusters/
+  outdir: ./clusters/
   fsky: 0.3
 
 parameters:
@@ -35,10 +35,6 @@ mor_parameters:
   min_halo_mass: 1.0e13
   max_halo_mass: 1.0e16
   #richness-mass relation parameters (from eq (14) in https://arxiv.org/pdf/1904.07524):
-  alpha: 3.207
-  beta: 0.75
-  sigma_zero: 2.68 
-  q: 0.54
   m_pivot: 428571428571428.6
   z_pivot: 0.5
   mu_p0: 3.207
