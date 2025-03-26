@@ -1,0 +1,15 @@
+#necessary cosmological parameters
+Omega_c: 0.2640
+Omega_b: 0.0493
+h: 0.6736
+n_s: 0.9649
+sigma8: 0.8111
+w0: -1
+wa: 0
+transfer_function: 'boltzmann_camb'
+
+#Some additional cosmological parameters you can set
+T_CMB: 2.725000e+00
+Neff: 3.046000e+00
+m_nu: 0.0
+Omega_k: 0.000000e+00
