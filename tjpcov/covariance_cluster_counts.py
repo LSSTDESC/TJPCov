@@ -95,8 +95,6 @@ class CovarianceClusterCounts(CovarianceBuilder):
         self.mor_sigma_p2 = float(
             self.config["mor_parameters"].get("sigma_p2")
         )
-        # Msun (convert units using a fiducial value for h,
-        # if the self.h0 is used this would add an extra dependence on h)
         self.mor_z_pivot = float(self.config["mor_parameters"].get("z_pivot"))
 
     def load_from_sacc(self, sacc_file):
@@ -206,9 +204,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         richness_lower = np.log10(self.richness_bins[richness_i])
         richness_upper = np.log10(self.richness_bins[richness_i + 1])
         rich_bin = (richness_lower, richness_upper)
-        mass_richness_prob = MurataBinned(
-            np.log10(self.mor_m_pivot), self.mor_z_pivot
-        )
+        mass_richness_prob = MurataBinned(self.mor_m_pivot, self.mor_z_pivot)
         # mass-obs relation params to be added as input params
         mass_richness_prob.mu_p0 = self.mor_mu_p0
         mass_richness_prob.mu_p1 = self.mor_mu_p1
