@@ -1,7 +1,11 @@
-#!/usr/bin/python
+"""Test the CovarianceCalculator class."""
+
 from tjpcov.covariance_calculator import CovarianceCalculator
 from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_fourier_ssc import FourierSSCHaloModel
+from tjpcov.__init__ import covariance_from_name
+import copy
+
 import os
 import pytest
 import numpy as np
@@ -14,50 +18,125 @@ OUTDIR = "./tests/tmp/"
 
 
 def setup_module():
+    """Create output directory for tests."""
     os.makedirs(OUTDIR, exist_ok=True)
 
 
 def teardown_module():
+    """Remove output directory after tests."""
     shutil.rmtree(OUTDIR)
 
 
 @pytest.fixture
 def mock_cov_calc():
+    """Return a CovarianceCalculator object for testing."""
     return CovarianceCalculator(INPUT_YML)
 
 
 def test_smoke():
+    """Test that the CovarianceCalculator object can be created."""
     CovarianceCalculator(INPUT_YML)
 
 
-# TODO: Test with "clxN" when clusters are implemented
-def test_get_covariance_classes(mock_cov_calc):
-    classes = mock_cov_calc.get_covariance_classes()
+def test_covariance_from_name():
+    """Test the covariance_from_name function."""
+    valid_names = [
+        "FourierGaussianNmt",
+        "FourierSSCHaloModel",
+        "FouriercNGHaloModel",
+        "FourierSSCHaloModelFsky",
+        "FouriercNGHaloModelFsky",
+        "ClusterCountsSSC",
+        "ClusterCountsGaussian",
+        "ClusterMass",
+        "FourierGaussianFsky",
+        "RealGaussianFsky",
+    ]
 
+    for name in valid_names:
+        # Call the function and check if the returned object is a class
+        CovClass = covariance_from_name(name)
+        assert isinstance(
+            CovClass, type
+        ), f"Expected a class for {name}, got {CovClass}"
+
+    # Test invalid covariance name
+    invalid_name = "InvalidCovarianceName"
+    with pytest.raises(ValueError, match=f"Unknown covariance {invalid_name}"):
+        covariance_from_name(invalid_name)
+
+
+# TODO: Test with "clxN" when clusters are implemented
+
+
+def test_get_covariance_classes(mock_cov_calc):
+    """Test the get_covariance_classes method."""
+    # Test the default case where cov_type is a list
+    classes = mock_cov_calc.get_covariance_classes()
     assert isinstance(classes["gauss"], dict)
     assert isinstance(classes["SSC"], dict)
     assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
     assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
 
+    # Test the case where cov_type is a string (single covariance type)
+    config = copy.deepcopy(mock_cov_calc.config)
+    config["tjpcov"][
+        "cov_type"
+    ] = "FourierGaussianNmt"  # Set cov_type as a string
+    cc = CovarianceCalculator(config)
+    classes = cc.get_covariance_classes()
+    assert isinstance(classes["gauss"], dict)
+    assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
+
     # Test it raises an error if two gauss contributions are requested
-    config = mock_cov_calc.config.copy()
+    config = copy.deepcopy(mock_cov_calc.config)
     config["tjpcov"]["cov_type"] = ["FourierGaussianFsky"] * 2
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Covariance type gauss for .* is already set"
+    ):
         cc = CovarianceCalculator(config)
         cc.get_covariance_classes()
 
     # Test that it raises an error if you request Fourier and Real space covs
-    config = mock_cov_calc.config.copy()
+    config = copy.deepcopy(mock_cov_calc.config)
     config["tjpcov"]["cov_type"] = [
         "FourierGaussianFsky",
         "RealGaussianFsky",
     ]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Mixing configuration and Fourier space covariances"
+    ):
         cc = CovarianceCalculator(config)
         cc.get_covariance_classes()
 
+    # Test error for duplicate covariance type for same tracer types
+    config = copy.deepcopy(mock_cov_calc.config)
+    config["tjpcov"]["cov_type"] = [
+        "FourierGaussianNmt",
+        "FourierGaussianNmt",  # Duplicate covariance type
+    ]
+    with pytest.raises(
+        ValueError, match="Covariance type gauss for .* is already set"
+    ):
+        cc = CovarianceCalculator(config)
+        cc.get_covariance_classes()
+
+    # Test cov_classes update for multiple tracer types
+    config = copy.deepcopy(mock_cov_calc.config)
+    config["tjpcov"]["cov_type"] = [
+        "FourierGaussianNmt",
+        "FourierSSCHaloModel",
+    ]
+    cc = CovarianceCalculator(config)
+    classes = cc.get_covariance_classes()
+    assert isinstance(classes["gauss"], dict)
+    assert isinstance(classes["SSC"], dict)
+    assert isinstance(classes["gauss"][("cl", "cl")], FourierGaussianNmt)
+    assert isinstance(classes["SSC"][("cl", "cl")], FourierSSCHaloModel)
+
 
 def test_get_covariance(mock_cov_calc):
+    """Test the get_covariance method."""
     cov = mock_cov_calc.get_covariance() + 1e-100
 
     cov_gauss = FourierGaussianNmt(INPUT_YML).get_covariance()
@@ -68,6 +147,7 @@ def test_get_covariance(mock_cov_calc):
 
 
 def test_get_covariance_terms(mock_cov_calc):
+    """Test the get_covariance_terms method."""
     cov_terms = mock_cov_calc.get_covariance_terms()
 
     cov_gauss = FourierGaussianNmt(INPUT_YML).get_covariance()
@@ -78,6 +158,7 @@ def test_get_covariance_terms(mock_cov_calc):
 
 
 def test_create_sacc_cov(mock_cov_calc):
+    """Test the create_sacc_cov method."""
     cov = mock_cov_calc.get_covariance() + 1e-100
 
     # Check returned file
@@ -108,3 +189,11 @@ def test_create_sacc_cov(mock_cov_calc):
     # Test the different terms are not saved
     assert not os.path.isfile(OUTDIR + "test_gauss.fits")
     assert not os.path.isfile(OUTDIR + "test_SSC.fits")
+
+    # Test early return when rank is not 0
+    mock_cov_calc.rank = 1  # Set rank to a non-zero value
+    result = mock_cov_calc.create_sacc_cov()
+    assert result is None  # Ensure the function returns early
+
+    # Reset rank to None or 0 for other tests
+    mock_cov_calc.rank = 0

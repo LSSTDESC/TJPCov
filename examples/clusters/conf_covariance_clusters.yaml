@@ -1,12 +1,14 @@
 tjpcov:
   use_mpi: False
   do_xi: False
-  cov_type: [ClusterMass, ClusterCountsGaussian, ClusterCountsSSC]
+#   cov_type: [ClusterCountsGaussian]
+  #cov_type: [ClusterMass, ClusterCountsGaussian, ClusterCountsSSC]
+  cov_type: [ClusterCountsGaussian, ClusterCountsSSC]
   # sacc input file 
-  sacc_file: ../tests/data/clusters/cluster_redshift_richness.sacc
+  sacc_file: ./clusters/cluster_redshift_richness.sacc
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
-  outdir: ../tests/data/clusters/
+  outdir: ./clusters/
   fsky: 0.3
 
 parameters:
@@ -19,3 +21,25 @@ parameters:
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
+  
+photo-z:
+  # from DES Y1
+  sigma_0: 0.005
+  
+
+mor_parameters:
+  #halo mass function parameters
+  mass_func: 'Tinker08'
+  mass_def: '200m'
+  halo_bias: 'Tinker10'
+  min_halo_mass: 1.0e13
+  max_halo_mass: 1.0e16
+  #richness-mass relation parameters (from eq (14) in https://arxiv.org/pdf/1904.07524):
+  m_pivot: 14.648719176207223
+  z_pivot: 0.5
+  mu_p0: 3.207
+  mu_p1: 0.75
+  mu_p2: 0.
+  sigma_p0: 2.68
+  sigma_p1: 0.54
+  sigma_p2: 0.  
