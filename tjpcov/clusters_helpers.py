@@ -59,13 +59,20 @@ def _load_from_sacc(sacc_file, min_halo_mass, max_halo_mass):
         survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
 
     # Setup redshift bins
-    z_bins = [
-        v for v in sacc_file.tracers.values() if v.tracer_type == z_tracer_type
-    ]
+    z_bins = sorted(
+        [
+            v
+            for v in sacc_file.tracers.values()
+            if v.tracer_type == z_tracer_type
+        ],
+        key=lambda z: z.lower,
+    )
     num_z_bins = len(z_bins)
     z_min = np.min([zbin.lower for zbin in z_bins])
     z_max = np.max([zbin.upper for zbin in z_bins])
-    z_bins = np.round(np.linspace(z_min, z_max, num_z_bins + 1), 2)
+    z_bins = [round(z_bins[0].lower, 2)] + [
+        round(zbin.upper, 2) for zbin in z_bins
+    ]
     z_bin_spacing = (z_max - z_min) / num_z_bins
     z_lower_limit = max(0.02, z_bins[0] - 4 * z_bin_spacing)
     z_upper_limit = (
@@ -73,23 +80,22 @@ def _load_from_sacc(sacc_file, min_halo_mass, max_halo_mass):
     )  # Set upper limit to be 40% higher than max redshift
 
     # Setup richness bins
-    richness_bins = [
-        v
-        for v in sacc_file.tracers.values()
-        if v.tracer_type == richness_tracer_type
-    ]
+    richness_bins = sorted(
+        [
+            v
+            for v in sacc_file.tracers.values()
+            if v.tracer_type == richness_tracer_type
+        ],
+        key=lambda rich: rich.lower,
+    )
     num_richness_bins = len(richness_bins)
     min_richness = 10 ** np.min([rbin.lower for rbin in richness_bins])
     max_richness = 10 ** np.max([rbin.upper for rbin in richness_bins])
-    richness_bins = np.round(
-        np.logspace(
-            np.log10(min_richness),
-            np.log10(max_richness),
-            num_richness_bins + 1,
-        ),
-        2,
+    richness_bins = np.array(
+        [10 ** richness_bins[0].lower]
+        + [10**rbin.upper for rbin in richness_bins]
     )
-
+    richness_bins = np.round(richness_bins, 2)
     # Compute mass-related attributes
     min_mass = np.log(min_halo_mass)
     max_mass = np.log(max_halo_mass)
