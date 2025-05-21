@@ -42,7 +42,6 @@ def _load_from_sacc(sacc_file, min_halo_mass, max_halo_mass):
     survey_tracer_type = "survey"
     richness_tracer_type = "bin_richness"
 
-    # Extract survey tracer
     survey_tracer = [
         x
         for x in sacc_file.tracers.values()
