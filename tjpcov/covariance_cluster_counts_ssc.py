@@ -1,7 +1,6 @@
 from .covariance_cluster_counts import CovarianceClusterCounts
+from .clusters_helpers import extract_indices_rich_z
 import numpy as np
-import pyccl as ccl
-from scipy.integrate import romb
 
 
 class ClusterCountsSSC(CovarianceClusterCounts):
@@ -22,7 +21,8 @@ class ClusterCountsSSC(CovarianceClusterCounts):
                 parses it.
         """
         super().__init__(config)
-        self.romberg_num = 2**6 + 1
+
+        self.ssc_total = None  # initialise the full ssc covariance
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
@@ -31,9 +31,9 @@ class ClusterCountsSSC(CovarianceClusterCounts):
 
         Args:
             tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_1')
+                ('survey', 'bin_richness_1', 'bin_z_0')
             tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_0')
+                ('survey', 'bin_richness_0', 'bin_z_0')
         Returns:
             float: Covariance for a single block
         """
@@ -44,59 +44,25 @@ class ClusterCountsSSC(CovarianceClusterCounts):
 
         Args:
             tracer_comb1 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_1')
+            ('survey', 'bin_richness_1', 'bin_z_0') or ('clusters_0_1',)
             tracer_comb2 (`tuple` of str): e.g.
-                ('survey', 'bin_z_0', 'bin_richness_0')
+            ('survey', 'bin_richness_0', 'bin_z_0') or ('clusters_0_0',)
 
         Returns:
             array_like: Covariance for a single block
         """
 
-        richness_i = int(tracer_comb1[1].split("_")[-1])
-        z_i = int(tracer_comb1[2].split("_")[-1])
+        # Extract richness and redshift indices for both tracer combinations
+        richness_i, z_i = extract_indices_rich_z(tracer_comb1)
+        richness_j, z_j = extract_indices_rich_z(tracer_comb2)
 
-        richness_j = int(tracer_comb2[1].split("_")[-1])
-        z_j = int(tracer_comb2[2].split("_")[-1])
+        # Compute the full SSC covariance only once
+        if self.ssc_total is None:
+            self.ssc_total = self.super_sample_covariance()
 
-        # Create a redshift range grid
-        z_low_limit = max(
-            self.z_lower_limit, self.z_bins[z_i] - 4 * self.z_bin_spacing
-        )
-        z_upper_limit = min(
-            self.z_upper_limit, self.z_bins[z_i + 1] + 6 * self.z_bin_spacing
-        )
-        z_range = np.linspace(z_low_limit, z_upper_limit, self.romberg_num)
-
-        linear_growth_factor = np.array(
-            ccl.growth_factor(self.cosmo, 1 / (1 + z_range))
-        )
-
-        comoving_volume_elements = np.array(
-            [self.comoving_volume_element(z_ii, z_i) for z_ii in z_range]
-        )
-
-        mass_richness_prob_dist = np.array(
-            [self.mass_richness_integral(z_ii, richness_i) for z_ii in z_range]
-        )
-
-        partial_SSC = np.array(
-            [self.partial_SSC(z_ii, z_j, richness_j) for z_ii in z_range]
-        )
-
-        # Eqn 4.18
-        super_sample_covariance = (
-            partial_SSC
-            * comoving_volume_elements
-            * mass_richness_prob_dist
-            * linear_growth_factor
-        )
-
-        redshift_spacing = (z_range[-1] - z_range[0]) / (self.romberg_num - 1)
-        cov = (self.survey_area**2) * romb(
-            super_sample_covariance, dx=redshift_spacing
-        )
-
-        cov_full = np.array(cov)
+        # Read the single entries of the total SSC covariance
+        # ssc_total dim = [richness, richness, redshift, redshift]
+        cov_full = np.array(self.ssc_total[richness_i, richness_j, z_i, z_j])
 
         return cov_full
 

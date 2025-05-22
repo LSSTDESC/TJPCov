@@ -1,37 +1,153 @@
+"""Helper functions and classes for cluster covariance calculations."""
+
 import numpy as np
+import pyccl as ccl
+
+# Map mass function name to actual function
+mass_func_map = {
+    "Tinker08": ccl.halos.MassFuncTinker08,
+    "Tinker10": ccl.halos.MassFuncTinker10,
+    "Bocquet16": ccl.halos.MassFuncBocquet16,
+    "Bocquet20": ccl.halos.MassFuncBocquet20,
+    "Despali16": ccl.halos.MassFuncDespali16,
+    "Jenkins01": ccl.halos.MassFuncJenkins01,
+    "Nishimichi19": ccl.halos.MassFuncNishimichi19,
+    "Press74": ccl.halos.MassFuncPress74,
+    "Sheth99": ccl.halos.MassFuncSheth99,
+    "Watson13": ccl.halos.MassFuncWatson13,
+    "Angulo12": ccl.halos.MassFuncAngulo12,
+}
+
+# Map halo bias name to actual function
+halo_bias_map = {
+    "Tinker10": ccl.halos.HaloBiasTinker10,
+    "Bhattacharya11": ccl.halos.HaloBiasBhattacharya11,
+    "Sheth01": ccl.halos.HaloBiasSheth01,
+    "Sheth99": ccl.halos.HaloBiasSheth99,
+}
 
 
-class MassRichnessRelation(object):
-    """Helper class to hold different mass richness relations"""
+def _load_from_sacc(sacc_file, min_halo_mass, max_halo_mass):
+    """Extract and compute attributes from a SACC file.
 
-    @staticmethod
-    def MurataCostanzi(ln_true_mass, h0):
-        """Uses constants from Murata et al - ArxIv 1707.01907 and Costanzi
-        et al ArxIv 1810.09456v1 to derive the log-normal mass-richness
-        relation
+    Args:
+        sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already loaded.
+        min_halo_mass (float): Minimum halo mass.
+        max_halo_mass (float): Maximum halo mass.
 
-        Args:
-            ln_true_mass (float): True mass
-            h0 (float): Hubble's constant
-        Returns:
-            `tuple` of float: The parameterized average and spread of the
-            log-normal mass-richness relation
-        """
+    Returns:
+        dict: A dictionary containing all computed attributes.
+    """
+    z_tracer_type = "bin_z"
+    survey_tracer_type = "survey"
+    richness_tracer_type = "bin_richness"
 
-        alpha = 3.207  # Murata
-        beta = 0.75  # Costanzi
-        sigma_zero = 2.68  # Costanzi
-        q = 0.54  # Costanzi
-        m_pivot = 3.0e14 / h0  # in solar masses , Murata and Costanzi use it
+    survey_tracer = [
+        x
+        for x in sacc_file.tracers.values()
+        if x.tracer_type == survey_tracer_type
+    ]
+    if len(survey_tracer) == 0:
+        survey_area = 4 * np.pi
+        print(
+            "Survey tracer not provided in sacc file.\n"
+            + "We will use the default value.",
+            flush=True,
+        )
+    else:
+        survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
 
-        sigma_lambda = sigma_zero + q * (ln_true_mass - np.log(m_pivot))
-        average = alpha + beta * (ln_true_mass - np.log(m_pivot))
+    # Setup redshift bins
+    z_bins = sorted(
+        [
+            v
+            for v in sacc_file.tracers.values()
+            if v.tracer_type == z_tracer_type
+        ],
+        key=lambda z: z.lower,
+    )
+    num_z_bins = len(z_bins)
+    z_min = np.min([zbin.lower for zbin in z_bins])
+    z_max = np.max([zbin.upper for zbin in z_bins])
+    z_bins = np.array(
+        [round(z_bins[0].lower, 2)] + [round(zbin.upper, 2) for zbin in z_bins]
+    )
+    z_bin_spacing = (z_max - z_min) / num_z_bins
+    z_lower_limit = max(0.02, z_bins[0] - 4 * z_bin_spacing)
+    z_upper_limit = (
+        z_bins[-1] + 0.4 * z_bins[-1]
+    )  # Set upper limit to be 40% higher than max redshift
 
-        return sigma_lambda, average
+    # Setup richness bins
+    richness_bins = sorted(
+        [
+            v
+            for v in sacc_file.tracers.values()
+            if v.tracer_type == richness_tracer_type
+        ],
+        key=lambda rich: rich.lower,
+    )
+    num_richness_bins = len(richness_bins)
+    min_richness = 10 ** np.min([rbin.lower for rbin in richness_bins])
+    max_richness = 10 ** np.max([rbin.upper for rbin in richness_bins])
+    richness_bins = np.array(
+        [10 ** richness_bins[0].lower]
+        + [10**rbin.upper for rbin in richness_bins]
+    )
+    richness_bins = np.round(richness_bins, 2)
+    # Compute mass-related attributes
+    min_mass = np.log(min_halo_mass)
+    max_mass = np.log(max_halo_mass)
+
+    # Return all computed attributes as a dictionary
+    return {
+        "survey_area": survey_area,
+        "num_z_bins": num_z_bins,
+        "z_min": z_min,
+        "z_max": z_max,
+        "z_bins": z_bins,
+        "z_bin_spacing": z_bin_spacing,
+        "z_lower_limit": z_lower_limit,
+        "z_upper_limit": z_upper_limit,
+        "num_richness_bins": num_richness_bins,
+        "min_richness": min_richness,
+        "max_richness": max_richness,
+        "richness_bins": richness_bins,
+        "min_mass": min_mass,
+        "max_mass": max_mass,
+    }
+
+
+def extract_indices_rich_z(tracer_comb):
+    """Extract richness and redshift indices from a tracer combination."""
+    if len(tracer_comb) == 1:
+        # Handle input type 2: ('clusters_0_1',)
+        parts = tracer_comb[0].split("_")
+        richness = int(parts[-2])  # Second-to-last part is richness
+        z = int(parts[-1])  # Last part is redshift
+    else:
+        # Handle input type 1: ('survey', 'bin_richness_1', 'bin_z_0')
+        richness = None
+        z = None
+        for part in tracer_comb:
+            if part.startswith("bin_richness_") or part.startswith(
+                "bin_rich_"
+            ):  # Handle both prefixes
+                richness = int(part.split("_")[-1])
+            elif part.startswith("bin_z_"):
+                z = int(part.split("_")[-1])
+        if richness is None or z is None:
+            raise ValueError(
+                "Could not extract richness or z from tracer combination: "
+                f"{tracer_comb}"
+            )
+    return richness, z
 
 
 class FFTHelper(object):
-    """Cluster covariance needs to use fast fourier transforms in combination
+    """Fft helper class.
+
+    Cluster covariance needs to use fast fourier transforms in combination
     with numerical approximations to evaluate rapidly oscillating integrals
     that appear in the calculation of the covariance.  These are stored in this
     helper class.
@@ -43,7 +159,7 @@ class FFTHelper(object):
     N = 1024
 
     def __init__(self, cosmo, z_min, z_max):
-        """Constructor for the FFTHelper class
+        """Constructor for the FFTHelper class.
 
         Args:
             cosmo (:obj:`pyccl.Cosmology`): Input cosmology
@@ -54,7 +170,9 @@ class FFTHelper(object):
         self._set_fft_params(z_min, z_max)
 
     def _set_fft_params(self, z_min, z_max):
-        """The numerical implementation of the FFT needs some values
+        """Function to set fft parameters.
+
+        The numerical implementation of the FFT needs some values
         set by some simple calculations.  Those are performed here.
 
         See Eqn 7.16 N. Ferreira disseration.
@@ -137,7 +255,7 @@ class FFTHelper(object):
             kind="cubic",
         )
         try:
-            return interpolation(max(r1, r2))
+            return float(interpolation(max(r1, r2)))
         except Exception as err:
             print(
                 err,
