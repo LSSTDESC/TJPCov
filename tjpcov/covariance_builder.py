@@ -6,7 +6,7 @@ import numpy as np
 import pyccl as ccl
 import sacc
 
-from .wigner_transform import bin_cov, WignerTransform
+from .wigner_transform import WignerTransform
 from . import tools
 from .covariance_io import CovarianceIO
 
@@ -1086,13 +1086,14 @@ class CovarianceProjectedReal(CovarianceReal):
             :obj:`~tjpcov.wigner_transform.WignerTransform` instance
         """
         if self.WT is None:
-            # Removing ell <= 1 (following original implementation)
-            ell = np.arange(2, self.lmax + 1)
-            theta, _, _ = self.get_binning_info(in_radians=True)
+            # Removing ell <= 1 is done in legendre.py
+            ell = np.arange(0, self.lmax + 1)
+            theta, _, theta_edges = self.get_binning_info(in_radians=True)
 
             WT_kwargs = {
                 "ell": ell,
                 "theta": theta,
+                "theta_edges": theta_edges,
                 "s1_s2": [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)],
             }
 
@@ -1127,7 +1128,7 @@ class CovarianceProjectedReal(CovarianceReal):
         """
         # For now we just use the EE block which should be dominant over the
         # EB, BE and BB pieces
-        cov = self._get_fourier_block(tracer_comb1, tracer_comb2)
+        cov, SN = self._get_fourier_block(tracer_comb1, tracer_comb2)
 
         WT = self.get_Wigner_transform()
 
@@ -1137,15 +1138,11 @@ class CovarianceProjectedReal(CovarianceReal):
             s1_s2_1 = s1_s2_1[xi_plus_minus1]
         if isinstance(s1_s2_2, dict):
             s1_s2_2 = s1_s2_2[xi_plus_minus2]
-        # Remove ell <= 1 for WT (following original implementation)
-        ell = np.arange(2, self.lmax + 1)
-        cov = cov[2:][:, 2:]
+        # Removing ell <= 1 is done in legendre.py
+        ell = np.arange(0, self.lmax + 1)
         th, cov = WT.projected_covariance(
-            ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
+            ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov, SN=SN
         )
-        if binned:
-            theta, _, theta_edges = self.get_binning_info(in_radians=False)
-            thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
 
         return cov
 

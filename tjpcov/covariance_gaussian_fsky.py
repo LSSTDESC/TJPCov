@@ -160,15 +160,22 @@ class FourierGaussianFsky(CovarianceFourier):
             else 0
         )
 
+        if for_real:
+            cov = np.diag(
+                (cl[13] + SN[13]) * (cl[24] + SN[24])
+                + (cl[14] + SN[14]) * (cl[23] + SN[23])
+                - np.ones_like(cl[13]) * SN[13] * SN[24]
+                - np.ones_like(cl[14]) * SN[14] * SN[23]
+            )
+            # If it is to compute the real space covariance, return the
+            # covariance before binning or normalizing
+            # pure shot/shape noise term will be computed separately
+            return cov, SN[13] * SN[24] + SN[14] * SN[23]
+
         cov = np.diag(
             (cl[13] + SN[13]) * (cl[24] + SN[24])
             + (cl[14] + SN[14]) * (cl[23] + SN[23])
         )
-
-        if for_real:
-            # If it is to compute the real space covariance, return the
-            # covariance before binning or normalizing
-            return cov
 
         norm = (2 * ell + 1) * np.gradient(ell) * self.fsky
         cov /= norm
@@ -227,9 +234,9 @@ class RealGaussianFsky(CovarianceProjectedReal):
         """
         # For now we just use the EE block which should be dominant over the
         # EB, BE and BB pieces when projecting to real space
-        cov = self.fourier.get_covariance_block(
+        cov, SN = self.fourier.get_covariance_block(
             tracer_comb1, tracer_comb2, for_real=True, lmax=self.lmax
         )
         norm = np.pi * 4 * self.fsky
 
-        return cov / norm
+        return cov / norm, SN / norm

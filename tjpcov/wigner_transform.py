@@ -10,7 +10,11 @@ from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.special import binom
 from scipy.special import eval_jacobi as jacobi
 from scipy.special import jn
-
+from .legendre import (
+    get_legfactors_00_binav,
+    get_legfactors_02_binav,
+    get_legfactors_22_binav,
+)
 
 # FIXME:
 # 1. Do we need to pass logger?
@@ -20,7 +24,7 @@ from scipy.special import jn
 class WignerTransform:
     """Class to compute curved sky Hankel transforms with wigner-d matrices."""
 
-    def __init__(self, theta, ell, s1_s2, ncpu=None):
+    def __init__(self, theta, theta_edges, ell, s1_s2, ncpu=None):
         """Initialize the class for the given angles, scales and spins.
 
         Args:
@@ -59,12 +63,26 @@ class WignerTransform:
         self.s1_s2s = s1_s2
         self.theta = {}
         self.theta = theta
-
-        # compute the wigner-d matrices.
+        self.theta_edges = theta_edges
+        # compute the bin-averaged legendre polynomials.
         for s1, s2 in s1_s2:
-            self.wig_d[(s1, s2)] = wigner_d_parallel(
-                s1, s2, theta, self.ell, ncpu=ncpu
-            )
+            if s1 == s2 == 0:
+                self.wig_d[(s1, s2)] = get_legfactors_00_binav(
+                    self.ell, theta_edges
+                )
+            elif s1 == s2 == 2:
+                self.wig_d[(s1, s2)] = get_legfactors_22_binav(
+                    self.ell, theta_edges
+                )[0]
+            elif (np.abs(s1) == np.abs(s2) == 2) and (s1 * s2 < 0):
+                self.wig_d[(s1, s2)] = get_legfactors_22_binav(
+                    self.ell, theta_edges
+                )[1]
+            else:
+                self.wig_d[(s1, s2)] = get_legfactors_02_binav(
+                    self.ell, theta_edges
+                )
+
         self.taper_f = None
         self.taper_f2 = None
 
@@ -188,7 +206,14 @@ class WignerTransform:
     #     return self.ell, cl
 
     def projected_covariance(
-        self, ell_cl, cl_cov, s1_s2, s1_s2_cross=None, taper=False, **kwargs
+        self,
+        ell_cl,
+        cl_cov,
+        SN,
+        s1_s2,
+        s1_s2_cross=None,
+        taper=False,
+        **kwargs,
     ):
         """Convert C_ell covariance to correlation function.
 
@@ -240,11 +265,14 @@ class WignerTransform:
 
         cov = np.einsum(
             "rk,kl,sl->rs",
-            self.wig_d[s1_s2] * np.sqrt(self.norm) * self.grad_ell,
+            self.wig_d[s1_s2] * self.grad_ell,
             cl_cov2,
-            self.wig_d[s1_s2_cross] * np.sqrt(self.norm),
+            self.wig_d[s1_s2_cross],
             optimize=True,
         )
+
+        # TODO: add SN term
+
         # FIXME: Check normalization
         return self.theta, cov
 
