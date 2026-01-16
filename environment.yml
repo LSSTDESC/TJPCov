@@ -11,7 +11,6 @@ dependencies:
   - pytest-rerunfailures
   - coveralls
   - numpy
-  - desc-crow
   - scipy
   - pyyaml
   - pyccl>=3.2
