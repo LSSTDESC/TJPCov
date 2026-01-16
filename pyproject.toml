@@ -31,7 +31,8 @@ dependencies = [
     "sacc>=0.12",
     "camb",
     "healpy",
-    "h5py"
+    "h5py",
+    "desc-crow"
 ]
 dynamic = ["version"]
 

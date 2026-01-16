@@ -5,7 +5,7 @@ from scipy.integrate import quad
 from scipy.integrate import simpson as simps
 from sacc import standard_types
 from scipy.special import spherical_jn, eval_legendre
-from firecrown.models.cluster.mass_proxy import MurataBinned
+from crow.cluster_modules.mass_proxy import MurataBinned
 from .clusters_helpers import _load_from_sacc, mass_func_map, halo_bias_map
 
 
@@ -206,12 +206,12 @@ class CovarianceClusterCounts(CovarianceBuilder):
         rich_bin = (richness_lower, richness_upper)
         mass_richness_prob = MurataBinned(self.mor_m_pivot, self.mor_z_pivot)
         # mass-obs relation params to be added as input params
-        mass_richness_prob.mu_p0 = self.mor_mu_p0
-        mass_richness_prob.mu_p1 = self.mor_mu_p1
-        mass_richness_prob.mu_p2 = self.mor_mu_p2
-        mass_richness_prob.sigma_p0 = self.mor_sigma_p0
-        mass_richness_prob.sigma_p1 = self.mor_sigma_p1
-        mass_richness_prob.sigma_p2 = self.mor_sigma_p2
+        mass_richness_prob.parameters["mu0"] = self.mor_mu_p0
+        mass_richness_prob.parameters["mu1"] = self.mor_mu_p1
+        mass_richness_prob.parameters["mu2"] = self.mor_mu_p2
+        mass_richness_prob.parameters["sigma0"] = self.mor_sigma_p0
+        mass_richness_prob.parameters["sigma1"] = self.mor_sigma_p1
+        mass_richness_prob.parameters["sigma2"] = self.mor_sigma_p2
         ln_true_mass = np.atleast_1d(ln_true_mass).astype(np.float64)
         z = np.atleast_1d(z).astype(np.float64)
         result = mass_richness_prob.distribution(
