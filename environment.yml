@@ -22,5 +22,5 @@ dependencies:
   - h5py
   - openmpi
   - mpi4py
-  - pipy:
+  - pip:
     - desc-crow
