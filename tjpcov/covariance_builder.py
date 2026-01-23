@@ -1017,7 +1017,7 @@ class CovarianceProjectedReal(CovarianceReal):
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
         # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
-
+     
         theta_eff = self.get_theta_eff()
         nbpw = theta_eff.size
 
@@ -1138,11 +1138,45 @@ class CovarianceProjectedReal(CovarianceReal):
             s1_s2_1 = s1_s2_1[xi_plus_minus1]
         if isinstance(s1_s2_2, dict):
             s1_s2_2 = s1_s2_2[xi_plus_minus2]
+
+        # Load Npair
+        # see https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/twopoint_plots.py#L215
+        if tracer_comb1 == tracer_comb2:
+            sacc_file = self.io.get_sacc_file()
+            data_type = self.get_tracer_comb_data_types(tracer_comb1)[0]      
+            D = sacc_file.get_data_points(data_type, (tracer_comb1[0], tracer_comb1[1]))
+            Npair = np.array([d.get_tag("npair") for d in D])
+
+            if np.any(Npair == None):
+                # assuming no survey boundaries.
+                if np.abs(s1_s2_1[0]) == np.abs(s1_s2_1[1]) == 2:
+                    SN *= 2
+            
+                cov_sn = SN / np.pi / (WT.theta_edges[1:]**2 - WT.theta_edges[:-1]**2)
+        
+            else:
+                # catalog level N_pair from treecorr
+                T_sn = 1
+                if tracer_comb1[0] in self.sigma_e:
+                    T_sn *= self.sigma_e[tracer_comb1[0]] ** 2
+                if tracer_comb1[1] in self.sigma_e:
+                    T_sn *= self.sigma_e[tracer_comb1[1]] ** 2
+
+                if (tracer_comb1[0] in self.sigma_e) and (tracer_comb1[1] in self.sigma_e):
+                    T_sn *= 2
+            
+                # Eq. 64 of https://arxiv.org/abs/2410.06962
+                cov_sn = 2 * T_sn / Npair
+          
+        # Project sample variance term and mixed term.
         # Removing ell <= 1 is done in legendre.py
         ell = np.arange(0, self.lmax + 1)
         th, cov = WT.projected_covariance(
-            ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov, SN=SN
-        )
+            ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov)
+
+        # Add pure shot/shape noise contribution.
+        if tracer_comb1 == tracer_comb2:
+            cov += np.diag(cov_sn)
 
         return cov
 
