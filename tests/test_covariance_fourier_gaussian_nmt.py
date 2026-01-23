@@ -13,7 +13,6 @@ import yaml
 from tjpcov.covariance_fourier_gaussian_nmt import FourierGaussianNmt
 from tjpcov.covariance_io import CovarianceIO
 
-
 ROOT = "tests/benchmarks/32_DES_tjpcov_bm/"
 OUTDIR = "tests/tmp/"
 INPUT_YML = "tests/data/conf_covariance_gaussian_fourier_nmt.yaml"

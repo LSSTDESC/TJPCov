@@ -8,7 +8,6 @@ import numpy as np
 import sacc
 import shutil
 
-
 INPUT_YML = "./tests/data/conf_covariance_calculator.yml"
 OUTDIR = "./tests/tmp/"
 
