@@ -125,7 +125,7 @@ def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
     ccltr = ccl_tracers["src0"]
     cl = ccl.angular_cl(mock_cosmo, ccltr, ccltr, ell) + tracer_noise["src0"]
     cov = np.diag(2 * cl**2)
-    cov2 = cov2 + np.diag(np.ones_like(cl)*SN)
+    cov2 = cov2 + np.diag(np.ones_like(cl) * SN)
     assert cov2.shape == (ell.size, ell.size)
     np.testing.assert_allclose(cov2, cov)
 

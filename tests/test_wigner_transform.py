@@ -107,11 +107,7 @@ def test_projected_covariance(s1_s2, s1_s2_cross):
     th, matb = wt.projected_covariance(wt.ell, mat, s1_s2, s1_s2_cross)
     wd_a = wt.wig_d[*s1_s2]
     wd_b = wt.wig_d[*s1_s2_cross]
-    matb_2 = (
-        (wd_a * wt.grad_ell)
-        @ mat
-        @ wd_b.T
-    )
+    matb_2 = (wd_a * wt.grad_ell) @ mat @ wd_b.T
     assert np.all(th == wt.theta)
     assert np.max(np.abs(matb / matb_2) - 1) < 1e-5
 
