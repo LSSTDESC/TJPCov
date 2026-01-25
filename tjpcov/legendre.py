@@ -169,8 +169,8 @@ def Gp_plus_minus_Gm_binav_dep1(ells, cost_min, cost_max):
     # this computes all polynomials of order 0 to ell_max+1 and for all ell's
     lpns_min = lpn(ell[-1] + 1, cost_min)[0][1:]
     lpns_max = lpn(ell[-1] + 1, cost_max)[0][1:]
-    dlpns_min = lpn(ell[-1] + 1, cost_min)[1][1:]
-    dlpns_max = lpn(ell[-1] + 1, cost_max)[1][1:]
+    dlpns_min = lpn(ell[-1] + 1, cost_min, diff_n=1)[1][1:]
+    dlpns_max = lpn(ell[-1] + 1, cost_max, diff_n=1)[1][1:]
 
     # denominator in average
     dcost = cost_max - cost_min
@@ -383,8 +383,8 @@ def Gp_plus_minus_Gm_binav(ells, cost_min, cost_max):
     # this computes all polynomials of order 0 to ell_max+1 and for all ell's
     lpns_min = lpn(ell[-1] + 1, cost_min)[0][1:]
     lpns_max = lpn(ell[-1] + 1, cost_max)[0][1:]
-    dlpns_min = lpn(ell[-1] + 1, cost_min)[1][1:]
-    dlpns_max = lpn(ell[-1] + 1, cost_max)[1][1:]
+    dlpns_min = lpn(ell[-1] + 1, cost_min, diff_n=1)[1][1:]
+    dlpns_max = lpn(ell[-1] + 1, cost_max, diff_n=1)[1][1:]
 
     # denominator in average
     dcost = cost_max - cost_min
