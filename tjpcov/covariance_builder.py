@@ -995,6 +995,7 @@ class CovarianceProjectedReal(CovarianceReal):
                 "You need to specify the lmax you want to "
                 "compute the Fourier covariance up to"
             )
+        self.cov_type = None
 
     @property
     def fourier(self):
@@ -1111,7 +1112,6 @@ class CovarianceProjectedReal(CovarianceReal):
         tracer_comb2,
         xi_plus_minus1="plus",
         xi_plus_minus2="plus",
-        binned=True,
     ):
         """Compute a single covariance matrix for a given pair of xi.
 
@@ -1139,44 +1139,6 @@ class CovarianceProjectedReal(CovarianceReal):
         if isinstance(s1_s2_2, dict):
             s1_s2_2 = s1_s2_2[xi_plus_minus2]
 
-        # Load Npair
-        # see https://github.com/LSSTDESC/TXPipe/blob/
-        # a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/twopoint_plots.py#L215
-        if tracer_comb1 == tracer_comb2:
-            sacc_file = self.io.get_sacc_file()
-            data_type = self.get_tracer_comb_data_types(tracer_comb1)[0]
-            D = sacc_file.get_data_points(
-                data_type, (tracer_comb1[0], tracer_comb1[1])
-            )
-            Npair = np.array([d.get_tag("npair") for d in D])
-
-            if np.any(Npair is None):
-                # assuming no survey boundaries.
-                if np.abs(s1_s2_1[0]) == np.abs(s1_s2_1[1]) == 2:
-                    SN *= 2
-
-                cov_sn = (
-                    SN
-                    / np.pi
-                    / (WT.theta_edges[1:] ** 2 - WT.theta_edges[:-1] ** 2)
-                )
-
-            else:
-                # catalog level N_pair from treecorr
-                T_sn = 1
-                if tracer_comb1[0] in self.sigma_e:
-                    T_sn *= self.sigma_e[tracer_comb1[0]] ** 2
-                if tracer_comb1[1] in self.sigma_e:
-                    T_sn *= self.sigma_e[tracer_comb1[1]] ** 2
-
-                if (tracer_comb1[0] in self.sigma_e) and (
-                    tracer_comb1[1] in self.sigma_e
-                ):
-                    T_sn *= 2
-
-                # Eq. 64 of https://arxiv.org/abs/2410.06962
-                cov_sn = 2 * T_sn / Npair
-
         # Project sample variance term and mixed term.
         # Removing ell <= 1 is done in legendre.py
         ell = np.arange(0, self.lmax + 1)
@@ -1184,9 +1146,52 @@ class CovarianceProjectedReal(CovarianceReal):
             ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
         )
 
-        # Add pure shot/shape noise contribution.
-        if tracer_comb1 == tracer_comb2:
-            cov += np.diag(cov_sn)
+        if self.cov_type == "gauss":
+            # denominator in average
+            dcost = np.cos(WT.theta_edges[1:]) - np.cos(WT.theta_edges[:-1])
+
+            if SN is not None:
+                # Load Npair
+                # see https://github.com/LSSTDESC/TXPipe/blob/
+                # a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/twopoint_plots.py#L215
+                if tracer_comb1 == tracer_comb2:
+                    sacc_file = self.io.get_sacc_file()
+                    data_type = self.get_tracer_comb_data_types(tracer_comb1)[
+                        0
+                    ]
+                    D = sacc_file.get_data_points(
+                        data_type, (tracer_comb1[0], tracer_comb1[1])
+                    )
+                    Npair = np.array([d.get_tag("npair") for d in D])
+
+                    if Npair[0] is None:
+                        # assuming no survey boundaries.
+                        if np.abs(s1_s2_1[0]) == np.abs(s1_s2_1[1]) == 2:
+                            SN *= 2
+
+                        cov_sn = SN / (np.pi * dcost)
+                    else:
+                        # catalog level N_pair from treecorr
+                        T_sn = 1
+                        if tracer_comb1[0] in self.sigma_e:
+                            T_sn *= self.sigma_e[tracer_comb1[0]] ** 2
+                        if tracer_comb1[1] in self.sigma_e:
+                            T_sn *= self.sigma_e[tracer_comb1[1]] ** 2
+
+                        if (tracer_comb1[0] in self.sigma_e) and (
+                            tracer_comb1[1] in self.sigma_e
+                        ):
+                            T_sn *= 2
+                        # Eq. 64 of https://arxiv.org/abs/2410.06962
+                        cov_sn = 2 * T_sn / Npair
+
+                    # Add pure shot/shape noise contribution.
+                    cov += np.diag(cov_sn)
+
+            else:
+                # TODO: Projection of NaMaster covariance via
+                # Eq. 67 of https://arxiv.org/abs/2012.08568
+                pass
 
         return cov
 

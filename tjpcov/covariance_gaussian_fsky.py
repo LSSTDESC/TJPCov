@@ -198,7 +198,7 @@ class FourierGaussianFsky(CovarianceFourier):
 class RealGaussianFsky(CovarianceProjectedReal):
     """Class to compute the Real space Gaussian cov. with the Knox formula.
 
-    It projects the the Fourier space Gaussian covariance into the real space.
+    It projects the Fourier space Gaussian covariance into the real space.
     """
 
     cov_type = "gauss"
@@ -219,6 +219,7 @@ class RealGaussianFsky(CovarianceProjectedReal):
         # sacc file.
         self.fourier = FourierGaussianFsky(config)
         self.fsky = self.fourier.fsky
+        self.cov_type = "gauss"
 
     def _get_fourier_block(self, tracer_comb1, tracer_comb2):
         """Return the Fourier covariance block for two pair of tracers.

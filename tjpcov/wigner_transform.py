@@ -209,7 +209,6 @@ class WignerTransform:
         self,
         ell_cl,
         cl_cov,
-        SN,
         s1_s2,
         s1_s2_cross=None,
         taper=False,
@@ -270,8 +269,6 @@ class WignerTransform:
             self.wig_d[s1_s2_cross],
             optimize=True,
         )
-
-        # TODO: add SN term
 
         # FIXME: Check normalization
         return self.theta, cov

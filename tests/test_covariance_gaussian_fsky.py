@@ -118,13 +118,14 @@ def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
             tracer_comb1=trs, tracer_comb2=trs, for_real=True
         )
     # 2. Check block
-    cov2 = cov_fg_fsky.get_covariance_block(
+    cov2, SN = cov_fg_fsky.get_covariance_block(
         tracer_comb1=trs, tracer_comb2=trs, for_real=True, lmax=30
     )
     ell = np.arange(30 + 1)
     ccltr = ccl_tracers["src0"]
     cl = ccl.angular_cl(mock_cosmo, ccltr, ccltr, ell) + tracer_noise["src0"]
     cov = np.diag(2 * cl**2)
+    cov2 = cov2 + np.diag(np.ones_like(cl)*SN)
     assert cov2.shape == (ell.size, ell.size)
     np.testing.assert_allclose(cov2, cov)
 
@@ -150,13 +151,14 @@ def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
 def test_Real_get_fourier_block(
     cov_rg_fsky, cov_fg_fsky, tracer_comb1, tracer_comb2
 ):
-    cov = cov_rg_fsky._get_fourier_block(tracer_comb1, tracer_comb2)
-    cov2 = cov_fg_fsky.get_covariance_block(
+    cov, SN = cov_rg_fsky._get_fourier_block(tracer_comb1, tracer_comb2)
+    cov2, SN2 = cov_fg_fsky.get_covariance_block(
         tracer_comb1, tracer_comb2, for_real=True, lmax=cov_rg_fsky.lmax
     )
 
     norm = np.pi * 4 * cov_rg_fsky.fsky
     assert np.all(cov == cov2 / norm)
+    assert np.all(SN == SN2 / norm)
 
 
 def test_smoke_get_covariance(cov_fg_fsky, cov_rg_fsky):
