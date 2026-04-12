@@ -10,7 +10,7 @@ from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.special import binom
 from scipy.special import eval_jacobi as jacobi
 from scipy.special import jn
-from .legendre import (
+from legendre import (
     get_legfactors_00_binav,
     get_legfactors_02_binav,
     get_legfactors_22_binav,
@@ -66,22 +66,25 @@ class WignerTransform:
         self.theta_edges = theta_edges
         # compute the bin-averaged legendre polynomials.
         for s1, s2 in s1_s2:
-            if s1 == s2 == 0:
-                self.wig_d[(s1, s2)] = get_legfactors_00_binav(
-                    self.ell, theta_edges
-                )
-            elif s1 == s2 == 2:
-                self.wig_d[(s1, s2)] = get_legfactors_22_binav(
-                    self.ell, theta_edges
-                )[0]
-            elif (np.abs(s1) == np.abs(s2) == 2) and (s1 * s2 < 0):
-                self.wig_d[(s1, s2)] = get_legfactors_22_binav(
-                    self.ell, theta_edges
-                )[1]
-            else:
-                self.wig_d[(s1, s2)] = get_legfactors_02_binav(
-                    self.ell, theta_edges
-                )
+            match (s1, s2):
+                case (0, 0):
+                    self.wig_d[(s1, s2)] = get_legfactors_00_binav(
+                        self.ell, theta_edges
+                    )
+                case (0, 2) | (2, 0):
+                    self.wig_d[(s1, s2)] = get_legfactors_02_binav(
+                        self.ell, theta_edges
+                    )
+                case (2, 2) | (2, -2) | (-2, 2):
+                    self.wig_d[(s1, s2)] = get_legfactors_22_binav(
+                        self.ell, theta_edges, sign=np.sign(s1 * s2)
+                    )
+                case _:
+                    raise ValueError(
+                        f"Invalid (s1, s2) pair: ({s1}, {s2}). "
+                        f"Allowed pairs are (0, 0), (0, 2), (2, 0), \
+                        (2, 2), (2, -2), (-2, 2)."
+                    )
 
         self.taper_f = None
         self.taper_f2 = None
