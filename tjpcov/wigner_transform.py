@@ -10,7 +10,7 @@ from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.special import binom
 from scipy.special import eval_jacobi as jacobi
 from scipy.special import jn
-from legendre import (
+from .legendre import (
     get_legfactors_00_binav,
     get_legfactors_02_binav,
     get_legfactors_22_binav,
