@@ -32,7 +32,7 @@ dependencies = [
     "camb",
     "healpy",
     "h5py",
-    "desc-crow"
+    "lsstdesc-crow"
 ]
 dynamic = ["version"]
 
