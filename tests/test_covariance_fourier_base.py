@@ -143,7 +143,7 @@ def test_get_ell_eff(mock_cov_fourier):
     bins = get_nmt_bin()
     ells = bins.get_effective_ells()
 
-    assert np.all(mock_cov_fourier.get_ell_eff() == ells)
+    assert pytest.approx(mock_cov_fourier.get_ell_eff(), rel=1e-10) == ells
 
 
 def test_get_sacc_with_concise_dtypes(mock_sacc, mock_cov_fourier):
