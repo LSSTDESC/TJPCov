@@ -2,7 +2,6 @@
 
 from tjpcov.covariance_calculator import CovarianceCalculator
 
-
 if __name__ == "__main__":
     import argparse
 
