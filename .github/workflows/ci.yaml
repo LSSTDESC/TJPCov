@@ -19,7 +19,7 @@ jobs:
     name: Run Linters
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -48,12 +48,12 @@ jobs:
         runs-on: [ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up mamba
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           channels: conda-forge
           python-version: ${{ matrix.python-version }}
@@ -130,7 +130,7 @@ jobs:
 
     steps:
       - name: Collect all coverage reports and publish to coveralls.io
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2
         with:
           carryforward: "run-3.10-ubuntu-latest,run-3.11-ubuntu-latest,run-3.12-ubuntu-latest,run-3.13-ubuntu-latest,run-3.10-macos-latest,run-3.11-macos-latest,run-3.12-macos-latest,run-3.13-macos-latest"
           github-token: ${{ secrets.GITHUB_TOKEN }}
