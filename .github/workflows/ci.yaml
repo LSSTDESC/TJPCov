@@ -23,6 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          # Use the same Python version as in pyproject.toml black config.
+          python-version: "3.13"
+
       - name: Run black
         uses: psf/black@stable
 
