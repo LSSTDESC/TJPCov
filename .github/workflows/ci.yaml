@@ -135,3 +135,15 @@ jobs:
           carryforward: "run-3.10-ubuntu-latest,run-3.11-ubuntu-latest,run-3.12-ubuntu-latest,run-3.13-ubuntu-latest,run-3.10-macos-latest,run-3.11-macos-latest,run-3.12-macos-latest,run-3.13-macos-latest"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
+
+  all_tests_passed:
+    needs: [lint, tests]
+    name: All tests passed
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          if [[ "${{ needs.tests.result }}" != "success" || "${{ needs.lint.result }}" != "success" ]]; then
+            exit 1
+          fi
