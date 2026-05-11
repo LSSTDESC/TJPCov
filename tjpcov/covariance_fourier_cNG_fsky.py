@@ -1,4 +1,5 @@
 from .covariance_fourier_cNG import FouriercNGHaloModel
+import numpy as np
 
 
 class FouriercNGHaloModelFsky(FouriercNGHaloModel):
@@ -31,4 +32,4 @@ class FouriercNGHaloModelFsky(FouriercNGHaloModel):
         Returns:
             - (:obj:`float`): fractional sky area.
         """
-        return self.fsky
+        return np.float64(self.fsky).item()

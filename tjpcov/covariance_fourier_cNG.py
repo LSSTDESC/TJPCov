@@ -65,7 +65,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         """
         masks = self.get_masks_dict(tr, {})
         fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
-        return fsky
+        return np.float64(fsky).item()
 
     def get_covariance_block(
         self,

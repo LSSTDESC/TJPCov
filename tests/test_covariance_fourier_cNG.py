@@ -110,7 +110,7 @@ def get_fsky(tr1, tr2, tr3, tr4):
     m3 = hp.read_map(mf[tr3])
     m4 = hp.read_map(mf[tr4])
 
-    return np.mean(m1 * m2 * m3 * m4)
+    return np.float64(np.mean(m1 * m2 * m3 * m4)).item()
 
 
 def test_smoke():
@@ -233,7 +233,6 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     )
 
     if calculate_with_hod:
-
         prof_2pt_hod = ccl.halos.profiles_2pt.Profile2ptHOD()
         prof_2pt_avg = ccl.halos.profiles_2pt.Profile2pt()
         HOD = ccl.halos.HaloProfileHOD
