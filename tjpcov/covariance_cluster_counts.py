@@ -218,7 +218,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
             ln_true_mass / np.log(10), z, rich_bin
         )
 
-        return result
+        return float(result)
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
         """Integrates the HMF weighted by mass-richness relation.
