@@ -11,7 +11,6 @@ from scipy.special import binom
 from scipy.special import eval_jacobi as jacobi
 from scipy.special import jn
 
-
 # FIXME:
 # 1. Do we need to pass logger?
 # 2. Need to add inverse transform functionality.
