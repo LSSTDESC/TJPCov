@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pyccl as ccl
 import sacc
-
+import healpy as hp
 from .wigner_transform import WignerTransform
 from . import tools
 from .covariance_io import CovarianceIO
@@ -1020,28 +1020,49 @@ class CovarianceProjectedReal(CovarianceReal):
         # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
 
         theta_eff = self.get_theta_eff()
-        nbpw = theta_eff.size
 
-        thetab_min, thetab_max = theta_eff.min(), theta_eff.max()
-        if binning == "log":
-            # assuming constant log bins
-            del_logtheta = np.log10(theta_eff[1:] / theta_eff[:-1]).mean()
-            theta_min = 2 * thetab_min / (10**del_logtheta + 1)
-            theta_max = 2 * thetab_max / (1 + 10 ** (-del_logtheta))
+        sacc_file = self.io.get_sacc_file()
+        bin_keys = [
+            k for k in sacc_file.tracers.keys() if k.startswith("bin_radius_")
+        ]
+        if len(bin_keys) > 0:
+            theta = []
+            theta_min = []
+            theta_max = []
+            for key in bin_keys:
+                theta.append(sacc_file.tracers[key].center)
+                theta_min.append(sacc_file.tracers[key].lower)
+                theta_max.append(sacc_file.tracers[key].upper)
 
-            th_min = theta_min
-            th_max = theta_max
-            theta_edges = np.logspace(
-                np.log10(th_min), np.log10(th_max), nbpw + 1
-            )
-            th = np.logspace(np.log10(th_min * 0.98), np.log10(1), nbpw * 30)
-            # binned covariance can be sensitive to the th values. Make sure
-            # you check convergence for your application
-            th2 = np.linspace(1, th_max * 1.02, nbpw * 30)
-
-            theta = np.unique(np.sort(np.append(th, th2)))
+            theta_edges = np.array(theta_min + [theta_max[-1]])
+            theta = np.array(theta)
         else:
-            raise NotImplementedError(f"Binning {binning} not implemented yet")
+            nbpw = theta_eff.size
+
+            thetab_min, thetab_max = theta_eff.min(), theta_eff.max()
+            if binning == "log":
+                # assuming constant log bins
+                del_logtheta = np.log10(theta_eff[1:] / theta_eff[:-1]).mean()
+                theta_min = 2 * thetab_min / (10**del_logtheta + 1)
+                theta_max = 2 * thetab_max / (1 + 10 ** (-del_logtheta))
+
+                th_min = theta_min
+                th_max = theta_max
+                theta_edges = np.logspace(
+                    np.log10(th_min), np.log10(th_max), nbpw + 1
+                )
+                th = np.logspace(
+                    np.log10(th_min * 0.98), np.log10(1), nbpw * 30
+                )
+                # binned covariance can be sensitive to the th values.
+                # Make sure you check convergence for your application
+                th2 = np.linspace(1, th_max * 1.02, nbpw * 30)
+
+                theta = np.unique(np.sort(np.append(th, th2)))
+            else:
+                raise NotImplementedError(
+                    f"Binning {binning} not implemented yet"
+                )
 
         if in_radians:
             arcmin_rad = np.pi / 180 / 60
@@ -1155,6 +1176,11 @@ class CovarianceProjectedReal(CovarianceReal):
                 # see https://github.com/LSSTDESC/TXPipe/blob/
                 # a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/twopoint_plots.py#L215
                 if tracer_comb1 == tracer_comb2:
+                    # For xi+- (gamma_t), we first try to load weighted
+                    # (unweighted) pair counts from the sacc file, and
+                    # if not available, we estimate it from the survey mask.
+                    # For wtheta, we just estimate it from the survey mask,
+                    # as Npair should be calculated from random points.
                     sacc_file = self.io.get_sacc_file()
                     data_type = self.get_tracer_comb_data_types(tracer_comb1)[
                         0
@@ -1162,31 +1188,101 @@ class CovarianceProjectedReal(CovarianceReal):
                     D = sacc_file.get_data_points(
                         data_type, (tracer_comb1[0], tracer_comb1[1])
                     )
-                    Npair = np.array([d.get_tag("npair") for d in D])
+
+                    match (s1_s2_1):
+                        case (0, 2) | (2, 0):
+                            # Unweighted pair count from treecorr for gamma_t
+                            Npair = np.array([d.get_tag("npair") for d in D])
+
+                        # Eq. 89 of https://arxiv.org/abs/2012.08568
+                        case (0, 2):
+                            T_sn = self.sigma_e[tracer_comb1[1]] ** 2
+                        case (2, 0):
+                            T_sn = self.sigma_e[tracer_comb1[0]] ** 2
+
+                        case (2, 2) | (2, -2) | (-2, 2):
+                            # Weighted pair count is needed for the xi+-
+                            weight_average = np.ones(
+                                2
+                            )  # default to 1 if not found in sacc file
+                            for i in range(2):
+                                wav_keys = [
+                                    k
+                                    for k in sacc_file.tracers[
+                                        tracer_comb1[i]
+                                    ].extra_columns.keys()
+                                    if k.startswith("weight_average")
+                                ]
+                                if len(wav_keys) > 0:
+                                    weight_average[i] = sacc_file.tracers[
+                                        tracer_comb1[i]
+                                    ].extra_columns[wav_keys[0]]
+
+                            Npair = (
+                                np.array([d.get_tag("weight") for d in D])
+                                / weight_average[0]
+                                / weight_average[1]
+                            )
+
+                            # Eq. 92 of https://arxiv.org/abs/2012.08568
+                            T_sn = 2 * self.sigma_e[tracer_comb1[0]] ** 4
+
+                        case (0, 0):
+                            # For wtheta, estimate it from the survey mask,
+                            # as Npair should be calculated from random points.
+                            Npair = [None]
+
+                            # Eq. 85 of https://arxiv.org/abs/2012.08568
+                            T_sn = 1
 
                     if Npair[0] is None:
-                        # assuming no survey boundaries.
-                        if np.abs(s1_s2_1[0]) == np.abs(s1_s2_1[1]) == 2:
-                            SN *= 2
+                        t1, t2 = tracer_comb1
 
-                        cov_sn = SN / (np.pi * dcost)
-                    else:
-                        # catalog level N_pair from treecorr
-                        T_sn = 1
-                        if tracer_comb1[0] in self.sigma_e:
-                            T_sn *= self.sigma_e[tracer_comb1[0]] ** 2
-                        if tracer_comb1[1] in self.sigma_e:
-                            T_sn *= self.sigma_e[tracer_comb1[1]] ** 2
+                        if self.mask_files is not None:
+                            # Estimate Npair from the survey mask when
+                            # pair counts are not stored in the sacc file.
+                            # Eq. (C5) of https://arxiv.org/abs/2012.08568
+                            # N_pair(θ) = (8 pi^2 *n_1 * n_2) * \
+                            # \sum_l [P_{l+1}(x) - P_{l}(x)] / (4 pi) C_l^W
+                            masks = self.get_masks_dict(
+                                {1: t1, 2: t2, 3: t1, 4: t2}
+                            )
+                            # Overlap mask power spectrum
+                            alm = hp.map2alm(masks[1] * masks[2])
+                            mask_wl = hp.alm2cl(alm, alm)
+                            mask_wl *= 2 * np.arange(mask_wl.size) + 1
+                            mask_wl = mask_wl[: WT.ell.size]
 
-                        if (tracer_comb1[0] in self.sigma_e) and (
-                            tracer_comb1[1] in self.sigma_e
-                        ):
-                            T_sn *= 2
-                        # Eq. 64 of https://arxiv.org/abs/2410.06962
-                        cov_sn = 2 * T_sn / Npair
+                            P_ell_av = WT.wig_d(
+                                0, 0
+                            )  # shape (len(theta), len(ell))
+                            Npair = (
+                                (8 * np.pi**2 * self.Ngal[t1] * self.Ngal[t2])
+                                * np.sum(
+                                    mask_wl[None, :]
+                                    * P_ell_av
+                                    * dcost[:, None],
+                                    axis=1,
+                                )
+                                / (4 * np.pi)
+                            )
+
+                        else:
+                            # N_pair(θ) = n_1 * n_2 * A_survey * 2π |Δcosθ|,
+                            # where A_survey is the effective survey area.
+                            A_survey = 4 * np.pi * self.fsky
+                            # 2π|Δcosθ| is the ring solid angle per bin
+                            Npair = (
+                                self.Ngal[t1]
+                                * self.Ngal[t2]
+                                * A_survey
+                                * 2
+                                * np.pi
+                                * dcost
+                            )
 
                     # Add pure shot/shape noise contribution.
-                    cov += np.diag(cov_sn)
+                    cov += np.diag(T_sn / Npair)
 
             else:
                 # TODO: Projection of NaMaster covariance via
