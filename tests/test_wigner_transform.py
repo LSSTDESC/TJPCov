@@ -7,11 +7,13 @@ import tjpcov.wigner_transform as wigner_transform
 
 def get_WT_kwargs():
     lmax = 96
-    ell = np.arange(2, lmax + 1)
-    theta = np.sort(np.pi / ell)[::2]  # Force them to have different sizes
+    ell = np.arange(0, lmax + 1)
+    theta = np.sort(np.pi / ell[1:])[::2]  # Force them to have different sizes
+    theta_edges = np.append(theta, [np.max(theta) * 1.05])
     WT_kwargs = {
         "ell": ell,
         "theta": theta,
+        "theta_edges": theta_edges,
         "s1_s2": [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)],
     }
     return WT_kwargs
@@ -103,14 +105,9 @@ def test_projected_covariance(s1_s2, s1_s2_cross):
         wt.projected_covariance(wt.ell[10:], mat, s1_s2, s1_s2_cross)
 
     th, matb = wt.projected_covariance(wt.ell, mat, s1_s2, s1_s2_cross)
-    wd_a = wigner_transform.wigner_d(*s1_s2, wt.theta, wt.ell)
-    wd_b = wigner_transform.wigner_d(*s1_s2_cross, wt.theta, wt.ell)
-    matb_2 = (
-        (wd_a * np.sqrt(wt.norm) * wt.grad_ell)
-        @ mat
-        @ (wd_b * np.sqrt(wt.norm)).T
-    )
-
+    wd_a = wt.wig_d[*s1_s2]
+    wd_b = wt.wig_d[*s1_s2_cross]
+    matb_2 = (wd_a * wt.grad_ell) @ mat @ wd_b.T
     assert np.all(th == wt.theta)
     assert np.max(np.abs(matb / matb_2) - 1) < 1e-5
 
