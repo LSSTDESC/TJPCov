@@ -5,7 +5,7 @@ from scipy.integrate import quad
 from sacc import standard_types
 from crow.cluster_modules.mass_proxy import MurataBinned
 from .cluster_covariance_base import ClusterCovarianceBase
-from .clusters_helpers import mass_func_map, halo_bias_map
+from .clusters_helpers import halo_bias_map
 
 
 class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
