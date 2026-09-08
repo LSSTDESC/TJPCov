@@ -1,13 +1,12 @@
 tjpcov:
   use_mpi: False
   do_xi: False
-  cov_type: [ClusterCountsGaussian, ClusterCountsSSC] #[ClusterCounts]
+  cov_type: [ClusterCountsGaussian, ClusterCountsSSC]
   # sacc input file 
-  sacc_file: ./tests/tmp/test_cl_sacc.fits
+  sacc_file: ./tests/tmp/cluster_redshift_richness_sacc_data.fits
   # 'set' from parameters OR pass CCL cosmology object OR yaml file
   cosmo: 'set' 
-  outdir: ./
-  fsky: 0.3
+  outdir: ./tests/tmp/
 
 parameters:
   # Not used for while (read by ccl.cosmo):

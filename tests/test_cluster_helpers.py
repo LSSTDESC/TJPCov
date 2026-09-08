@@ -5,30 +5,6 @@ import pytest
 import pyccl as ccl
 
 
-# Mock pyccl and other dependencies
-@pytest.fixture
-def mock_cosmo():
-    """Mock a CCL cosmology object."""
-    Omg_c = 0.26
-    Omg_b = 0.04
-    h0 = 0.67  # so H0 = 100h0 will be in km/s/Mpc
-    A_s_value = 2.1e-9
-    n_s_value = 0.96
-    w_0 = -1.0
-    w_a = 0.0
-
-    cosmo = ccl.Cosmology(
-        Omega_c=Omg_c,
-        Omega_b=Omg_b,
-        h=h0,
-        A_s=A_s_value,
-        n_s=n_s_value,
-        w0=w_0,
-        wa=w_a,
-    )
-    return cosmo
-
-
 @pytest.fixture
 def fft_helper(mock_cosmo):
     """Return an instance of FFTHelper."""

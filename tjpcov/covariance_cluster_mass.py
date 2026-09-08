@@ -1,8 +1,7 @@
 from .covariance_builder import CovarianceBuilder
+from .cluster_covariance_base import ClusterCovarianceBase
 from .clusters_helpers import (
     FFTHelper,
-    extract_indices_rich_z,
-    _load_from_sacc,
     mass_func_map,
 )
 import numpy as np
@@ -10,7 +9,7 @@ import pyccl as ccl
 from sacc import standard_types
 
 
-class ClusterMass(CovarianceBuilder):
+class ClusterMass(ClusterCovarianceBase, CovarianceBuilder):
     """Calculate the covariance of cluster mass measurements.
 
     This class is able to compute the covariance for
@@ -55,51 +54,11 @@ class ClusterMass(CovarianceBuilder):
         )
         self.covariance_block_data_type = standard_types.cluster_mean_log_mass
 
-    def load_from_cosmology(self, cosmo):
-        """Load parameters from a CCL cosmology object.
-
-        Derived attributes from the cosmology are set here.
-
-        Args:
-            cosmo (:obj:`pyccl.Cosmology`): Input cosmology
-        """
-        self.cosmo = cosmo
-        self.c = ccl.physical_constants.CLIGHT / 1000
-        self.h0 = float(self.config["parameters"].get("h"))
 
     def load_cluster_parameters(self):
         """Load cluster parameters from the configuration file."""
-        mass_func_name = self.config["mor_parameters"].get("mass_func")
-        self.mass_def = self.config["mor_parameters"].get("mass_def")
-        self.min_halo_mass = float(
-            self.config["mor_parameters"].get("min_halo_mass")
-        )
-        self.max_halo_mass = float(
-            self.config["mor_parameters"].get("max_halo_mass")
-        )
-        if mass_func_name not in mass_func_map:
-            raise ValueError(f"Invalid mass function: {mass_func_name}")
+        self._load_cluster_parameters()
 
-        # Create the mass definition, mass function, and halo bias objects
-        self.mass_func = mass_func_map[mass_func_name](mass_def=self.mass_def)
-
-    def load_from_sacc(self, sacc_file):
-        """Load and set class attributes based on data from the SACC file.
-
-        Cluster covariance has special parameters set in the SACC file. This
-        informs the code that the data to calculate the cluster covariance is
-        there.  We set extract those values from the sacc file here, and set
-        the attributes here.
-
-        Args:
-            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already
-            loaded.
-        """
-        attributes = _load_from_sacc(
-            sacc_file, self.min_halo_mass, self.max_halo_mass
-        )
-        for key, value in attributes.items():
-            setattr(self, key, value)
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
@@ -141,8 +100,8 @@ class ClusterMass(CovarianceBuilder):
             float: Covariance for a single block
         """
 
-        richness_i, z_i = extract_indices_rich_z(tracer_comb1)
-        richness_j, z_j = extract_indices_rich_z(tracer_comb2)
+        richness_i, z_i = self.extract_indices_rich_z(tracer_comb1)
+        richness_j, z_j = self.extract_indices_rich_z(tracer_comb2)
 
         if richness_i != richness_j or z_i != z_j:
             return np.array(0)

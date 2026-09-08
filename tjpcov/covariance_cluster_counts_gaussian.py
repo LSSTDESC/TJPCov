@@ -1,5 +1,5 @@
 from .covariance_cluster_counts import CovarianceClusterCounts
-from .clusters_helpers import extract_indices_rich_z
+
 import numpy as np
 
 
@@ -51,8 +51,8 @@ class ClusterCountsGaussian(CovarianceClusterCounts):
             array_like: Covariance for a single block
         """
         # Extract richness and redshift indices for both tracer combinations
-        richness_i, z_i = extract_indices_rich_z(tracer_comb1)
-        richness_j, z_j = extract_indices_rich_z(tracer_comb2)
+        richness_i, z_i = self.extract_indices_rich_z(tracer_comb1)
+        richness_j, z_j = self.extract_indices_rich_z(tracer_comb2)
 
         if richness_i != richness_j or z_i != z_j:
             return np.array(0)
