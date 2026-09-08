@@ -14,7 +14,7 @@ class ClusterCovarianceBase:
         """Extract and compute attributes from a SACC file.
 
         Args:
-            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, 
+            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object,
             already loaded.
 
         Returns:
