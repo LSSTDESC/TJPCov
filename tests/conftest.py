@@ -4,7 +4,6 @@ Pytest configuration additions.
 Fixtures defined here are available to any test in TJPCov.
 """
 
-import itertools
 import os
 
 import numpy as np

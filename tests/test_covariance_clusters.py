@@ -7,8 +7,6 @@ from tjpcov.covariance_calculator import CovarianceCalculator
 from tjpcov.covariance_cluster_counts_gaussian import ClusterCountsGaussian
 from tjpcov.covariance_cluster_counts_ssc import ClusterCountsSSC
 from tjpcov.covariance_cluster_mass import ClusterMass
-from tjpcov.clusters_helpers import FFTHelper
-import pyccl.halos.hmfunc as hmf
 import pytest
 import os
 import shutil

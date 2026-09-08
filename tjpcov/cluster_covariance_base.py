@@ -6,15 +6,16 @@ from .clusters_helpers import mass_func_map
 
 
 class ClusterCovarianceBase:
-    """Base class to provide cosmology/SACC loading shared by cluster covariance
-    classes.
+    """Base class to provide cosmology/SACC loading shared by cluster
+    covariance classes.
     """
 
     def load_from_sacc(self, sacc_file):
         """Extract and compute attributes from a SACC file.
 
         Args:
-            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already loaded.
+            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, 
+            already loaded.
 
         Returns:
             dict: A dictionary containing all computed attributes.

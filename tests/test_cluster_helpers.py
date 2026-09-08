@@ -2,7 +2,6 @@
 
 from tjpcov.clusters_helpers import FFTHelper
 import pytest
-import pyccl as ccl
 
 
 @pytest.fixture

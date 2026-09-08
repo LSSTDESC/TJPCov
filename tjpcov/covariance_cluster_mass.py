@@ -2,10 +2,8 @@ from .covariance_builder import CovarianceBuilder
 from .cluster_covariance_base import ClusterCovarianceBase
 from .clusters_helpers import (
     FFTHelper,
-    mass_func_map,
 )
 import numpy as np
-import pyccl as ccl
 from sacc import standard_types
 
 
