@@ -54,11 +54,9 @@ class ClusterMass(ClusterCovarianceBase, CovarianceBuilder):
         )
         self.covariance_block_data_type = standard_types.cluster_mean_log_mass
 
-
     def load_cluster_parameters(self):
         """Load cluster parameters from the configuration file."""
         self._load_cluster_parameters()
-
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs

@@ -10,11 +10,11 @@ tjpcov:
 
 parameters:
   # Not used for while (read by ccl.cosmo):
-  Omega_c: 0.26
-  Omega_b: 0.04
-  h: 0.67
-  n_s: 0.96
-  A_s: 2.1e-9
+  Omega_c: 0.2640
+  Omega_b: 0.0493
+  h: 0.6736
+  n_s: 0.9649
+  sigma8: 0.8111
   w0: -1
   wa: 0
   transfer_function: 'boltzmann_camb'
@@ -34,7 +34,7 @@ mor_parameters:
   min_halo_mass: 1.0e13
   max_halo_mass: 1.0e16
   #richness-mass relation parameters (from eq (14) in https://arxiv.org/pdf/1904.07524):
-  m_pivot: 14.6320
+  m_pivot: 14.648719176207223
   z_pivot: 0.5
   mu_p0: 3.207
   mu_p1: 0.75

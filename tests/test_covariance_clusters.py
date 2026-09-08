@@ -6,6 +6,7 @@ from tjpcov.covariance_cluster_counts import CovarianceClusterCounts
 from tjpcov.covariance_calculator import CovarianceCalculator
 from tjpcov.covariance_cluster_counts_gaussian import ClusterCountsGaussian
 from tjpcov.covariance_cluster_counts_ssc import ClusterCountsSSC
+from tjpcov.covariance_cluster_mass import ClusterMass
 from tjpcov.clusters_helpers import FFTHelper
 import pyccl.halos.hmfunc as hmf
 import pytest
@@ -17,23 +18,30 @@ import copy
 
 from conftest import INPUT_YML, OUTDIR
 
-
 MASSDEF = ccl.halos.MassDef200m
+SURVEY_NAME = "NC_mock_redshift_richness"
 
 
 def teardown_module():
     shutil.rmtree(OUTDIR)
 
 
+def _load_config(sacc_file=None, sigma_0=None):
+    """Load INPUT_YML, optionally overriding the sacc file path/sigma_0."""
+    with open(INPUT_YML, "r") as fp:
+        config_str = jinja2.Template(fp.read()).render()
+    config = yaml.load(config_str, Loader=yaml.Loader)
+    if sacc_file is not None:
+        config["tjpcov"]["sacc_file"] = sacc_file
+    if sigma_0 is not None:
+        config["photo-z"]["sigma_0"] = sigma_0
+    return config
+
+
 @pytest.fixture
 def mock_covariance_gauss(mock_cosmo, save_cluster_sacc_data):
     cc_cov = ClusterCountsGaussian(INPUT_YML)
     cc_cov.load_from_cosmology(mock_cosmo)
-    cc_cov.fft_helper = FFTHelper(
-        mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
-    )
-    cc_cov.mass_func = hmf.MassFuncTinker10(mass_def=MASSDEF)
-    cc_cov.h0 = 0.67
     return cc_cov
 
 
@@ -41,11 +49,13 @@ def mock_covariance_gauss(mock_cosmo, save_cluster_sacc_data):
 def mock_covariance_ssc(mock_cosmo, save_cluster_sacc_data):
     cc_cov = ClusterCountsSSC(INPUT_YML)
     cc_cov.load_from_cosmology(mock_cosmo)
-    cc_cov.fft_helper = FFTHelper(
-        mock_cosmo, cc_cov.z_lower_limit, cc_cov.z_upper_limit
-    )
-    cc_cov.mass_func = hmf.MassFuncTinker10(mass_def=MASSDEF)
-    cc_cov.h0 = 0.67
+    return cc_cov
+
+
+@pytest.fixture
+def mock_covariance_mass(mock_cosmo, save_cluster_sacc_data):
+    cc_cov = ClusterMass(INPUT_YML)
+    cc_cov.load_from_cosmology(mock_cosmo)
     return cc_cov
 
 
@@ -53,9 +63,11 @@ def mock_covariance_ssc(mock_cosmo, save_cluster_sacc_data):
 def test_is_not_null(save_cluster_sacc_data):
     cc_cov = ClusterCountsSSC(INPUT_YML)
     assert cc_cov is not None
-    cc_cov = None
 
     cc_cov = ClusterCountsGaussian(INPUT_YML)
+    assert cc_cov is not None
+
+    cc_cov = ClusterMass(INPUT_YML)
     assert cc_cov is not None
 
 
@@ -83,10 +95,14 @@ def test_load_from_sacc(mock_covariance_gauss: CovarianceClusterCounts):
     assert mock_covariance_gauss.min_halo_ln_mass == np.log(1e13)
     assert mock_covariance_gauss.num_richness_bins == 3
     assert mock_covariance_gauss.num_z_bins == 6
-    assert mock_covariance_gauss.min_richness == 10
-    assert mock_covariance_gauss.max_richness == 100
-    assert mock_covariance_gauss.z_min == 0.3
-    assert mock_covariance_gauss.z_max == 1.2
+    assert mock_covariance_gauss.min_richness == pytest.approx(
+        10**0.8685892469619315
+    )
+    assert mock_covariance_gauss.max_richness == pytest.approx(
+        10**1.8864886182119167
+    )
+    assert mock_covariance_gauss.z_min == pytest.approx(0.20000240679472392)
+    assert mock_covariance_gauss.z_max == pytest.approx(0.6499986281483467)
 
 
 def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
@@ -98,6 +114,7 @@ def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
 
 def test_load_cluster_parameters(
     mock_covariance_gauss: CovarianceClusterCounts,
+    mock_covariance_mass: ClusterMass,
 ):
     # Test with valid parameters
     mock_covariance_gauss.load_cluster_parameters()
@@ -109,7 +126,7 @@ def test_load_cluster_parameters(
     assert mock_covariance_gauss.mass_func is not None
     assert mock_covariance_gauss.hbias is not None
     assert mock_covariance_gauss.sigma_0 == 0.005
-    assert mock_covariance_gauss.mor_m_pivot == 14.6320
+    assert mock_covariance_gauss.mor_m_pivot == 14.648719176207223
     assert mock_covariance_gauss.mor_mu_p0 == 3.207
     assert mock_covariance_gauss.mor_mu_p1 == 0.75
     assert mock_covariance_gauss.mor_mu_p2 == 0.0
@@ -138,13 +155,30 @@ def test_load_cluster_parameters(
         match=f"Invalid halo bias: {invalid_halo_bias}",
     ):
         ClusterCountsGaussian(config_copy)
+    # Test with cluster mass
+    mock_covariance_mass.load_cluster_parameters()
+
+    assert mock_covariance_mass.mass_def == "200m"
+    assert mock_covariance_mass.min_halo_ln_mass == np.log(1.0e13)
+    assert mock_covariance_mass.max_halo_ln_mass == np.log(1.0e16)
+    assert mock_covariance_mass.mass_func is not None
+
+    invalid_mass_func = "InvalidMassFunc"
+    config_copy = mock_covariance_mass.config.copy()
+    config_copy["mor_parameters"]["mass_func"] = invalid_mass_func
+    mock_covariance_mass.config = config_copy
+    with pytest.raises(
+        ValueError,
+        match=f"Invalid mass function: {invalid_mass_func}",
+    ):
+        mock_covariance_mass.load_cluster_parameters()
 
 
 @pytest.mark.parametrize(
     "z, ref_val",
     [
-        (0.3, 1.535576971814782e-05),
-        (0.35, 1.4966733247622803e-05),
+        (0.3, 1.909297e-05),  # Values obtained from crow
+        (0.35, 1.839692e-05),
     ],
 )
 def test_integral_mass_no_bias(
@@ -155,7 +189,7 @@ def test_integral_mass_no_bias(
 
 
 def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
-    ref = 65072.00833349381
+    ref = 9662.189914386521
     test = mock_covariance_gauss.shot_noise(0, 0)
     assert test == pytest.approx(ref, rel=1e-3)
 
@@ -163,8 +197,8 @@ def test_shot_noise(mock_covariance_gauss: ClusterCountsGaussian):
 @pytest.mark.parametrize(
     "z, reference_val",
     [
-        (0.5, 2.7048501644251484e-05),
-        (0.55, 2.7008280451561754e-05),
+        (0.5, 3.222714e-05),  # 3.41497484734468e-05),
+        (0.55, 3.187768e-05),  # 3.418971366446374e-05),
     ],
 )
 def test_integral_mass(
@@ -177,7 +211,7 @@ def test_integral_mass(
 @pytest.mark.parametrize(
     "z, reference_val",
     [
-        (0.5, 3.8e-05),  # a proper value must be added here
+        (0.5, 3.656507e-05),  # 3.8543405453894756e-05),
     ],
 )
 def test_integral_mass_no_mproxy(
@@ -190,11 +224,11 @@ def test_integral_mass_no_mproxy(
 
 
 def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
-    reference_min = 0.001635
+    reference_min = 0.004609851096662065
 
     test_min = [
         mock_covariance_gauss.mass_richness(
-            mock_covariance_gauss.min_mass, 1.0, i
+            mock_covariance_gauss.min_halo_ln_mass, 1.0, i
         )
         for i in range(mock_covariance_gauss.num_richness_bins)
     ]
@@ -204,17 +238,18 @@ def test_mass_richness(mock_covariance_gauss: CovarianceClusterCounts):
 @pytest.mark.parametrize(
     "z_i, reference_val",
     [
-        (0, 6613.739621696188),
-        (4, 55940746.72160228),
-        (8, 3781771343.1278453),
-        (14, 252063237.8394578),
-        (17, 1113852.72571463),
+        (0, 379483148.0254884),
+        (1, 1793852013.816144),
+        (2, 3955019406.7812386),
+        (3, 2377993261.4517136),
+        (4, 636933571.4428573),
+        (5, 68339853.74341723),
     ],
 )
 def test_calc_dv(
     mock_covariance_gauss: CovarianceClusterCounts, z_i, reference_val
 ):
-    z_true = 0.8
+    z_true = 0.4
     sigma_0 = 0.05  # use large scatter here to have more non-zero values
     test = (
         mock_covariance_gauss.comoving_volume_element(z_true, z_i, sigma_0)
@@ -227,51 +262,39 @@ def test_cov_gaussian_zero_offdiagonal(
     mock_covariance_gauss: ClusterCountsGaussian,
 ):
     cov_0111_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_rich_1", "bin_z_0"),
-        ("mock_survey", "bin_rich_1", "bin_z_1"),
+        (SURVEY_NAME, "bin_rich_1", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_1", "bin_z_1"),
     )
     cov_1011_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_rich_0", "bin_z_1"),
-        ("mock_survey", "bin_rich_1", "bin_z_1"),
+        (SURVEY_NAME, "bin_rich_0", "bin_z_1"),
+        (SURVEY_NAME, "bin_rich_1", "bin_z_1"),
     )
     cov_1001_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_rich_0", "bin_z_1"),
-        ("mock_survey", "bin_rich_1", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_1", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_0", "bin_z_1"),
     )
     assert cov_0111_gauss == 0
     assert cov_1011_gauss == 0
     assert cov_1001_gauss == 0
-
-    cov_10_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_rich_0", "bin_z_1"),
-        ("mock_survey", "bin_rich_1", "bin_z_1"),
-    )
-    assert cov_10_gauss == 0
 
 
 def test_cov_nxn(
     mock_covariance_gauss: ClusterCountsGaussian,
     mock_covariance_ssc: ClusterCountsSSC,
 ):
-    ref_sum = 189480.8478457688
+    ref_sum = COV_REF_GAUSS_005[0, 0] + COV_REF_SSC_005[0, 0]
     # Need to include survey name from mock file here to ensure correct data
     # types are found
     cov_00_gauss = mock_covariance_gauss.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_rich_0", "bin_z_0"),
-        ("mock_survey", "bin_rich_0", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
     )
     cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
-        ("mock_survey", "bin_rich_0", "bin_z_0"),
-        ("mock_survey", "bin_rich_0", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
+        (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
 
-
-def test_get_covariance_block(
-    mock_covariance_gauss: ClusterCountsGaussian,
-    mock_covariance_ssc: ClusterCountsSSC,
-):
-    ref_sum = 189480.8478457688
     cov_00_gauss = mock_covariance_gauss.get_covariance_block(
         ("clusters_0_0",),
         ("clusters_0_0",),
@@ -290,11 +313,7 @@ def test_cluster_count_tracer_missing_throws(save_cluster_sacc_data):
     bad_sacc_file = os.path.join(OUTDIR, "test_cl_fails_sacc.fits")
     s.save_fits(bad_sacc_file, overwrite=True)
 
-    # Overwrite config file to point to new sacc file
-    with open(INPUT_YML, "r") as fp:
-        config_str = jinja2.Template(fp.read()).render()
-    config = yaml.load(config_str, Loader=yaml.Loader)
-    config["tjpcov"]["sacc_file"] = bad_sacc_file
+    config = _load_config(sacc_file=bad_sacc_file)
 
     with pytest.raises(
         ValueError, match="Cluster count covariance was requested"
@@ -308,29 +327,24 @@ def test_cluster_count_defaults_survey_area(save_cluster_sacc_data):
     """Test default survey area."""
     s = copy.deepcopy(save_cluster_sacc_data)
     del s.tracers["NC_mock_redshift_richness"]
-    s.reorder(s.indices(data_type=sacc.standard_types.cluster_mean_log_mass))
 
     os.makedirs(OUTDIR, exist_ok=True)
-    new_sacc_file = os.path.join(OUTDIR, "test_cl_mass_no_survey_sacc.fits")
+    new_sacc_file = os.path.join(OUTDIR, "test_cl_no_survey_sacc.fits")
     s.save_fits(new_sacc_file, overwrite=True)
 
-    # Overwrite config file to point to new sacc file
-    with open(INPUT_YML, "r") as fp:
-        config_str = jinja2.Template(fp.read()).render()
-    config = yaml.load(config_str, Loader=yaml.Loader)
-    config["tjpcov"]["sacc_file"] = new_sacc_file
-
+    config = _load_config(sacc_file=new_sacc_file)
 
     cc = ClusterCountsGaussian(config)
+    assert cc.survey_area == 4 * np.pi
+
+    cc = ClusterMass(config)
     assert cc.survey_area == 4 * np.pi
 
     os.remove(new_sacc_file)
 
 
 def test_non_cluster_counts_covmat_zero(save_cluster_sacc_data):
-    with open(INPUT_YML, "r") as fp:
-        config_str = jinja2.Template(fp.read()).render()
-    config = yaml.load(config_str, Loader=yaml.Loader)
+    config = _load_config()
 
     cc = ClusterCountsGaussian(config)
 
@@ -347,374 +361,94 @@ def test_non_cluster_counts_covmat_zero(save_cluster_sacc_data):
     assert np.all(cov[19:, :18] == 0)
     assert np.all(cov[:18, 19:] == 0)
 
+    cc = ClusterMass(config)
+
+    trs_cov = cc.get_list_of_tracers_for_cov()
+    blocks = []
+    for trs1, trs2 in trs_cov:
+        blocks.append(np.array(1))
+
+    cov = cc._build_matrix_from_blocks(blocks, trs_cov)
+
+    assert np.all(cov[:18, :18] == 0)
+    assert np.all(cov[19:, 19:] == 1)
+    assert np.all(cov[19:, :18] == 0)
+    assert np.all(cov[:18, 19:] == 0)
+
+
+def test_cluster_mass_tracer_missing_throws(save_cluster_sacc_data):
+    # Keep only cluster_counts, so cluster_mean_log_mass is "missing".
+    s = copy.deepcopy(save_cluster_sacc_data)
+    s.reorder(s.indices(data_type=sacc.standard_types.cluster_counts))
+    os.makedirs(OUTDIR, exist_ok=True)
+
+    bad_sacc_file = os.path.join(OUTDIR, "test_cl_mass_fails_sacc.fits")
+    s.save_fits(bad_sacc_file, overwrite=True)
+
+    config = _load_config(sacc_file=bad_sacc_file)
+
+    with pytest.raises(
+        ValueError, match="Cluster mass covariance was requested"
+    ):
+        ClusterMass(config)
+
+    os.remove(bad_sacc_file)
+
+
+# -------------------
+# External validation
+# -------------------
+
 N_Z_BINS = 6
 N_LAMBDA_BINS = 3
 LEN_NC = N_Z_BINS * N_LAMBDA_BINS
 
-COV_REF_GAUSS_005 = np.array(
+COV_REF_GAUSS_005 = np.diag(
     [
-        [
-            9662.191886121263,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            12688.703662905858,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            19265.909425255675,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            20661.845270498427,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            23689.742361218232,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            30009.17124258014,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4607.998294863565,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            5973.534063222964,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            8945.157180170849,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            9456.975028553872,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            10692.656431207164,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            13336.72847308123,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            2223.2774498819904,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            2842.332919951176,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4193.715282176797,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4366.509536275869,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4864.393924854495,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            5968.457438220038,
-        ],
+        9662.191886121263,
+        12688.703662905858,
+        19265.909425255675,
+        20661.845270498427,
+        23689.742361218232,
+        30009.17124258014,
+        4607.998294863565,
+        5973.534063222964,
+        8945.157180170849,
+        9456.975028553872,
+        10692.656431207164,
+        13336.72847308123,
+        2223.2774498819904,
+        2842.332919951176,
+        4193.715282176797,
+        4366.509536275869,
+        4864.393924854495,
+        5968.457438220038,
     ]
 )
+
+COV_REF_GAUSS_05 = np.diag(
+    [
+        10194.12329803862,
+        13048.195639926998,
+        19532.821236429125,
+        20761.58467107396,
+        23667.08902891256,
+        29815.699656727247,
+        4835.783954606114,
+        6113.75973919279,
+        9030.402201864066,
+        9465.651771980924,
+        10644.33710939592,
+        13208.94527333313,
+        2320.176465888219,
+        2894.8758154874317,
+        4215.3348554211,
+        4353.5471086757925,
+        4825.520507128297,
+        5893.518040166468,
+    ]
+)
+
 
 COV_REF_SSC_005 = np.array(
     [
@@ -1077,371 +811,6 @@ COV_REF_SSC_005 = np.array(
             -3.0274780756728791e02,
             -3.7871570911669386e02,
             3.4334346996029708e03,
-        ],
-    ]
-)
-
-COV_REF_GAUSS_05 = np.array(
-    [
-        [
-            10194.12329803862,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            13048.195639926998,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            19532.821236429125,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            20761.58467107396,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            23667.08902891256,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            29815.699656727247,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4835.783954606114,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            6113.75973919279,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            9030.402201864066,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            9465.651771980924,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            10644.33710939592,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            13208.94527333313,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            2320.176465888219,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            2894.8758154874317,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4215.3348554211,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4353.5471086757925,
-            0.0,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            4825.520507128297,
-            0.0,
-        ],
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            5893.518040166468,
         ],
     ]
 )
@@ -1812,15 +1181,6 @@ COV_REF_SSC_05 = np.array(
 )
 
 
-def _load_config(sacc_file):
-    with open(INPUT_YML, "r") as fp:
-        config_str = jinja2.Template(fp.read()).render()
-    config = yaml.load(config_str, Loader=yaml.Loader)
-    config["tjpcov"]["sacc_file"] = sacc_file
-    config["tjpcov"]["outdir"] = "./tests/tmp/"
-    return config
-
-
 @pytest.mark.parametrize(
     "sigma_0, ref_gauss, ref_ssc",
     [
@@ -1831,22 +1191,8 @@ def _load_config(sacc_file):
 def test_cluster_count_covariance_matches_reference(
     save_cluster_sacc_data, sigma_0, ref_gauss, ref_ssc
 ):
-    """Gaussian  SSC cluster-count covariance vs. an external reference.
-
-    save_cluster_sacc_data (tests/conftest.py) builds and saves the mock
-    SACC file this test (and the notebook it's derived from) uses.
-    """
-    config = _load_config(
-        "./tests/tmp/cluster_redshift_richness_sacc_data.fits"
-    )
-    config["photo-z"]["sigma_0"] = sigma_0
-
-    config["parameters"]["A_s"] = None
-    config["parameters"]["Omega_c"] = 0.2640 
-    config["parameters"]["Omega_b"] = 0.0493
-    config["parameters"]["h"] = 0.6736
-    config["parameters"]["sigma8"] = 0.811
-    config["parameters"]["n_s"] = 0.9649
+    """Gaussian  SSC cluster-count covariance vs. an external reference."""
+    config = _load_config(sigma_0=sigma_0)
 
     cc = CovarianceCalculator(config)
     cov_terms = cc.get_covariance_terms()

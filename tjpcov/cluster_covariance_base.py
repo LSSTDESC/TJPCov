@@ -4,6 +4,7 @@ import pyccl as ccl
 import numpy as np
 from .clusters_helpers import mass_func_map
 
+
 class ClusterCovarianceBase:
     """Base class to provide cosmology/SACC loading shared by cluster covariance
     classes.
@@ -21,7 +22,7 @@ class ClusterCovarianceBase:
         z_tracer_type = "bin_z"
         survey_tracer_type = "survey"
         richness_tracer_type = "bin_richness"
-    
+
         survey_tracer = [
             x
             for x in sacc_file.tracers.values()
@@ -36,7 +37,7 @@ class ClusterCovarianceBase:
             )
         else:
             survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
-    
+
         # Setup redshift bins
         z_bins = sorted(
             [
@@ -50,14 +51,15 @@ class ClusterCovarianceBase:
         z_min = np.min([zbin.lower for zbin in z_bins])
         z_max = np.max([zbin.upper for zbin in z_bins])
         z_bins = np.array(
-            [round(z_bins[0].lower, 2)] + [round(zbin.upper, 2) for zbin in z_bins]
+            [round(z_bins[0].lower, 2)]
+            + [round(zbin.upper, 2) for zbin in z_bins]
         )
         z_bin_spacing = (z_max - z_min) / num_z_bins
         z_lower_limit = max(0.02, z_bins[0] - 4 * z_bin_spacing)
         z_upper_limit = (
             z_bins[-1] + 0.4 * z_bins[-1]
         )  # Set upper limit to be 40% higher than max redshift
-    
+
         # Setup richness bins
         richness_bins = sorted(
             [
@@ -75,7 +77,7 @@ class ClusterCovarianceBase:
             + [10**rbin.upper for rbin in richness_bins]
         )
         richness_bins = np.round(richness_bins, 2)
-    
+
         sacc_meta_dict = {
             "survey_area": survey_area,
             "num_z_bins": num_z_bins,
@@ -94,7 +96,6 @@ class ClusterCovarianceBase:
             setattr(self, key, value)
         # Return all computed attributes as a dictionary
         return sacc_meta_dict
-
 
     def extract_indices_rich_z(self, tracer_comb):
         """Extract richness and redshift indices from a tracer combination."""
@@ -121,7 +122,6 @@ class ClusterCovarianceBase:
                 )
         return richness, z
 
-    
     def load_from_cosmology(self, cosmo):
         """Load parameters from a CCL cosmology object.
 
@@ -138,12 +138,12 @@ class ClusterCovarianceBase:
         """Load cluster parameters from the configuration file."""
         mass_func_name = self.config["mor_parameters"].get("mass_func")
         self.mass_def = self.config["mor_parameters"].get("mass_def")
-        self.min_halo_ln_mass = np.log(float(
-            self.config["mor_parameters"].get("min_halo_mass")
-        ))
-        self.max_halo_ln_mass = np.log(float(
-            self.config["mor_parameters"].get("max_halo_mass")
-        ))
+        self.min_halo_ln_mass = np.log(
+            float(self.config["mor_parameters"].get("min_halo_mass"))
+        )
+        self.max_halo_ln_mass = np.log(
+            float(self.config["mor_parameters"].get("max_halo_mass"))
+        )
         if mass_func_name not in mass_func_map:
             raise ValueError(f"Invalid mass function: {mass_func_name}")
 

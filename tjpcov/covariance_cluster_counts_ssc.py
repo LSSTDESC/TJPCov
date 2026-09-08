@@ -4,6 +4,7 @@ import pyccl as ccl
 from scipy.integrate import simpson as simps
 from scipy.special import spherical_jn, eval_legendre
 
+
 class ClusterCountsSSC(CovarianceClusterCounts):
     """Implementation of the SSC cluster covariance term.
 
@@ -77,7 +78,6 @@ class ClusterCountsSSC(CovarianceClusterCounts):
             array_like: Covariance for a single block
         """
         return self._get_covariance_cluster_counts(tracer_comb1, tracer_comb2)
-
 
     # spherical harmonics coefficients
     def Kl_func(self, L, theta):

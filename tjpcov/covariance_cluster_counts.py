@@ -7,6 +7,7 @@ from crow.cluster_modules.mass_proxy import MurataBinned
 from .cluster_covariance_base import ClusterCovarianceBase
 from .clusters_helpers import mass_func_map, halo_bias_map
 
+
 class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
     """Class to calculate covariance of cluster counts."""
 
@@ -216,7 +217,10 @@ class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
             return argument
 
         if self.has_mproxy:
-            m_integ_lower, m_integ_upper = self.min_halo_ln_mass, self.max_halo_ln_mass
+            m_integ_lower, m_integ_upper = (
+                self.min_halo_ln_mass,
+                self.max_halo_ln_mass,
+            )
         else:
             m_integ_lower = np.log(10) * self.richness_bins[richness_i]
             m_integ_upper = np.log(10) * self.richness_bins[richness_i + 1]
