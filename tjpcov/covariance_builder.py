@@ -1025,20 +1025,19 @@ class CovarianceProjectedReal(CovarianceReal):
         if binning == "log":
             # assuming constant log bins
             del_logtheta = np.log10(theta_eff[1:] / theta_eff[:-1]).mean()
+    
             theta_min = 2 * thetab_min / (10**del_logtheta + 1)
             theta_max = 2 * thetab_max / (1 + 10 ** (-del_logtheta))
-
+    
             th_min = theta_min
             th_max = theta_max
+    
             theta_edges = np.logspace(
                 np.log10(th_min), np.log10(th_max), nbpw + 1
             )
-            th = np.logspace(np.log10(th_min * 0.98), np.log10(1), nbpw * 30)
-            # binned covariance can be sensitive to the th values. Make sure
-            # you check convergence for your application
-            th2 = np.linspace(1, th_max * 1.02, nbpw * 30)
-
-            theta = np.unique(np.sort(np.append(th, th2)))
+    
+            # Integration grid: logarithmic over the full theta range
+            theta = np.logspace(np.log10(th_min * 0.98), np.log10(th_max * 1.02), nbpw * 30)
         else:
             raise NotImplementedError(f"Binning {binning} not implemented yet")
 
