@@ -990,6 +990,7 @@ class CovarianceProjectedReal(CovarianceReal):
         super().__init__(config)
         self.WT = None
         self.lmax = self.config["ProjectedReal"].get("lmax")
+        self.binning = self.config["ProjectedReal"].get("binning", "log")
         if self.lmax is None:
             raise ValueError(
                 "You need to specify the lmax you want to "
@@ -1017,10 +1018,10 @@ class CovarianceProjectedReal(CovarianceReal):
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
         # https://github.com/LSSTDESC/TXPipe/blob/a9dfdb7809ac7ed6c162fd3930c643a67afcd881/txpipe/covariance.py#L23
-
+    
         theta_eff = self.get_theta_eff()
         nbpw = theta_eff.size
-
+    
         thetab_min, thetab_max = theta_eff.min(), theta_eff.max()
         if binning == "log":
             # assuming constant log bins
@@ -1038,15 +1039,28 @@ class CovarianceProjectedReal(CovarianceReal):
     
             # Integration grid: logarithmic over the full theta range
             theta = np.logspace(np.log10(th_min * 0.98), np.log10(th_max * 1.02), nbpw * 30)
+        elif binning == "linear":
+            # assuming constant linear bins
+            del_theta = np.diff(theta_eff).mean()
+    
+            th_min = thetab_min - del_theta / 2
+            th_max = thetab_max + del_theta / 2
+    
+            theta_edges = np.linspace(
+                th_min, th_max, nbpw + 1,
+            )
+    
+            # Integration grid: linear over the full theta range
+            theta = np.linspace(th_min * 0.98, th_max * 1.02, nbpw * 30)
         else:
             raise NotImplementedError(f"Binning {binning} not implemented yet")
-
+    
         if in_radians:
             arcmin_rad = np.pi / 180 / 60
             theta *= arcmin_rad
             theta_eff *= arcmin_rad
             theta_edges *= arcmin_rad
-
+    
         return theta, theta_eff, theta_edges
 
     def get_cov_WT_spin(self, tracer_comb):
@@ -1087,7 +1101,7 @@ class CovarianceProjectedReal(CovarianceReal):
         if self.WT is None:
             # Removing ell <= 1 (following original implementation)
             ell = np.arange(2, self.lmax + 1)
-            theta, _, _ = self.get_binning_info(in_radians=True)
+            theta, _, _ = self.get_binning_info(in_radians=True, binning=self.binning)
 
             WT_kwargs = {
                 "ell": ell,
@@ -1143,7 +1157,7 @@ class CovarianceProjectedReal(CovarianceReal):
             ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
         )
         if binned:
-            theta, _, theta_edges = self.get_binning_info(in_radians=False)
+            theta, _, theta_edges = self.get_binning_info(in_radians=False, binning=self.binning)
             thb, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
 
         return cov
