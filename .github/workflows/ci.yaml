@@ -89,6 +89,9 @@ jobs:
           export MAMBA_NO_BANNER=1
           mamba env update --file ${{ env.CONDA_ENV }}
 
+      - name: Pin NaMaster below the 3.x API break
+        run: mamba install -y "namaster<3"
+
       - name: Install TJPCov
         run: | 
           pip install .[nmt] --no-deps

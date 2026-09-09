@@ -27,7 +27,8 @@ from tjpcov.covariance_calculator import CovarianceCalculator
 
 # The .yaml file contains the reference to the .sacc file - so specify which
 # .sacc file you want to use there. You can also specify if you want to use
-# MPI or not.
+# MPI or not. Before running this example, run the notebook in the same
+# folder to generate the sacc data.
 input_yml = "./clusters/conf_covariance_clusters.yaml"
 cc = CovarianceCalculator(input_yml)
 
@@ -55,7 +56,7 @@ sacc_with_cov = cc.create_sacc_cov(
 
 cov_from_file = sacc_with_cov.covariance.covmat
 # cov_from_file = sacc.Sacc.load_fits(
-#   '../tests/data/clusters/mock_clusters_with_cov.sacc'
+#   './clusters/mock_clusters_with_cov.sacc'
 # ).covariance.covmat
 
 

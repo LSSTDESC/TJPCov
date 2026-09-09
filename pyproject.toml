@@ -14,7 +14,7 @@ authors = [
 ]
 description = "Covariances for LSST DESC"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -32,7 +32,8 @@ dependencies = [
     "sacc>=0.12",
     "camb",
     "healpy",
-    "h5py"
+    "h5py",
+    "lsstdesc-crow"
 ]
 dynamic = ["version"]
 
