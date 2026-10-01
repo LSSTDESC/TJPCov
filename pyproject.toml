@@ -32,8 +32,7 @@ dependencies = [
     "sacc>=0.12",
     "camb",
     "healpy",
-    "h5py",
-    "lsstdesc-crow"
+    "h5py"
 ]
 dynamic = ["version"]
 
@@ -49,14 +48,18 @@ doc = [
     "sphinx-book-theme",
 ]
 nmt = [
-    "pymaster>=2"
+    "pymaster>=2,<3"
 ]
 mpi = [
     "mpi4py"
 ]
+clusters = [
+    "lsstdesc-crow"
+]
 full = [
-    "pymaster>=2",
+    "pymaster>=2,<3",
     "mpi4py",
+    "lsstdesc-crow",
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",

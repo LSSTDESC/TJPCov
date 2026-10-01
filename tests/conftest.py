@@ -1,7 +1,9 @@
 """
 Pytest configuration additions.
 
-Fixtures defined here are available to any test in TJPCov.
+pytest loads ``conftest.py`` automatically before collecting the tests,
+so the fixtures defined here can be requested by name (as test function
+arguments) in any test module under ``tests/`` without importing them.
 """
 
 import os

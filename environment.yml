@@ -15,7 +15,7 @@ dependencies:
   - pyyaml
   - pyccl>=3.2
   - sacc>=0.12
-  - namaster>2
+  - namaster>2,<3
   - camb
   - Jinja2
   - healpy
