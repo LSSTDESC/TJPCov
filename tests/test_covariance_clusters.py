@@ -396,6 +396,10 @@ def test_cluster_mass_tracer_missing_throws(save_cluster_sacc_data):
 # -------------------
 # External validation
 # -------------------
+# Reference covariances provided by A. Fumagalli, computed with her
+# implementation of the cluster count covariance described in
+# Costanzi et al. 2019 (arXiv:1810.09456) and Fumagalli et al. 2021
+# (arXiv:2102.08914).
 
 N_Z_BINS = 6
 N_LAMBDA_BINS = 3
