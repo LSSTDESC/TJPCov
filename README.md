@@ -48,6 +48,8 @@ Because TJPCov relies on some packages that may not be necessary for every user,
      dependencies and the dependencies needed to use NaMaster.
  - `pip install 'tjpcov[mpi4py]'` will install, the minimal
      dependencies and the mpi4py library to use MPI parallelization. **Does not work on NERSC** (see above)
+ - `pip install 'tjpcov[clusters]'` will install tjpcov, the minimal
+     dependencies and the dependencies needed for the cluster covariances (crow).
  - `pip install 'tjpcov[full]'` will install tjpcov and all dependencies
 
 

@@ -1,3 +1,5 @@
+"""Tests for the CovarianceBuilder class."""
+
 import healpy as hp
 import os
 import pytest
@@ -16,20 +18,24 @@ OUTDIR = "tests/tmp/"
 
 
 def setup_module():
+    """Create the output directory."""
     os.makedirs(OUTDIR, exist_ok=True)
 
 
 def teardown_module():
+    """Remove the output directory."""
     shutil.rmtree(OUTDIR)
 
 
 def mock_sacc():
+    """Return a mock sacc file."""
     return sacc.Sacc.load_fits(
         "./tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits"
     )
 
 
 def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
+    """Return a 10x10 block with the product of the first elements."""
     f1 = int(tracer_comb1[0].split("__")[1]) + 1
     f2 = int(tracer_comb1[1].split("__")[1]) + 1
     f3 = int(tracer_comb2[0].split("__")[1]) + 1
@@ -40,15 +46,19 @@ def get_covariance_block(tracer_comb1, tracer_comb2, **kwargs):
 
 
 class CovarianceBuilderTester(CovarianceBuilder):
+    """A class to test the CovarianceBuilder class."""
+
     _tracer_types = ["cl", "cl"]
 
     # Based on https://stackoverflow.com/a/28299369
     def get_covariance_block(self, tracer_comb1, tracer_comb2, **kwargs):
+        """Return a block with the product of the first elements."""
         super().get_covariance_block(tracer_comb1, tracer_comb2, **kwargs)
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
     ):
+        """Return a block with the product of the first elements for sacc."""
         super()._get_covariance_block_for_sacc(
             tracer_comb1, tracer_comb2, **kwargs
         )
@@ -56,10 +66,12 @@ class CovarianceBuilderTester(CovarianceBuilder):
 
 @pytest.fixture()
 def mock_builder():
+    """Return a CovarianceBuilderTester instance."""
     return CovarianceBuilderTester(INPUT_YML)
 
 
 def get_nmt_bin(lmax=95):
+    """Return a NmtBin object."""
     bpw_edges = np.array(
         [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96]
     )
@@ -72,10 +84,12 @@ def get_nmt_bin(lmax=95):
 
 
 def test_smoke():
+    """Test that the class can be instantiated."""
     CovarianceBuilderTester(INPUT_YML)
 
 
 def test_nuisance_config(mock_builder):
+    """Test that the nuisance parameters are read correctly."""
     assert mock_builder.bias_lens == {"DESgc__0": 1.48}
     assert mock_builder.IA is None
     Ngal = 26 * 3600 / (np.pi / 180) ** 2
@@ -89,6 +103,7 @@ def test_nuisance_config(mock_builder):
 
 # Tested also in tests/test_mpi.py
 def test_split_tasks_by_rank(mock_builder):
+    """Test that the tasks are split correctly."""
     tasks = list(range(100))
     tasks_splitted = list(mock_builder._split_tasks_by_rank(tasks))
 
@@ -104,6 +119,8 @@ def test_split_tasks_by_rank(mock_builder):
 
 
 def test_compute_all_blocks():
+    """Test that the blocks are computed correctly."""
+
     class CovarianceBuilderTester(CovarianceBuilder):
         _tracer_types = ["cl", "cl"]
 
@@ -126,6 +143,7 @@ def test_compute_all_blocks():
 
 
 def test_get_cosmology(mock_builder):
+    """Test that the cosmology is read correctly."""
     # Check that it reads the parameters from the yaml file
     config = mock_builder.config.copy()
     assert isinstance(mock_builder.get_cosmology(), ccl.Cosmology)
@@ -159,12 +177,16 @@ def test_get_cosmology(mock_builder):
 
 
 def test_get_covariance_block_not_implemented(mock_builder):
+    """Test that the method raises a NotImplementedError."""
     with pytest.raises(NotImplementedError):
         mock_builder.get_covariance_block([], [])
 
 
 def test_get_covariance():
+    """Test that the covariance is computed correctly."""
+
     def build_matrix_from_blocks(blocks, tracers_cov):
+        """Build a matrix from the blocks."""
         tracers_cov_sorted = sorted(tracers_cov)
         ix = []
         for trs in tracers_cov_sorted:
@@ -173,6 +195,8 @@ def test_get_covariance():
         return block_diag(*blocks)
 
     class CovarianceBuilderTester(CovarianceBuilder):
+        """A class to test the CovarianceBuilder class."""
+
         _tracer_types = ["cl", "cl"]
 
         # Based on https://stackoverflow.com/a/28299369
@@ -202,6 +226,8 @@ def test_get_covariance():
 
 
 def test_get_covariance_block_for_sacc():
+    """Test that the covariance block is computed correctly."""
+
     class CovarianceBuilderTester(CovarianceBuilder):
         _tracer_types = ["cl", "cluster"]
 
@@ -259,6 +285,7 @@ def test_get_covariance_block_for_sacc():
 
 
 def test_get_list_of_tracers_for_cov(mock_builder):
+    """Test that the tracers are read correctly."""
     trs_cov = mock_builder.get_list_of_tracers_for_cov()
 
     # Test all tracers
@@ -272,6 +299,7 @@ def test_get_list_of_tracers_for_cov(mock_builder):
 
 
 def test_get_mask_names_dict(mock_builder):
+    """Test that the mask names are read correctly."""
     tracer_names = {1: "DESwl__0", 2: "DESgc__0", 3: "DESwl__1", 4: "DESwl__1"}
     mn = mock_builder.get_mask_names_dict(tracer_names)
 
@@ -282,6 +310,7 @@ def test_get_mask_names_dict(mock_builder):
 
 
 def test_get_masks_dict(mock_builder):
+    """Test that the masks are read correctly."""
     tracer_names = {1: "DESwl__0", 2: "DESgc__0", 3: "DESwl__1", 4: "DESwl__1"}
     m = mock_builder.get_masks_dict(tracer_names)
 
@@ -300,10 +329,12 @@ def test_get_masks_dict(mock_builder):
 
 
 def test_get_nbpw(mock_builder):
+    """Test that the number of bandpowers is read correctly."""
     assert mock_builder.get_nbpw() == 16
 
 
 def test_get_tracers_spin_dict(mock_builder):
+    """Test that the tracers spins are read correctly."""
     tracer_names = {1: "DESwl__0", 2: "DESgc__0", 3: "DESwl__1", 4: "DESwl__1"}
     s = mock_builder.get_tracers_spin_dict(tracer_names)
 
@@ -311,11 +342,13 @@ def test_get_tracers_spin_dict(mock_builder):
 
 
 def test_get_tracer_comb_spin(mock_builder):
+    """Test that the tracers spins are read correctly."""
     tracer_comb = ["DESwl__0", "DESgc__0"]
     assert mock_builder.get_tracer_comb_spin(tracer_comb) == (2, 0)
 
 
 def test_get_tracer_comb_data_types(mock_builder):
+    """Test that the data types are read correctly."""
     tracer_comb = ["DESgc__0", "DESgc__0"]
     assert mock_builder.get_tracer_comb_data_types(tracer_comb) == ["cl_00"]
 
@@ -343,5 +376,6 @@ def test_get_tracer_comb_data_types(mock_builder):
 
 @pytest.mark.parametrize("tr", ["DESwl__0", "DESgc__0"])
 def test_get_tracer_nmaps(tr, mock_builder):
+    """Test that the number of maps is read correctly."""
     nmap = 2 if tr == "DESwl__0" else 1
     assert mock_builder.get_tracer_nmaps(tr) == nmap

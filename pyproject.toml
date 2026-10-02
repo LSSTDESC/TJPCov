@@ -14,7 +14,7 @@ authors = [
 ]
 description = "Covariances for LSST DESC"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -48,14 +48,18 @@ doc = [
     "sphinx-book-theme",
 ]
 nmt = [
-    "pymaster>=2"
+    "pymaster>=2,<3"
 ]
 mpi = [
     "mpi4py"
 ]
+clusters = [
+    "lsstdesc-crow"
+]
 full = [
-    "pymaster>=2",
+    "pymaster>=2,<3",
     "mpi4py",
+    "lsstdesc-crow",
     "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
