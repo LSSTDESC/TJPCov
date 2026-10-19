@@ -53,8 +53,6 @@ class FouriercNGHaloModel(CovarianceFourier):
             "no1h": None,
         }
 
-        self._a_arr_survey = None
-
         for key in self.HOD_dict.keys():
             self.HOD_dict[key] = self.config["HOD"].get(key, None)
             if self.HOD_dict[key] is None:
