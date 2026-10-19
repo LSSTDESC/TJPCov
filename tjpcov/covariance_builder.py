@@ -939,8 +939,8 @@ class CovarianceFourier(CovarianceBuilder):
         return self.ccl_tracers, self.tracer_Noise
 
     def _has_galaxy_nz(self, t):
-        """Avoids potential issue with CMB Lensing tracers having a much higher z
-        than needed for trispectrum calculations.
+        """Avoids potential issue with CMB Lensing tracers having
+        a much higher z than needed for trispectrum calculations.
         """
         return (
             getattr(t, "z", None) is not None
