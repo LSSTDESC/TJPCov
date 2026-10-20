@@ -88,6 +88,11 @@ jobs:
         run: |
           export MAMBA_NO_BANNER=1
           mamba env update --file ${{ env.CONDA_ENV }}
+        
+      - name: Install git (needed by setuptools-scm)
+        run: |
+          mamba install -y git
+          git --version
 
       - name: Install TJPCov
         run: | 

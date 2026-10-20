@@ -101,7 +101,7 @@ def get_NFW_profile():
 def get_fsky(tr1, tr2, tr3, tr4):
     config = get_config()
     fsky = config["tjpcov"].get("fsky", None)
-    return fsky
+    return np.float64(fsky).item()
 
 
 def test_smoke():
@@ -224,7 +224,6 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     )
 
     if calculate_with_hod:
-
         prof_2pt_hod = ccl.halos.profiles_2pt.Profile2ptHOD()
         prof_2pt_avg = ccl.halos.profiles_2pt.Profile2pt()
         HOD = ccl.halos.HaloProfileHOD
