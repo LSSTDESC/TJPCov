@@ -2,7 +2,7 @@ name: tjpcov
 channels: 
   - conda-forge
 dependencies:
-  - python>=3.10
+  - python>=3.11
   - pip
   - wheel
   - black
@@ -15,11 +15,11 @@ dependencies:
   - pyyaml
   - pyccl>=3.2
   - sacc>=0.12
-  - namaster>2
-  - camb
+  - namaster>2,<3
+  - camb<2
   - Jinja2
   - healpy
   - h5py
   - openmpi
   - mpi4py
-
+  - lsstdesc-crow
