@@ -113,7 +113,6 @@ jobs:
       - name: Run MPI Tests (mpich)
         run: |
           mamba install -y "mpi=*=mpich" mpich mpi4py
-          mpiexec -n 2 python -c "...print(rank, size, MPI library)..."
           mpiexec -n 2 python -m mpi4py -m pytest -vv tests/test_mpi.py
           mamba remove -y mpich mpi4py
       
