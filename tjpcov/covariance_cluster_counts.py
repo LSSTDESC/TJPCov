@@ -1,12 +1,14 @@
 from .covariance_builder import CovarianceBuilder
-from .clusters_helpers import MassRichnessRelation, FFTHelper
 import numpy as np
 import pyccl as ccl
-from scipy.integrate import quad, romb
+from scipy.integrate import quad
 from sacc import standard_types
+from crow.cluster_modules.mass_proxy import MurataBinned
+from .cluster_covariance_base import ClusterCovarianceBase
+from .clusters_helpers import halo_bias_map
 
 
-class CovarianceClusterCounts(CovarianceBuilder):
+class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
     """Class to calculate covariance of cluster counts."""
 
     space_type = "Fourier"
@@ -15,14 +17,13 @@ class CovarianceClusterCounts(CovarianceBuilder):
         standard_types.cluster_counts,
     )
 
-    def __init__(self, config, min_halo_mass=1e13):
+    def __init__(self, config):
         """Class to calculate covariance of cluster counts.
 
         Args:
             config (dict or str): If dict, it returns the configuration
                 dictionary directly. If string, it asumes a YAML file and
                 parses it.
-            min_halo_mass (float, optional): Minimum halo mass.
         """
         super().__init__(config)
 
@@ -33,103 +34,42 @@ class CovarianceClusterCounts(CovarianceBuilder):
                 + " points were not included in the sacc file."
             )
 
-        self.hbias = ccl.halos.HaloBiasTinker10()
-        self.h0 = float(self.config["parameters"].get("h"))
-        self.load_from_sacc(sacc_file, min_halo_mass)
-
         cosmo = self.get_cosmology()
         self.load_from_cosmology(cosmo)
-        self.fft_helper = FFTHelper(
-            cosmo, self.z_lower_limit, self.z_upper_limit
-        )
-
+        self.load_cluster_parameters()
+        self.load_from_sacc(sacc_file)
         # Quick key to skip P(Richness|M)
         self.has_mproxy = self.config.get("has_mproxy", True)
         self.covariance_block_data_type = standard_types.cluster_counts
 
-    def load_from_cosmology(self, cosmo):
-        """Load parameters from a CCL cosmology object.
+    def load_cluster_parameters(self):
+        """Load cluster parameters from the configuration file."""
+        self._load_cluster_parameters()
+        halo_bias_name = self.config["mor_parameters"].get("halo_bias")
+        if halo_bias_name not in halo_bias_map:
+            raise ValueError(f"Invalid halo bias: {halo_bias_name}")
 
-        Derived attributes from the cosmology are set here.
+        # Create the halo bias objects
+        self.hbias = halo_bias_map[halo_bias_name](mass_def=self.mass_def)
 
-        Args:
-            cosmo (:obj:`pyccl.Cosmology`): Input cosmology
-        """
-        self.cosmo = cosmo
-        mass_def = ccl.halos.MassDef200m
-        self.c = ccl.physical_constants.CLIGHT / 1000
-        self.mass_func = ccl.halos.MassFuncTinker08(mass_def=mass_def)
+        # photo-z scatter
+        self.sigma_0 = float(self.config["photo-z"].get("sigma_0"))
 
-    def load_from_sacc(self, sacc_file, min_halo_mass):
-        """Set class attributes based on data from the SACC file.
-
-        Cluster covariance has special parameters set in the SACC file. This
-        informs the code that the data to calculate the cluster covariance is
-        there.  We set extract those values from the sacc file here, and set
-        the attributes here.
-
-        Args:
-            sacc_file (:obj: `sacc.sacc.Sacc`): SACC file object, already
-            loaded.
-        """
-
-        z_tracer_type = "bin_z"
-        survey_tracer_type = "survey"
-        richness_tracer_type = "bin_richness"
-
-        survey_tracer = [
-            x
-            for x in sacc_file.tracers.values()
-            if x.tracer_type == survey_tracer_type
-        ]
-        if len(survey_tracer) == 0:
-            self.survey_tracer_nm = ""
-            self.survey_area = 4 * np.pi
-            print(
-                "Survey tracer not provided in sacc file.\n"
-                + "We will use the default value.",
-                flush=True,
-            )
-        else:
-            self.survey_area = survey_tracer[0].sky_area * (np.pi / 180) ** 2
-
-        # Setup redshift bins
-        z_bins = [
-            v
-            for v in sacc_file.tracers.values()
-            if v.tracer_type == z_tracer_type
-        ]
-        self.num_z_bins = len(z_bins)
-        self.z_min = z_bins[0].lower
-        self.z_max = z_bins[-1].upper
-        self.z_bins = np.round(
-            np.linspace(self.z_min, self.z_max, self.num_z_bins + 1), 2
+        # mass-observable relation parameters
+        self.mor_m_pivot = float(self.config["mor_parameters"].get("m_pivot"))
+        self.mor_mu_p0 = float(self.config["mor_parameters"].get("mu_p0"))
+        self.mor_mu_p1 = float(self.config["mor_parameters"].get("mu_p1"))
+        self.mor_mu_p2 = float(self.config["mor_parameters"].get("mu_p2"))
+        self.mor_sigma_p0 = float(
+            self.config["mor_parameters"].get("sigma_p0")
         )
-        self.z_bin_spacing = (self.z_max - self.z_min) / self.num_z_bins
-        self.z_lower_limit = max(0.02, self.z_bins[0] - 4 * self.z_bin_spacing)
-        # Set upper limit to be 40% higher than max redshift
-        self.z_upper_limit = self.z_bins[-1] + 0.4 * self.z_bins[-1]
-
-        # Setup richness bins
-        richness_bins = [
-            v
-            for v in sacc_file.tracers.values()
-            if v.tracer_type == richness_tracer_type
-        ]
-        self.num_richness_bins = len(richness_bins)
-        self.min_richness = 10 ** richness_bins[0].lower
-        self.max_richness = 10 ** richness_bins[-1].upper
-        self.richness_bins = np.round(
-            np.logspace(
-                np.log10(self.min_richness),
-                np.log10(self.max_richness),
-                self.num_richness_bins + 1,
-            ),
-            2,
+        self.mor_sigma_p1 = float(
+            self.config["mor_parameters"].get("sigma_p1")
         )
-
-        self.min_mass = np.log(min_halo_mass)
-        self.max_mass = np.log(1e16)
+        self.mor_sigma_p2 = float(
+            self.config["mor_parameters"].get("sigma_p2")
+        )
+        self.mor_z_pivot = float(self.config["mor_parameters"].get("z_pivot"))
 
     def _quad_integrate(self, argument, from_lim, to_lim):
         """Numerically integrate argument between bounds using scipy quad.
@@ -146,19 +86,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
         integral_value = quad(argument, from_lim, to_lim)
         return integral_value[0]
 
-    def _romb_integrate(self, kernel, spacing):
-        """Numerically integrate arguments between bounds using scipy romberg.
-
-        Args:
-            kernel (array_like): Vector of equally spaced samples of a function
-            spacing (float): Sample spacing
-
-        Returns:
-            float: Value of the integral
-        """
-        return romb(kernel, dx=spacing)
-
-    def observed_photo_z(self, z_true, z_i, sigma_0=0.05):
+    def observed_photo_z(self, z_true, z_i, sigma_0):
         """Implementation of the photometric redshift uncertainty distribution.
 
         We don't assume that redshift can be measured exactly, so we include
@@ -171,8 +99,6 @@ class CovarianceClusterCounts(CovarianceBuilder):
         Args:
             z_true (float): True redshift
             z_i (float): Photometric redshift bin index
-            sigma_0 (float): Spread in the uncertainty of the photo-z
-                distribution, defaults to 0.05 (DES Y1)
         Returns:
             float: Probability weighted photo-z
         """
@@ -192,7 +118,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         return numerator / denominator
 
-    def comoving_volume_element(self, z_true, z_i):
+    def comoving_volume_element(self, z_true, z_i, sigma_0):
         """Calculates the volume element for this bin.
 
         Given a true redshift, and a redshift bin, this will give the
@@ -210,11 +136,11 @@ class CovarianceClusterCounts(CovarianceBuilder):
             self.c
             * (ccl.comoving_radial_distance(self.cosmo, 1 / (1 + z_true)) ** 2)
             / (100 * self.h0 * ccl.h_over_h0(self.cosmo, 1 / (1 + z_true)))
-            * (self.observed_photo_z(z_true, z_i))
+            * (self.observed_photo_z(z_true, z_i, sigma_0))
         )
         return dV
 
-    def mass_richness(self, ln_true_mass, richness_i):
+    def mass_richness(self, ln_true_mass, z, richness_i):
         """Log-normal mass-richness relation without observational scatter.
 
         The probability that we observe richness given the true mass M, is
@@ -225,29 +151,30 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         Args:
             ln_true_mass (float): True mass
+            z (float): Redshift
             richness_bin (int): Richness bin i
         Returns:
             float: The probability that the true mass ln(ln_true_mass)
             is observed within the richness bin i and richness bin i+1
         """
-
-        richness_bin = self.richness_bins[richness_i]
-        richness_bin_next = self.richness_bins[richness_i + 1]
-
-        std_deviation, average = MassRichnessRelation.MurataCostanzi(
-            ln_true_mass, self.h0
+        richness_lower = np.log10(self.richness_bins[richness_i])
+        richness_upper = np.log10(self.richness_bins[richness_i + 1])
+        rich_bin = (richness_lower, richness_upper)
+        mass_richness_prob = MurataBinned(self.mor_m_pivot, self.mor_z_pivot)
+        # mass-obs relation params to be added as input params
+        mass_richness_prob.parameters["mu0"] = self.mor_mu_p0
+        mass_richness_prob.parameters["mu1"] = self.mor_mu_p1
+        mass_richness_prob.parameters["mu2"] = self.mor_mu_p2
+        mass_richness_prob.parameters["sigma0"] = self.mor_sigma_p0
+        mass_richness_prob.parameters["sigma1"] = self.mor_sigma_p1
+        mass_richness_prob.parameters["sigma2"] = self.mor_sigma_p2
+        ln_true_mass = np.atleast_1d(ln_true_mass).astype(np.float64)
+        z = np.atleast_1d(z).astype(np.float64)
+        result = mass_richness_prob.distribution(
+            ln_true_mass / np.log(10), z, rich_bin
         )
 
-        def integrand(richness):
-            prefactor = 1.0 / (
-                richness * (np.sqrt(2.0 * np.pi) * std_deviation)
-            )
-            distribution = np.exp(
-                -(1 / 2) * ((np.log(richness) - average) / std_deviation) ** 2
-            )
-            return prefactor * distribution
-
-        return self._quad_integrate(integrand, richness_bin, richness_bin_next)
+        return result[0]
 
     def mass_richness_integral(self, z, richness_i, remove_bias=False):
         """Integrates the HMF weighted by mass-richness relation.
@@ -257,7 +184,7 @@ class CovarianceClusterCounts(CovarianceBuilder):
 
         Args:
             z (float): Redshift
-            lbd_i (int): Richness bin
+            richness_i (int): Richness bin
             remove_bias (bool, optional): If TRUE, will remove halo_bias from
             the mass integral. Used for calculating the shot noise.
         Returns:
@@ -283,82 +210,18 @@ class CovarianceClusterCounts(CovarianceBuilder):
                 argument *= halo_bias
 
             if self.has_mproxy:
-                argument *= self.mass_richness(ln_m, richness_i)
+                argument *= self.mass_richness(
+                    np.array([ln_m]), np.array([z]), np.array([richness_i])
+                )
 
             return argument
 
         if self.has_mproxy:
-            m_integ_lower, m_integ_upper = self.min_mass, self.max_mass
+            m_integ_lower, m_integ_upper = (
+                self.min_halo_ln_mass,
+                self.max_halo_ln_mass,
+            )
         else:
             m_integ_lower = np.log(10) * self.richness_bins[richness_i]
             m_integ_upper = np.log(10) * self.richness_bins[richness_i + 1]
-
         return self._quad_integrate(integrand, m_integ_lower, m_integ_upper)
-
-    def partial_SSC(self, z, bin_z_j, bin_lbd_j, approx=True):
-        """Calculate the SSC contribution to the covariance integrand.
-
-        Calculate part of the super sample covariance, or the non-diagonal
-        correlation between two point functions whose observed modes are larger
-        than the survey size.
-
-        Args:
-            z (float): redshift
-            bin_z_j (int): redshift bin j
-            bin_lbd_j (int): richness bin j
-            approx (bool, optional): Will only calculate the mass richness
-            integral once and multiply at end. Defaults to True.
-        Returns:
-            float: SSC covariance contribution.
-
-        """
-        # Nelson tested and found convergence at 5 iterations
-        romb_k = 5
-        num_samples = 2 ** (romb_k - 1) + 1
-
-        # Build an equally sampled redshift array based on input and bounds
-        if z <= np.average(self.z_bins):
-            min_z = max(self.z_lower_limit, z - 6 * self.z_bin_spacing)
-            vec_left = np.linspace(min_z, z, num_samples)
-            vec_right = np.linspace(z, z + (z - vec_left[0]), num_samples)
-        else:
-            max_z = min(self.z_upper_limit, z + 0.4 * z)
-            vec_right = np.linspace(z, max_z, num_samples)
-            vec_left = np.linspace(z - (vec_right[-1] - z), z, num_samples)
-
-        z_values = np.append(vec_left, vec_right[1:])
-        romb_range = (z_values[-1] - z_values[0]) / (2**romb_k)
-        fn_values = np.zeros(2**romb_k + 1)
-
-        for i in range(2**romb_k + 1):
-            fn_values[i] = (
-                self.comoving_volume_element(z_values[i], bin_z_j)
-                * ccl.growth_factor(self.cosmo, 1 / (1 + z_values[i]))
-                * self.double_bessel_integral(z, z_values[i])
-            )
-
-            if approx:
-                continue
-
-            fn_values[i] *= self.mass_richness_integral(z_values[i], bin_lbd_j)
-
-        integral_val = self._romb_integrate(fn_values, romb_range)
-
-        factor_approx = 1
-        if approx:
-            factor_approx = self.mass_richness_integral(z, bin_lbd_j)
-
-        return integral_val * factor_approx
-
-    def double_bessel_integral(self, z1, z2):
-        """Calculates the double bessel integral using 2-FAST algorithm.
-
-        See section 7.1, 7.2 of N. Ferreira dissertation.
-
-        Args:
-            z1 (float): redshift lower bound
-            z2 (float): redshift upper bound
-        Returns:
-            float: Numerical approximation of integral.
-        """
-        return self.fft_helper.two_fast_algorithm(z1, z2)
