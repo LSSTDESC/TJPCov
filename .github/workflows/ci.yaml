@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         runs-on: [ubuntu-latest, macos-latest]
 
     steps:
@@ -137,7 +137,7 @@ jobs:
       - name: Collect all coverage reports and publish to coveralls.io
         uses: coverallsapp/github-action@v2
         with:
-          carryforward: "run-3.11-ubuntu-latest,run-3.12-ubuntu-latest,run-3.13-ubuntu-latest,run-3.11-macos-latest,run-3.12-macos-latest,run-3.13-macos-latest"
+          carryforward: "run-3.10-ubuntu-latest,run-3.11-ubuntu-latest,run-3.12-ubuntu-latest,run-3.13-ubuntu-latest,run-3.10-macos-latest,run-3.11-macos-latest,run-3.12-macos-latest,run-3.13-macos-latest"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
 
