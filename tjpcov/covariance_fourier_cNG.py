@@ -72,7 +72,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             - (:obj:`float`): fractional sky area.
         """
         masks = self.get_masks_dict(tr, {})
-        fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
+        fsky = float(np.mean(masks[1] * masks[2] * masks[3] * masks[4]))
         return fsky
 
     def _get_no1h_tkk(self, cosmo, hmc, lk_arr, a_arr, nfw):
@@ -287,6 +287,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             integration_method=integration_method,
             fsky=fsky,
         )
+        cov_cng = cov_cng.T
 
         nbpw = ell.size
         ncell1 = self.get_tracer_comb_ncell(tracer_comb1)

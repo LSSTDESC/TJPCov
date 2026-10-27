@@ -194,6 +194,8 @@ class FourierSSCHaloModel(CovarianceFourier):
             sigma2_B=(a, sigma2_B),
             integration_method=integration_method,
         )
+        
+        cov_ssc = cov_ssc.T
 
         nbpw = ell.size
         ncell1 = self.get_tracer_comb_ncell(tracer_comb1)

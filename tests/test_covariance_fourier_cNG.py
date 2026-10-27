@@ -110,7 +110,7 @@ def get_fsky(tr1, tr2, tr3, tr4):
     m3 = hp.read_map(mf[tr3])
     m4 = hp.read_map(mf[tr4])
 
-    return np.mean(m1 * m2 * m3 * m4)
+    return float(np.mean(m1 * m2 * m3 * m4))
 
 
 def test_smoke():
