@@ -33,8 +33,6 @@ tjpcov:
 
   # linear bias for lenses constant for redshift bin (example notebook)
   bias_DESgc__0: 1.48
-
-GaussianFsky:
   fsky: 0.5
 
 NaMaster:
