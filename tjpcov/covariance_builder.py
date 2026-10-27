@@ -1190,14 +1190,15 @@ class CovarianceProjectedReal(CovarianceReal):
                     )
 
                     match (s1_s2_1):
-                        case (0, 2) | (2, 0):
-                            # Unweighted pair count from treecorr for gamma_t
-                            Npair = np.array([d.get_tag("npair") for d in D])
-
                         # Eq. 89 of https://arxiv.org/abs/2012.08568
                         case (0, 2):
+                            # Unweighted pair count from treecorr for gamma_t
+                            Npair = np.array([d.get_tag("npair") for d in D])
                             T_sn = self.sigma_e[tracer_comb1[1]] ** 2
+
                         case (2, 0):
+                            # Unweighted pair count from treecorr for gamma_t
+                            Npair = np.array([d.get_tag("npair") for d in D])
                             T_sn = self.sigma_e[tracer_comb1[0]] ** 2
 
                         case (2, 2) | (2, -2) | (-2, 2):
