@@ -5,7 +5,7 @@ import sacc
 
 from functools import partial
 
-from tjpcov.wigner_transform import bin_cov, WignerTransform
+from tjpcov.wigner_transform import WignerTransform
 from tjpcov.covariance_builder import (
     CovarianceProjectedReal,
     CovarianceReal,
@@ -115,7 +115,7 @@ def test_get_Wigner_transform(cov_prj_real):
     wt = cov_prj_real.get_Wigner_transform()
 
     assert isinstance(wt, WignerTransform)
-    assert np.all(wt.ell == np.arange(2, cov_prj_real.lmax + 1))
+    assert np.all(wt.ell == np.arange(0, cov_prj_real.lmax + 1))
     assert np.all(wt.theta == cov_prj_real.get_binning_info()[0])
     assert wt.s1_s2s == [(2, 2), (2, -2), (0, 2), (2, 0), (0, 0)]
 
@@ -158,12 +158,12 @@ def test_build_matrix_from_blocks(cov_prj_real):
 )
 def test_get_covariance_block(cov_prj_real, tracer_comb1, tracer_comb2):
     lmax = cov_prj_real.lmax
-    ell = np.arange(2, lmax + 1)
+    ell = np.arange(0, lmax + 1)
     fourier_block = np.random.rand(lmax + 1, lmax + 1)
 
     # Dynamically override the method on this instance.
     def override_fourier_block(self, tracer_comb1, tracer_comb2):
-        return fourier_block
+        return fourier_block, None
 
     cov_prj_real._get_fourier_block = partial(
         override_fourier_block, cov_prj_real
@@ -180,23 +180,15 @@ def test_get_covariance_block(cov_prj_real, tracer_comb1, tracer_comb2):
         ell_cl=ell,
         s1_s2=s1_s2_1,
         s1_s2_cross=s1_s2_2,
-        cl_cov=fourier_block[2:][:, 2:],
+        cl_cov=fourier_block,
     )
 
     gcov_xi_1 = cov_prj_real.get_covariance_block(
-        tracer_comb1=tracer_comb1, tracer_comb2=tracer_comb2, binned=False
+        tracer_comb1=tracer_comb1, tracer_comb2=tracer_comb2
     )
 
     assert np.max(np.abs((gcov_xi_1 + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
-
-    gcov_xi_1 = cov_prj_real.get_covariance_block(
-        tracer_comb1=tracer_comb1, tracer_comb2=tracer_comb2, binned=True
-    )
-
-    theta, _, theta_edges = cov_prj_real.get_binning_info(in_radians=False)
-    _, cov = bin_cov(r=theta, r_bins=theta_edges, cov=cov)
     assert gcov_xi_1.shape == (20, 20)
-    assert np.max(np.abs((gcov_xi_1 + 1e-100) / (cov + 1e-100) - 1)) < 1e-5
 
 
 @pytest.mark.parametrize(
