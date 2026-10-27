@@ -45,6 +45,14 @@ class FouriercNGHaloModel(CovarianceFourier):
             "ns_independent": None,
         }
 
+        # cache the long-compute time trispectra
+        # that don't depend on specific tracers
+        # leaving as dictionary now in case we add
+        # functionality to specify certain components in the computation
+        self._tkk_cache = {
+            "no1h": None,
+        }
+
         for key in self.HOD_dict.keys():
             self.HOD_dict[key] = self.config["HOD"].get(key, None)
             if self.HOD_dict[key] is None:
@@ -64,8 +72,32 @@ class FouriercNGHaloModel(CovarianceFourier):
             - (:obj:`float`): fractional sky area.
         """
         masks = self.get_masks_dict(tr, {})
-        fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
+        fsky = float(np.mean(masks[1] * masks[2] * masks[3] * masks[4]))
         return fsky
+
+    def _get_no1h_tkk(self, cosmo, hmc, lk_arr, a_arr, nfw):
+        """Caching system for the general matter
+        trispectrum 2h + 3h + 4h terms.
+        """
+        if self._tkk_cache["no1h"] is not None:
+            return self._tkk_cache["no1h"]
+        tkk = 0.0
+
+        tkk += ccl.halos.halomod_trispectrum_2h_22(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
+        )
+        tkk += ccl.halos.halomod_trispectrum_2h_13(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
+        )
+        tkk += ccl.halos.halomod_trispectrum_3h(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
+        )
+        tkk += ccl.halos.halomod_trispectrum_4h(
+            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
+        )
+
+        self._tkk_cache["no1h"] = tkk
+        return tkk
 
     def get_covariance_block(
         self,
@@ -155,24 +187,18 @@ class FouriercNGHaloModel(CovarianceFourier):
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
         sacc_file = self.io.get_sacc_file()
+        a_survey = self._get_a_arr_survey(cosmo)
+        z_max_survey = np.max(1 / a_survey - 1)
         z_max = []
         for i in range(4):
             tr_sacc = sacc_file.tracers[tr[i + 1]]
-            z = tr_sacc.z
-            z_max.append(z.max())
+            if self._has_galaxy_nz(tr_sacc):
+                z_max.append(tr_sacc.z.max())
         # Divide by zero errors happen when default a_arr used for 1h term
-
-        z_max = np.min(z_max)
-
-        # Array of a.
-        # Use the a's in the pk spline
-        na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
-        a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
-        # Cut the array for efficiency
-        sel = 1 / a_arr < z_max + 1
-        # Include the next node so that z_max is in the range
-        sel[np.sum(~sel) - 1] = True
-        a_arr = a_arr[sel]
+        if len(z_max) == 0:
+            z_max = z_max_survey
+        else:
+            z_max = np.min(z_max)
 
         # Array of k
         lk_arr = cosmo.get_pk_spline_lk()
@@ -183,28 +209,18 @@ class FouriercNGHaloModel(CovarianceFourier):
         bias4 = self.bias_lens.get(tr[4], 1)
 
         ccl_tracers, _ = self.get_tracer_info()
-
+        ccl_tracers = dict(ccl_tracers)
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
         fsky = self._get_fsky(tr=tr)
+
+        sel = 1 / a_survey < z_max + 1
+        sel[np.sum(~sel) - 1] = True
+        a_arr = a_survey[sel]
+
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
-        tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
-        )
-
-        tkk += ccl.halos.halomod_trispectrum_2h_13(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
-        )
-
-        tkk += ccl.halos.halomod_trispectrum_3h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
-        )
-
-        tkk += ccl.halos.halomod_trispectrum_4h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
-        )
-
+        tkk = self._get_no1h_tkk(cosmo, hmc, lk_arr, a_survey, nfw)[sel]
         tkk *= bias1 * bias2 * bias3 * bias4
 
         isnc = {}
@@ -212,6 +228,15 @@ class FouriercNGHaloModel(CovarianceFourier):
             isnc[i] = (
                 sacc_file.tracers[tr[i]].quantity == "galaxy_density"
             ) or ("lens" in tr[i])
+            if isnc[i]:
+                z = sacc_file.tracers[tr[i]].z
+                nz = sacc_file.tracers[tr[i]].nz
+                ccl_tracers[tr[i]] = ccl.NumberCountsTracer(
+                    cosmo,
+                    has_rsd=False,
+                    dndz=(z, nz),
+                    bias=(z, np.ones_like(z)),
+                )
 
         # Choose using the HOD with or without number_counts = True
         # based on the results of isnc
@@ -262,6 +287,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             integration_method=integration_method,
             fsky=fsky,
         )
+        cov_cng = cov_cng.T
 
         nbpw = ell.size
         ncell1 = self.get_tracer_comb_ncell(tracer_comb1)

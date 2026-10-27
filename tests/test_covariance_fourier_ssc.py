@@ -129,29 +129,45 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
     a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
 
+    ccl_tracers, _ = cov_fssc.get_tracer_info()
+    ccl_tracers = dict(ccl_tracers)
+
+    def _bare_bias_tracer(tr):
+        z, nz = s.tracers[tr].z, s.tracers[tr].nz
+        return ccl.NumberCountsTracer(
+            cosmo,
+            has_rsd=False,
+            dndz=(z, nz),
+            bias=(z, np.ones_like(z)),
+        )
+
     bias1 = 1
     is_nc1 = False
     if "gc" in tracer_comb1[0]:
         bias1 = cov_fssc.bias_lens[tracer_comb1[0]]
         is_nc1 = True
+        ccl_tracers[tracer_comb1[0]] = _bare_bias_tracer(tracer_comb1[0])
 
     bias2 = 1
     is_nc2 = False
     if "gc" in tracer_comb1[1]:
         bias2 = cov_fssc.bias_lens[tracer_comb1[1]]
         is_nc2 = True
+        ccl_tracers[tracer_comb1[1]] = _bare_bias_tracer(tracer_comb1[1])
 
     bias3 = 1
     is_nc3 = False
     if "gc" in tracer_comb2[0]:
         bias3 = cov_fssc.bias_lens[tracer_comb2[0]]
         is_nc3 = True
+        ccl_tracers[tracer_comb2[0]] = _bare_bias_tracer(tracer_comb2[0])
 
     bias4 = 1
     is_nc4 = False
-    if "gc" in tracer_comb2[0]:
+    if "gc" in tracer_comb2[1]:
         bias4 = cov_fssc.bias_lens[tracer_comb2[1]]
         is_nc4 = True
+        ccl_tracers[tracer_comb2[1]] = _bare_bias_tracer(tracer_comb2[1])
 
     hmc = get_halo_model(cosmo)
     nfw_profile = get_NFW_profile()
@@ -172,7 +188,6 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     cl_mask = get_cl_footprint(*tracer_comb1, *tracer_comb2)
     sigma2_B = ccl.sigma2_B_from_mask(cosmo, a_arr=a_arr, mask_wl=cl_mask)
 
-    ccl_tracers, _ = cov_fssc.get_tracer_info()
     tr1 = ccl_tracers[tracer_comb1[0]]
     tr2 = ccl_tracers[tracer_comb1[1]]
     tr3 = ccl_tracers[tracer_comb2[0]]
@@ -187,7 +202,7 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
         tracer3=tr3,
         tracer4=tr4,
     )
-
+    cov_ccl = cov_ccl.T
     assert np.max(np.fabs(np.diag(cov_ssc / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_ssc / cov_ccl - 1)) < 1e-3
 

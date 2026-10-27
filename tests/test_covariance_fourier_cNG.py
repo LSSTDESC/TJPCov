@@ -110,7 +110,7 @@ def get_fsky(tr1, tr2, tr3, tr4):
     m3 = hp.read_map(mf[tr3])
     m4 = hp.read_map(mf[tr4])
 
-    return np.mean(m1 * m2 * m3 * m4)
+    return float(np.mean(m1 * m2 * m3 * m4))
 
 
 def test_smoke():
@@ -181,26 +181,42 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     hod = get_hod_model()
     prof1 = prof2 = prof3 = prof4 = nfw_profile
 
+    ccl_tracers, _ = cov_fcNG.get_tracer_info()
+    ccl_tracers = dict(ccl_tracers)
+
+    def _bare_bias_tracer(tr):
+        z, nz = s.tracers[tr].z, s.tracers[tr].nz
+        return ccl.NumberCountsTracer(
+            cosmo,
+            has_rsd=False,
+            dndz=(z, nz),
+            bias=(z, np.ones_like(z)),
+        )
+
     calculate_with_hod = False
     if "gc" in tracer_comb1[0]:
         bias1 = cov_fcNG.bias_lens[tracer_comb1[0]]
         prof1 = hod
         calculate_with_hod = True
+        ccl_tracers[tracer_comb1[0]] = _bare_bias_tracer(tracer_comb1[0])
 
     if "gc" in tracer_comb1[1]:
         bias2 = cov_fcNG.bias_lens[tracer_comb1[1]]
         prof2 = hod
         calculate_with_hod = True
+        ccl_tracers[tracer_comb1[1]] = _bare_bias_tracer(tracer_comb1[1])
 
     if "gc" in tracer_comb2[0]:
         bias3 = cov_fcNG.bias_lens[tracer_comb2[0]]
         prof3 = hod
         calculate_with_hod = True
+        ccl_tracers[tracer_comb2[0]] = _bare_bias_tracer(tracer_comb2[0])
 
-    if "gc" in tracer_comb2[0]:
+    if "gc" in tracer_comb2[1]:
         bias4 = cov_fcNG.bias_lens[tracer_comb2[1]]
         prof4 = hod
         calculate_with_hod = True
+        ccl_tracers[tracer_comb2[1]] = _bare_bias_tracer(tracer_comb2[1])
 
     biases = bias1 * bias2 * bias3 * bias4
 
@@ -212,7 +228,6 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         a_arr=a_arr,
     )
 
-    ccl_tracers, _ = cov_fcNG.get_tracer_info()
     tr1 = ccl_tracers[tracer_comb1[0]]
     tr2 = ccl_tracers[tracer_comb1[1]]
     tr3 = ccl_tracers[tracer_comb2[0]]
@@ -292,6 +307,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         # using current CCL infrastructure.
         cov_ccl = biases * (cov_ccl - cov_ccl_1h_nfw) + cov_ccl_1h_hod
 
+    cov_ccl = cov_ccl.T
     assert np.max(np.fabs(np.diag(cov_cNG / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_cNG / cov_ccl - 1)) < 1e-3
 

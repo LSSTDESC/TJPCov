@@ -624,6 +624,7 @@ class CovarianceFourier(CovarianceBuilder):
         self.ccl_tracers = None
         self.tracer_Noise = None
         self.tracer_Noise_coupled = None
+        self._a_arr_survey = None
 
     def _get_covariance_block_for_sacc(
         self, tracer_comb1, tracer_comb2, **kwargs
@@ -752,7 +753,9 @@ class CovarianceFourier(CovarianceBuilder):
                 ell_edges[i] = bpw.values[bpw.weight[:, i] > 0][0]
                 if i == bpw.weight.shape[1] - 1:
                     ell_edges[i + 1] = bpw.values[bpw.weight[:, i] > 0][-1]
-            return bpw.values, ell_eff, ell_edges
+            # important to return bpw.values as numpy array,
+            # sacc has different byte ordering convention
+            return np.asarray(bpw.values, dtype=np.float64), ell_eff, ell_edges
         else:
             return None
 
@@ -934,6 +937,33 @@ class CovarianceFourier(CovarianceBuilder):
             )
 
         return self.ccl_tracers, self.tracer_Noise
+
+    def _has_galaxy_nz(self, t):
+        """Avoids potential issue with CMB Lensing tracers having
+        a much higher z than needed for trispectrum calculations.
+        """
+        return (
+            getattr(t, "z", None) is not None
+            and t.quantity != "cmb_convergence"
+        )
+
+    def _get_a_arr_survey(self, cosmo):
+        """Scale factor spline covering the redshift range
+        of every tracer in the sacc.
+        """
+        if self._a_arr_survey is None:  # set to None in __init__
+            sacc_file = self.io.get_sacc_file()
+            z_max = max(
+                t.z.max()
+                for t in sacc_file.tracers.values()
+                if self._has_galaxy_nz(t)
+            )
+            na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
+            a_arr, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
+            sel = 1 / a_arr < z_max + 1
+            sel[np.sum(~sel) - 1] = True
+            self._a_arr_survey = a_arr[sel]
+        return self._a_arr_survey
 
 
 class CovarianceReal(CovarianceBuilder):

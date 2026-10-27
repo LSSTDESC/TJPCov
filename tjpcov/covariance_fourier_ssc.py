@@ -121,30 +121,25 @@ class FourierSSCHaloModel(CovarianceFourier):
         hmc = ccl.halos.HMCalculator(
             mass_function=hmf, halo_bias=hbf, mass_def=mass_def
         )
-
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
         sacc_file = self.io.get_sacc_file()
+        a_survey = self._get_a_arr_survey(cosmo)
+        z_max_survey = np.max(1 / a_survey - 1)
         z_max = []
         for i in range(4):
             tr_sacc = sacc_file.tracers[tr[i + 1]]
-            z = tr_sacc.z
-            # z, nz = tr_sacc.z, tr_sacc.nz
-            # z_min.append(z[np.where(nz > 0)[0][0]])
-            # z_max.append(z[np.where(np.cumsum(nz)/np.sum(nz) > 0.999)[0][0]])
-            z_max.append(z.max())
+            if self._has_galaxy_nz(tr_sacc):
+                z_max.append(tr_sacc.z.max())
+        # Divide by zero errors happen when default a_arr used for 1h term
+        if len(z_max) == 0:
+            z_max = z_max_survey
+        else:
+            z_max = np.min(z_max)
 
-        z_max = np.min(z_max)
-
-        # Array of a.
-        # Use the a's in the pk spline
-        na = ccl.ccllib.get_pk_spline_na(cosmo.cosmo)
-        a, _ = ccl.ccllib.get_pk_spline_a(cosmo.cosmo, na, 0)
-        # Cut the array for efficiency
-        sel = 1 / a < z_max + 1
-        # Include the next node so that z_max is in the range
+        sel = 1 / a_survey < z_max + 1
         sel[np.sum(~sel) - 1] = True
-        a = a[sel]
+        a = a_survey[sel]
 
         bias1 = self.bias_lens.get(tr[1], 1)
         bias2 = self.bias_lens.get(tr[2], 1)
@@ -152,13 +147,24 @@ class FourierSSCHaloModel(CovarianceFourier):
         bias4 = self.bias_lens.get(tr[4], 1)
 
         ccl_tracers, _ = self.get_tracer_info()
+        ccl_tracers = dict(ccl_tracers)
 
-        s = self.io.get_sacc_file()
+        # Make dummy tracers for number counts to avoid double-counting
+        # the bias in the SSC calculation.
         isnc = {}
         for i in range(1, 5):
-            isnc[i] = (s.tracers[tr[i]].quantity == "galaxy_density") or (
-                "lens" in tr[i]
-            )
+            isnc[i] = (
+                sacc_file.tracers[tr[i]].quantity == "galaxy_density"
+            ) or ("lens" in tr[i])
+            if isnc[i]:
+                z = sacc_file.tracers[tr[i]].z
+                nz = sacc_file.tracers[tr[i]].nz
+                ccl_tracers[tr[i]] = ccl.NumberCountsTracer(
+                    cosmo,
+                    has_rsd=False,
+                    dndz=(z, nz),
+                    bias=(z, np.ones_like(z)),
+                )
 
         tk3D = ccl.halos.halomod_Tk3D_SSC_linear_bias(
             cosmo=cosmo,
@@ -188,6 +194,7 @@ class FourierSSCHaloModel(CovarianceFourier):
             sigma2_B=(a, sigma2_B),
             integration_method=integration_method,
         )
+        cov_ssc = cov_ssc.T
 
         nbpw = ell.size
         ncell1 = self.get_tracer_comb_ncell(tracer_comb1)
