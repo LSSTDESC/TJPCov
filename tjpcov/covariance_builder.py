@@ -1219,11 +1219,17 @@ class CovarianceProjectedReal(CovarianceReal):
                                         tracer_comb1[i]
                                     ].extra_columns[wav_keys[0]]
 
-                            Npair = (
-                                np.array([d.get_tag("weight") for d in D])
-                                / weight_average[0]
-                                / weight_average[1]
-                            )
+                            weights = [d.get_tag("weight") for d in D]
+                            if not weights or any(
+                                weight is None for weight in weights
+                            ):
+                                Npair = [None]
+                            else:
+                                Npair = (
+                                    np.array(weights)
+                                    / weight_average[0]
+                                    / weight_average[1]
+                                )
 
                             # Eq. 92 of https://arxiv.org/abs/2012.08568
                             T_sn = 2 * self.sigma_e[tracer_comb1[0]] ** 4
