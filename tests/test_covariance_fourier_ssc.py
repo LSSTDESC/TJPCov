@@ -202,7 +202,7 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
         tracer3=tr3,
         tracer4=tr4,
     )
-
+    cov_ccl = cov_ccl.T
     assert np.max(np.fabs(np.diag(cov_ssc / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_ssc / cov_ccl - 1)) < 1e-3
 

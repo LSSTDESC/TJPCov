@@ -307,6 +307,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         # using current CCL infrastructure.
         cov_ccl = biases * (cov_ccl - cov_ccl_1h_nfw) + cov_ccl_1h_hod
 
+    cov_ccl = cov_ccl.T
     assert np.max(np.fabs(np.diag(cov_cNG / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_cNG / cov_ccl - 1)) < 1e-3
 
