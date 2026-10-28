@@ -103,7 +103,8 @@ class FourierGaussianFsky(CovarianceFourier):
             if lmax is None:
                 raise ValueError("You need to set lmax if for_real is True")
             else:
-                ell = np.arange(lmax + 1)
+                # ell = np.arange(lmax + 1)
+                ell = np.arange(2, lmax + 1) # from 2, so we can use has_rsd=True without pyccl crashing
         else:
             # binning information not need for Real
             ell, ell_bins, ell_edges = self.get_binning_info()
@@ -116,24 +117,28 @@ class FourierGaussianFsky(CovarianceFourier):
             ccl_tracers[tracer_comb1[0]],
             ccl_tracers[tracer_comb2[0]],
             ell,
+            l_limber="auto",
         )
         cl[24] = ccl.angular_cl(
             cosmo,
             ccl_tracers[tracer_comb1[1]],
             ccl_tracers[tracer_comb2[1]],
             ell,
+            l_limber="auto",
         )
         cl[14] = ccl.angular_cl(
             cosmo,
             ccl_tracers[tracer_comb1[0]],
             ccl_tracers[tracer_comb2[1]],
             ell,
+            l_limber="auto",
         )
         cl[23] = ccl.angular_cl(
             cosmo,
             ccl_tracers[tracer_comb1[1]],
             ccl_tracers[tracer_comb2[0]],
             ell,
+            l_limber="auto",
         )
 
         SN = {}

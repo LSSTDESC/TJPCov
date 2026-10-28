@@ -894,7 +894,7 @@ class CovarianceFourier(CovarianceBuilder):
                     dNdz = tracer_dat.nz
                     b = self.bias_lens[tracer] * np.ones(len(z))
                     ccl_tracers[tracer] = ccl.NumberCountsTracer(
-                        cosmo, has_rsd=False, dndz=(z, dNdz), bias=(z, b)
+                        cosmo, has_rsd=True, dndz=(z, dNdz), bias=(z, b)
                     )
 
                     # Noise
@@ -1152,7 +1152,7 @@ class CovarianceProjectedReal(CovarianceReal):
             s1_s2_2 = s1_s2_2[xi_plus_minus2]
         # Remove ell <= 1 for WT (following original implementation)
         ell = np.arange(2, self.lmax + 1)
-        cov = cov[2:][:, 2:]
+        # cov = cov[2:][:, 2:] # not needed since now ell min is set to 2 in covariance_gaussian_fsky.py
         th, cov = WT.projected_covariance(
             ell_cl=ell, s1_s2=s1_s2_1, s1_s2_cross=s1_s2_2, cl_cov=cov
         )
