@@ -726,7 +726,8 @@ class CovarianceFourier(CovarianceBuilder):
 
     def get_binning_info(self):
         """Return all ells used for the different bandpowers, their effective
-        ell and bandpower edges based on the SACC information.
+        ell, bandpower edges and bandpower window matrix based on the SACC
+        information.
 
         It assume that all tracers have the same bandpower windows.
 
@@ -737,6 +738,10 @@ class CovarianceFourier(CovarianceBuilder):
             ells: Array with the ells to pass to theory prediction.
             ell_eff: Array with effective ells from sacc
             ell_edges: Array with bandpower edges (assumed to be contiguous).
+            bpw_window: Bandpower window matrix of shape [nbpw, nell], row b
+                giving the weights applied to each ell in ells to build
+                bandpower b. This is the transpose of the window matrix as
+                stored by sacc (matching NaMaster's convention).
         """
         sacc_file = self.io.get_sacc_file()
         tr1, tr2 = sacc_file.get_tracer_combinations()[0]
@@ -753,7 +758,8 @@ class CovarianceFourier(CovarianceBuilder):
                 ell_edges[i] = bpw.values[bpw.weight[:, i] > _eps][0]
                 if i == bpw.weight.shape[1] - 1:
                     ell_edges[i + 1] = bpw.values[bpw.weight[:, i] > _eps][-1]
-            return bpw.values, ell_eff, ell_edges
+            bpw_window = bpw.weight.T
+            return bpw.values, ell_eff, ell_edges, bpw_window
         else:
             return None
 
