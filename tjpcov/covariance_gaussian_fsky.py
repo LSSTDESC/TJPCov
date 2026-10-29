@@ -39,6 +39,10 @@ class FourierGaussianFsky(CovarianceFourier):
                 - ell (array): All the ells covered
                 - ell_eff (array): The effective ells
                 - ell_edges (array): The bandpower edges
+                - bpw_window (array or None): Bandpower window matrix of
+                    shape [nbpw, nell] from the sacc file, or None if no
+                    bandpower window is available and a fallback binning
+                    scheme is used instead.
         """
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:
@@ -48,7 +52,8 @@ class FourierGaussianFsky(CovarianceFourier):
             ell = out[0]
             ell_eff = out[1]
             ell_edges = out[2]
-            return ell, ell_eff, ell_edges
+            bpw_window = out[3]
+            return ell, ell_eff, ell_edges, bpw_window
         else:
             warnings.warn("No bandpower windows found, \
                            falling back to linear method")
@@ -70,7 +75,7 @@ class FourierGaussianFsky(CovarianceFourier):
                     f"Binning {binning} not implemented yet"
                 )
 
-            return ell, ell_eff, ell_edges
+            return ell, ell_eff, ell_edges, None
 
     def get_covariance_block(
         self,
@@ -106,7 +111,8 @@ class FourierGaussianFsky(CovarianceFourier):
                 ell = np.arange(lmax + 1)
         else:
             # binning information not need for Real
-            ell, ell_bins, ell_edges = self.get_binning_info()
+            #FAOTODO: Remove this method or call it just for a tophat case.
+            ell, ell_eff, ell_edges, bpw_window = self.get_binning_info()
 
         ccl_tracers, tracer_Noise = self.get_tracer_info()
 
@@ -171,8 +177,13 @@ class FourierGaussianFsky(CovarianceFourier):
         norm = (2 * ell + 1) * np.gradient(ell) * self.fsky
         cov /= norm
 
-        # TODO: Maybe it's a better approximation just to use the ell_effective
-        lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
+        if bpw_window is not None:
+            # Use the real sacc bandpower window, matching the binning
+            # convention used by NaMaster.
+            cov = self._bin_covariance_with_window(cov, bpw_window)
+            lb = ell_eff
+        else:
+            lb, cov = bin_cov(r=ell, r_bins=ell_edges, cov=cov)
 
         # Include the B-modes if requested (e.g. needed to build the full
         # covariance)
@@ -186,6 +197,40 @@ class FourierGaussianFsky(CovarianceFourier):
             cov = cov_full
 
         return cov
+
+    def _bin_covariance_with_window(self, cov, W):
+        """Bin an unbinned covariance matrix using an explicit window matrix.
+
+        This implements the quadratic-form binning
+        `cov_binned = W @ cov @ W.T`, where `W` has shape
+        `[nbpw, nell]` and encodes, per bandpower row, the weights
+        applied to each unbinned ell. This matches NaMaster's own
+        bandpower window convention and is used by
+        `get_covariance_block` whenever the sacc file provides a real
+        bandpower window. When no bandpower window is available, the
+        tophat rebinning in :func:`tjpcov.wigner_transform.bin_cov` is
+        used instead, since there is no real window to match in that
+        case.
+
+        Args:
+            cov (array): Unbinned covariance matrix of shape
+                `[nell, nell]`, or a 1-d array of shape `[nell]`
+                representing the diagonal of the unbinned covariance.
+            W (array): Window/weight matrix of shape `[nbpw, nell]`.
+                Row `b` gives the weights applied to each unbinned ell
+                to build bandpower `b`.
+
+        Returns:
+            array: The binned covariance matrix, of shape
+                `[nbpw, nbpw]`.
+        """
+        W = np.asarray(W)
+        cov = np.asarray(cov)
+        if cov.ndim == 1:
+            # cov is the diagonal of the unbinned covariance matrix
+            cov = np.diag(cov)
+
+        return W @ cov @ W.T
 
 
 class RealGaussianFsky(CovarianceProjectedReal):

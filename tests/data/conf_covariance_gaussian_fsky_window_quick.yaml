@@ -1,0 +1,30 @@
+tjpcov:
+  # Reuses the NaMaster-generated benchmark sacc file, which has a real,
+  # non-tophat bandpower window -- needed to exercise the window-matrix
+  # binning path in FourierGaussianFsky, not just the tophat fallback.
+  sacc_file: tests/benchmarks/32_DES_tjpcov_bm/cls_cov.fits
+
+  cosmo: 'set'
+
+  cov_type: [FourierGaussianFsky]
+
+  Ngal_DESgc__0: 26
+  Ngal_DESwl__0: 26
+  Ngal_DESwl__1: 26
+
+  sigma_e_DESwl__0: 0.26
+  sigma_e_DESwl__1: 0.26
+
+  bias_DESgc__0: 1.48
+
+  fsky: 0.4
+
+parameters:
+  Omega_c: 0.2640
+  Omega_b: 0.0493
+  h: 0.6736
+  n_s: 0.9649
+  sigma8: 0.8111
+  w0: -1
+  wa: 0
+  transfer_function: 'boltzmann_camb'

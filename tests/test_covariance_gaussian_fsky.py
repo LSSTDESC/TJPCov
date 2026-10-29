@@ -64,10 +64,14 @@ def test_smoke():
 
 
 def test_Fourier_get_binning_info(cov_fg_fsky):
-    ell, ell_eff, ell_edges = cov_fg_fsky.get_binning_info()
+    ell, ell_eff, ell_edges, bpw_window = cov_fg_fsky.get_binning_info()
 
     assert np.all(ell_eff == cov_fg_fsky.get_ell_eff())
     assert np.allclose((ell_edges[1:] + ell_edges[:-1]) / 2, ell_eff)
+
+    # This fixture's sacc file has no bandpower window, so the fallback
+    # linear binning is used and no window matrix is available.
+    assert bpw_window is None
 
     with pytest.raises(NotImplementedError):
         cov_fg_fsky.get_binning_info("log")
@@ -78,7 +82,7 @@ def test_Fourier_get_covariance_block(cov_fg_fsky, mock_cosmo):
     tracer_comb1 = ("lens0", "lens0")
     tracer_comb2 = ("lens0", "lens0")
 
-    ell, _, ell_edges = cov_fg_fsky.get_binning_info()
+    ell, _, ell_edges, _ = cov_fg_fsky.get_binning_info()
     ccl_tracers, tracer_noise = cov_fg_fsky.get_tracer_info()
 
     ccltr = ccl_tracers["lens0"]
@@ -159,6 +163,63 @@ def test_Real_get_fourier_block(
     assert np.all(cov == cov2 / norm)
 
 
+def test_Fourier_bin_covariance_with_window(cov_fg_fsky, mock_cosmo):
+    # Compare the existing tophat `bin_cov` binning (used internally by
+    # get_covariance_block) against the new window-matrix method
+    # `_bin_covariance_with_window`, using an explicit tophat window matrix
+    # W built from ell and ell_edges.
+    tracer_comb1 = ("lens0", "lens0")
+    tracer_comb2 = ("lens0", "lens0")
+
+    ell, _, ell_edges, _ = cov_fg_fsky.get_binning_info()
+
+    # Existing path: get_covariance_block internally calls bin_cov with
+    # ell_edges.
+    cov_bin_cov = cov_fg_fsky.get_covariance_block(
+        tracer_comb1=tracer_comb1,
+        tracer_comb2=tracer_comb2,
+        include_b_modes=False,
+    )
+
+    # Reproduce the unbinned, normalized diagonal covariance the same way
+    # get_covariance_block does internally, so we can bin it ourselves with
+    # the window-matrix method.
+    ccl_tracers, tracer_noise = cov_fg_fsky.get_tracer_info()
+    ccltr = ccl_tracers["lens0"]
+    cl = ccl.angular_cl(mock_cosmo, ccltr, ccltr, ell) + tracer_noise["lens0"]
+    fsky = cov_fg_fsky.fsky
+    dl = np.gradient(ell)
+    cov_diag = 2 * cl**2 / ((2 * ell + 1) * fsky * dl)
+
+    # Build a tophat window matrix W[b, i] from ell and ell_edges.
+    # bin_cov applies an r*dr-weighted tophat average within each bin, i.e.
+    # for bin b: cov_binned[b] = sum_i (r_dr[i] * cov[i]) / sum_i(r_dr[i])
+    # for i in bin b, with r_dr = ell * dr (dr computed via bin_cov's own
+    # np.gradient-on-augmented-grid trick). To get exact equivalence with
+    # bin_cov we replicate that same r*dr weighting in W instead of a plain
+    # 0/1 tophat.
+    bin_idx = np.digitize(ell, ell_edges) - 1
+    nbpw = len(ell_edges) - 1
+
+    r2 = np.sort(np.unique(np.append(ell, ell_edges)))
+    dr = np.gradient(r2)
+    r2_idx = [i for i in np.arange(len(r2)) if r2[i] in ell]
+    dr = dr[r2_idx]
+    r_dr = ell * dr
+
+    W = np.zeros((nbpw, ell.size))
+    for b in range(nbpw):
+        mask = bin_idx == b
+        norm_b = r_dr[mask].sum()
+        if norm_b == 0:
+            continue
+        W[b, mask] = r_dr[mask] / norm_b
+
+    cov_window = cov_fg_fsky._bin_covariance_with_window(cov_diag, W)
+
+    np.testing.assert_allclose(cov_window, cov_bin_cov, rtol=1e-10)
+
+@pytest.mark.slow
 def test_smoke_get_covariance(cov_fg_fsky, cov_rg_fsky):
     # Check that we can get the full covariance
     cov_fg_fsky.get_covariance()

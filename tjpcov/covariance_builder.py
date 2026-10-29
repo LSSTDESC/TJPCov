@@ -726,7 +726,8 @@ class CovarianceFourier(CovarianceBuilder):
 
     def get_binning_info(self):
         """Return all ells used for the different bandpowers, their effective
-        ell and bandpower edges based on the SACC information.
+        ell, bandpower edges and bandpower window matrix based on the SACC
+        information.
 
         It assume that all tracers have the same bandpower windows.
 
@@ -737,6 +738,10 @@ class CovarianceFourier(CovarianceBuilder):
             ells: Array with the ells to pass to theory prediction.
             ell_eff: Array with effective ells from sacc
             ell_edges: Array with bandpower edges (assumed to be contiguous).
+            bpw_window: Bandpower window matrix of shape [nbpw, nell], row b
+                giving the weights applied to each ell in ells to build
+                bandpower b. This is the transpose of the window matrix as
+                stored by sacc (matching NaMaster's convention).
         """
         sacc_file = self.io.get_sacc_file()
         tr1, tr2 = sacc_file.get_tracer_combinations()[0]
@@ -744,15 +749,15 @@ class CovarianceFourier(CovarianceBuilder):
         inds = sacc_file.indices(data_type=dt, tracers=(tr1, tr2))
         bpw = sacc_file.get_bandpower_windows(inds)
         if bpw is not None:
-            ells = np.repeat(bpw.values, bpw.weight.shape[1])
-            ells = ells.reshape(bpw.weight.shape)
-            ell_eff = np.average(ells, weights=bpw.weight, axis=0)
+            _eps = 1e-10 # Avoiding misidentification due to numerical errors
+            ell_eff = (bpw.values @ bpw.weight) / bpw.weight.sum(axis=0)
             ell_edges = np.zeros(bpw.weight.shape[1] + 1)
             for i in range(bpw.weight.shape[1]):
-                ell_edges[i] = bpw.values[bpw.weight[:, i] > 0][0]
+                ell_edges[i] = bpw.values[bpw.weight[:, i] > _eps][0]
                 if i == bpw.weight.shape[1] - 1:
-                    ell_edges[i + 1] = bpw.values[bpw.weight[:, i] > 0][-1]
-            return bpw.values, ell_eff, ell_edges
+                    ell_edges[i + 1] = bpw.values[bpw.weight[:, i] > _eps][-1]
+            bpw_window = bpw.weight.T
+            return bpw.values, ell_eff, ell_edges, bpw_window
         else:
             return None
 
