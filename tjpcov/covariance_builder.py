@@ -750,9 +750,7 @@ class CovarianceFourier(CovarianceBuilder):
         bpw = sacc_file.get_bandpower_windows(inds)
         if bpw is not None:
             _eps = 1e-10 # Avoiding misidentification due to numerical errors
-            ells = np.repeat(bpw.values, bpw.weight.shape[1])
-            ells = ells.reshape(bpw.weight.shape)
-            ell_eff = np.average(ells, weights=bpw.weight, axis=0)
+            ell_eff = (bpw.values @ bpw.weight) / bpw.weight.sum(axis=0)
             ell_edges = np.zeros(bpw.weight.shape[1] + 1)
             for i in range(bpw.weight.shape[1]):
                 ell_edges[i] = bpw.values[bpw.weight[:, i] > _eps][0]
