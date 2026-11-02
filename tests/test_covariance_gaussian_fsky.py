@@ -219,6 +219,7 @@ def test_Fourier_bin_covariance_with_window(cov_fg_fsky, mock_cosmo):
 
     np.testing.assert_allclose(cov_window, cov_bin_cov, rtol=1e-10)
 
+
 @pytest.mark.slow
 def test_smoke_get_covariance(cov_fg_fsky, cov_rg_fsky):
     # Check that we can get the full covariance

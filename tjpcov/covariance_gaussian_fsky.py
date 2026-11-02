@@ -111,7 +111,7 @@ class FourierGaussianFsky(CovarianceFourier):
                 ell = np.arange(lmax + 1)
         else:
             # binning information not need for Real
-            #FAOTODO: Remove this method or call it just for a tophat case.
+            # FAOTODO: Remove this method or call it just for a tophat case.
             ell, ell_eff, ell_edges, bpw_window = self.get_binning_info()
 
         ccl_tracers, tracer_Noise = self.get_tracer_info()
