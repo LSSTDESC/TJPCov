@@ -13,6 +13,7 @@ sensible result compared to the tophat approximation.
 Fully independent of the existing test suite: separate config, separate
 output dir, nothing shared or modified.
 """
+
 import os
 import shutil
 
@@ -106,4 +107,6 @@ def test_quick_covariance_block_uses_window_matrix(cov_fg_fsky_window):
     # ~1e-9 scale of this covariance; checking the off-diagonal structure
     # directly is the real discriminator between the two methods.
     off_diag = cov_window - np.diag(np.diag(cov_window))
-    assert np.max(np.abs(off_diag)) > 1e-3 * np.max(np.abs(np.diag(cov_window)))
+    assert np.max(np.abs(off_diag)) > 1e-3 * np.max(
+        np.abs(np.diag(cov_window))
+    )
