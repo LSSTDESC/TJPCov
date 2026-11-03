@@ -35,13 +35,14 @@ class FourierGaussianFsky(CovarianceFourier):
             binning (str): Binning type.
 
         Returns:
-            ell (array): All the ells covered
-            ell_eff (array): The effective ells
-            ell_edges (array): The bandpower edges
-            bpw_window (array or None): Bandpower window matrix of
-                    shape [nbpw, nell] from the sacc file, or None if no
-                    bandpower window is available and a fallback binning
-                    scheme is used instead.
+            tuple:
+                - ell (array): All the ells covered
+                - ell_eff (array): The effective ells
+                - ell_edges (array): The bandpower edges
+                - bpw_window (array or None): Bandpower window matrix
+                   of shape [nbpw, nell] from the sacc file, or None if
+                   no bandpower window is available and a fallback binning
+                   scheme is used instead.
         """
         # TODO: This should be obtained from the sacc file or the input
         # configuration. Check how it is done in TXPipe:

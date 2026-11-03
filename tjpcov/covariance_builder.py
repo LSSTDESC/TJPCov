@@ -735,13 +735,14 @@ class CovarianceFourier(CovarianceBuilder):
             sacc_data (:obj:`sacc.sacc.Sacc`): Data Sacc instance
 
         Returns:
-            ells: Array with the ells to pass to theory prediction.
-            ell_eff: Array with effective ells from sacc
-            ell_edges: Array with bandpower edges (assumed to be contiguous).
-            bpw_window: Bandpower window matrix of shape [nbpw, nell], row b
-                giving the weights applied to each ell in ells to build
-                bandpower b. This is the transpose of the window matrix as
-                stored by sacc (matching NaMaster's convention).
+            tuple:
+                - ells: Array with the ells to pass to theory prediction.
+                - ell_eff: Array with effective ells from sacc
+                - ell_edges: Array with bandpower edges (assumed contiguous)
+                - bpw_window: Bandpower window matrix of shape [nbpw, nell],
+                  row b giving the weights applied to each ell in ells
+                  to build bandpower b. This is the transpose of the window
+                  matrix as stored by sacc (matching NaMaster's convention).
         """
         sacc_file = self.io.get_sacc_file()
         tr1, tr2 = sacc_file.get_tracer_combinations()[0]
