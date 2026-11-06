@@ -175,6 +175,8 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
     ccl_tracers, _ = cov_fcNG.get_tracer_info()
     ccl_tracers = dict(ccl_tracers)
 
+    # need this here to avoid double-counting the bias,
+    # which is factored in after trispectrum calculations.
     def _bare_bias_tracer(tr):
         z, nz = s.tracers[tr].z, s.tracers[tr].nz
         return ccl.NumberCountsTracer(
@@ -298,6 +300,8 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         # using current CCL infrastructure.
         cov_ccl = biases * (cov_ccl - cov_ccl_1h_nfw) + cov_ccl_1h_hod
 
+    # CCL returns the covariance as Cov(ell2[i2], ell[i1]).
+    # Must transpose to match TJPCov output.
     cov_ccl = cov_ccl.T
     assert np.max(np.fabs(np.diag(cov_cNG / cov_ccl - 1))) < 1e-5
     assert np.max(np.fabs(cov_cNG / cov_ccl - 1)) < 1e-3

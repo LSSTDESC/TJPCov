@@ -194,6 +194,8 @@ class FourierSSCHaloModel(CovarianceFourier):
             sigma2_B=(a, sigma2_B),
             integration_method=integration_method,
         )
+        # CCL returns the covariance as Cov(ell2[i2], ell[i1]).
+        # Must transpose to match TJPCov output.
         cov_ssc = cov_ssc.T
 
         nbpw = ell.size

@@ -50,7 +50,7 @@ class FouriercNGHaloModel(CovarianceFourier):
         # leaving as dictionary now in case we add
         # functionality to specify certain components in the computation
         self._tkk_cache = {
-            "no1h": None,
+            "234h": None,
         }
 
         for key in self.HOD_dict.keys():
@@ -75,12 +75,12 @@ class FouriercNGHaloModel(CovarianceFourier):
         fsky = float(np.mean(masks[1] * masks[2] * masks[3] * masks[4]))
         return fsky
 
-    def _get_no1h_tkk(self, cosmo, hmc, lk_arr, a_arr, nfw):
+    def _get_234h_tkk(self, cosmo, hmc, lk_arr, a_arr, nfw):
         """Caching system for the general matter
         trispectrum 2h + 3h + 4h terms.
         """
-        if self._tkk_cache["no1h"] is not None:
-            return self._tkk_cache["no1h"]
+        if self._tkk_cache["234h"] is not None:
+            return self._tkk_cache["234h"]
         tkk = 0.0
 
         tkk += ccl.halos.halomod_trispectrum_2h_22(
@@ -96,7 +96,7 @@ class FouriercNGHaloModel(CovarianceFourier):
             cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
         )
 
-        self._tkk_cache["no1h"] = tkk
+        self._tkk_cache["234h"] = tkk
         return tkk
 
     def get_covariance_block(
@@ -220,7 +220,7 @@ class FouriercNGHaloModel(CovarianceFourier):
 
         # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
-        tkk = self._get_no1h_tkk(cosmo, hmc, lk_arr, a_survey, nfw)[sel]
+        tkk = self._get_234h_tkk(cosmo, hmc, lk_arr, a_survey, nfw)[sel]
         tkk *= bias1 * bias2 * bias3 * bias4
 
         isnc = {}
@@ -287,6 +287,8 @@ class FouriercNGHaloModel(CovarianceFourier):
             integration_method=integration_method,
             fsky=fsky,
         )
+        # CCL returns the covariance as Cov(ell2[i2], ell[i1]).
+        # Must transpose to match TJPCov output.
         cov_cng = cov_cng.T
 
         nbpw = ell.size
