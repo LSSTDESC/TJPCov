@@ -1,21 +1,49 @@
 from .covariance_builder import CovarianceBuilder
 import numpy as np
 import pyccl as ccl
-from scipy.integrate import quad
+from scipy.integrate import quad, simpson
 from sacc import standard_types
+from crow.cluster_modules.completeness_models import (
+    Completeness,
+    CompletenessAguena16,
+)
 from crow.cluster_modules.mass_proxy import MurataBinned
+from crow.cluster_modules.purity_models import (
+    Purity,
+    PurityAguena16,
+    PurityAguena16LnProxy,
+)
 from .cluster_covariance_base import ClusterCovarianceBase
 from .clusters_helpers import halo_bias_map
 
+# Map completeness and purity model names to crow models
+completeness_map = {"Aguena16": CompletenessAguena16}
+purity_map = {
+    "Aguena16": PurityAguena16,
+    "Aguena16LnProxy": PurityAguena16LnProxy,
+}
+
 
 class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
-    """Class to calculate covariance of cluster counts."""
+    """Class to calculate covariance of cluster counts.
+
+    The cluster selection can include the completeness, c(M, z), and purity,
+    p(richness, z), models of crow, given in the ``completeness`` and
+    ``purity`` sections of the configuration, e.g.
+    ``{"model": "Aguena16", "a_n": 1.1}`` (parameters not given take the
+    crow defaults) or directly as crow objects. As in crow, the selection is
+    multiplied by the completeness and divided by the purity of the observed
+    richness, so that the counts include the false detections. They are
+    assumed to be clustered as the true clusters.
+    """
 
     space_type = "Fourier"
     _tracer_types = (
         standard_types.cluster_counts,
         standard_types.cluster_counts,
     )
+    # Number of richness nodes per bin for the integral with the purity
+    n_richness_purity = 32
 
     def __init__(self, config):
         """Class to calculate covariance of cluster counts.
@@ -70,6 +98,48 @@ class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
             self.config["mor_parameters"].get("sigma_p2")
         )
         self.mor_z_pivot = float(self.config["mor_parameters"].get("z_pivot"))
+
+        self.mass_richness_prob = MurataBinned(
+            self.mor_m_pivot, self.mor_z_pivot
+        )
+        for p in ["mu", "sigma"]:
+            for i in range(3):
+                self.mass_richness_prob.parameters[f"{p}{i}"] = getattr(
+                    self, f"mor_{p}_p{i}"
+                )
+
+        # Selection completeness and purity (None if not given)
+        self.completeness = self._load_selection_model(
+            "completeness", completeness_map, Completeness
+        )
+        self.purity = self._load_selection_model("purity", purity_map, Purity)
+
+    def _load_selection_model(self, section, model_map, model_class):
+        """Return the crow completeness or purity model of the configuration.
+
+        Args:
+            section (str): Configuration section, 'completeness' or 'purity'
+            model_map (dict): Map of model names to crow models
+            model_class (type): Base class of the crow models
+
+        Returns:
+            crow model or None if the section is not in the configuration
+        """
+        conf = self.config.get(section)
+        if conf is None or isinstance(conf, model_class):
+            return conf
+
+        conf = dict(conf)
+        name = conf.pop("model", None)
+        if name not in model_map:
+            raise ValueError(
+                f"Invalid {section} model: {name}. "
+                f"Must be one of {list(model_map)}"
+            )
+        model = model_map[name]()
+        for key, value in conf.items():
+            model.parameters[key] = float(value)
+        return model
 
     def _quad_integrate(self, argument, from_lim, to_lim):
         """Numerically integrate argument between bounds using scipy quad.
@@ -157,26 +227,59 @@ class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
             float: The probability that the true mass ln(ln_true_mass)
             is observed within the richness bin i and richness bin i+1
         """
-        richness_lower = np.log10(self.richness_bins[richness_i])
-        richness_upper = np.log10(self.richness_bins[richness_i + 1])
-        rich_bin = (richness_lower, richness_upper)
-        mass_richness_prob = MurataBinned(self.mor_m_pivot, self.mor_z_pivot)
-        # mass-obs relation params to be added as input params
-        mass_richness_prob.parameters["mu0"] = self.mor_mu_p0
-        mass_richness_prob.parameters["mu1"] = self.mor_mu_p1
-        mass_richness_prob.parameters["mu2"] = self.mor_mu_p2
-        mass_richness_prob.parameters["sigma0"] = self.mor_sigma_p0
-        mass_richness_prob.parameters["sigma1"] = self.mor_sigma_p1
-        mass_richness_prob.parameters["sigma2"] = self.mor_sigma_p2
+        return self.mass_richness_vec(ln_true_mass, z, richness_i)[0]
+
+    def mass_richness_vec(self, ln_true_mass, z, richness_i):
+        """Vectorized version of :meth:`mass_richness`.
+
+        With a purity model, the probability density of the richness is
+        divided by the purity of the observed richness before integrating
+        over the bin, as in crow. It is then the number of detections, true
+        or false, per halo.
+
+        Args:
+            ln_true_mass (array): True masses
+            z (float or array): Redshift(s)
+            richness_bin (int): Richness bin i
+        Returns:
+            array: The probability that each mass is observed within the
+            richness bin i
+        """
+        rich_bin = (
+            np.log10(self.richness_bins[richness_i]),
+            np.log10(self.richness_bins[richness_i + 1]),
+        )
+        log_m = np.atleast_1d(ln_true_mass).astype(np.float64) / np.log(10)
+        z = np.atleast_1d(z).astype(np.float64)
+        if self.purity is None:
+            return self.mass_richness_prob.distribution(log_m, z, rich_bin)
+
+        log_rich = np.linspace(*rich_bin, self.n_richness_purity)[:, None]
+        integrand = (
+            self.mass_richness_prob.gaussian_kernel(log_m, z, log_rich)
+            * np.log(10.0)
+            / self.purity.distribution(log_rich, z)
+        )
+        return simpson(integrand, x=log_rich[:, 0], axis=0)
+
+    def completeness_vec(self, ln_true_mass, z):
+        """Completeness of the cluster selection.
+
+        Args:
+            ln_true_mass (array): True masses
+            z (float or array): Redshift(s)
+        Returns:
+            array: Completeness for each mass, 1 without completeness model
+        """
         ln_true_mass = np.atleast_1d(ln_true_mass).astype(np.float64)
         z = np.atleast_1d(z).astype(np.float64)
-        result = mass_richness_prob.distribution(
-            ln_true_mass / np.log(10), z, rich_bin
-        )
+        if self.completeness is None:
+            return np.ones(np.broadcast_shapes(ln_true_mass.shape, z.shape))
+        return self.completeness.distribution(ln_true_mass / np.log(10), z)
 
-        return result[0]
-
-    def mass_richness_integral(self, z, richness_i, remove_bias=False):
+    def mass_richness_integral(
+        self, z, richness_i, remove_bias=False, log_mass_power=0
+    ):
         """Integrates the HMF weighted by mass-richness relation.
 
         The halo mass function weighted by the probability that we measure
@@ -187,6 +290,8 @@ class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
             richness_i (int): Richness bin
             remove_bias (bool, optional): If TRUE, will remove halo_bias from
             the mass integral. Used for calculating the shot noise.
+            log_mass_power (int, optional): Power of log10(M) in the
+            integrand. Used for the mean log10 mass.
         Returns:
             float: The mass-richness weighed derivative of number density per
             fluctuation in background
@@ -209,9 +314,14 @@ class CovarianceClusterCounts(ClusterCovarianceBase, CovarianceBuilder):
                 )
                 argument *= halo_bias
 
+            if log_mass_power:
+                argument *= (ln_m / np.log(10.0)) ** log_mass_power
+
+            argument *= self.completeness_vec(ln_m, z)[0]
+
             if self.has_mproxy:
                 argument *= self.mass_richness(
-                    np.array([ln_m]), np.array([z]), np.array([richness_i])
+                    np.array([ln_m]), np.array([z]), richness_i
                 )
 
             return argument

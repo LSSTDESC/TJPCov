@@ -109,3 +109,10 @@ venv.bak/
 
 # Mutex lock object (auto generated)
 lockfile.lock
+
+# macOS
+.DS_Store
+
+# Test and example outputs
+tests/tmp/
+examples/output_*/

@@ -14,7 +14,7 @@ import jinja2
 import yaml
 import copy
 
-from conftest import INPUT_YML, OUTDIR
+from conftest import INPUT_YML, OUTDIR, cap_mask
 
 MASSDEF = ccl.halos.MassDef200m
 SURVEY_NAME = "NC_mock_redshift_richness"
@@ -93,14 +93,146 @@ def test_load_from_sacc(mock_covariance_gauss: CovarianceClusterCounts):
     assert mock_covariance_gauss.min_halo_ln_mass == np.log(1e13)
     assert mock_covariance_gauss.num_richness_bins == 3
     assert mock_covariance_gauss.num_z_bins == 6
-    assert mock_covariance_gauss.min_richness == pytest.approx(
-        10**0.8685892469619315
+    assert mock_covariance_gauss.min_richness == pytest.approx(7.39)
+    assert mock_covariance_gauss.max_richness == pytest.approx(77.0)
+    assert mock_covariance_gauss.z_min == pytest.approx(0.2)
+    assert mock_covariance_gauss.z_max == pytest.approx(0.65)
+
+
+def test_load_from_sacc_exact_edges(save_cluster_sacc_data):
+    # Bin edges are used as they are in the sacc file (not rounded)
+    s = copy.deepcopy(save_cluster_sacc_data)
+    s.tracers["bin_z_0"].upper = s.tracers["bin_z_1"].lower = 0.275
+    s.tracers["bin_rich_0"].lower = np.log10(7.389)
+    cc_cov = ClusterCountsGaussian(_load_config(sacc_file=s))
+    assert cc_cov.z_bins[1] == 0.275
+    assert cc_cov.richness_bins[0] == pytest.approx(7.389, rel=1e-12)
+
+
+def test_ssc_mask(mock_cosmo, save_cluster_sacc_data):
+    # The SSC with the mask of a spherical cap is that of the spherical cap
+    ssc = ClusterCountsSSC(_load_config())
+    ssc.load_from_cosmology(mock_cosmo)
+    assert ssc.mask is None and ssc.L == ClusterCountsSSC.L
+    ref = ssc.super_sample_covariance()
+
+    config = _load_config()
+    config["tjpcov"]["mask_file"] = {SURVEY_NAME: cap_mask(ssc.survey_area)}
+    assert ClusterCountsSSC(config).L == ClusterCountsSSC.L_mask
+    config["ClusterCountsSSC"] = {"L": ClusterCountsSSC.L}
+    ssc_mask = ClusterCountsSSC(config)
+    ssc_mask.load_from_cosmology(mock_cosmo)
+    assert ssc_mask.mask is not None
+    # The area of the pixelized cap is 0.6% larger
+    np.testing.assert_allclose(
+        ssc_mask.super_sample_covariance(),
+        ref,
+        rtol=2e-2,
+        atol=2e-2 * np.abs(ref).max(),
     )
-    assert mock_covariance_gauss.max_richness == pytest.approx(
-        10**1.8864886182119167
+
+
+@pytest.mark.parametrize("section", ["completeness", "purity"])
+def test_load_selection_models(save_cluster_sacc_data, section):
+    from crow.cluster_modules.completeness_models import (
+        CompletenessAguena16,
     )
-    assert mock_covariance_gauss.z_min == pytest.approx(0.20000240679472392)
-    assert mock_covariance_gauss.z_max == pytest.approx(0.6499986281483467)
+    from crow.cluster_modules.purity_models import PurityAguena16LnProxy
+
+    model_class, name = {
+        "completeness": (CompletenessAguena16, "Aguena16"),
+        "purity": (PurityAguena16LnProxy, "Aguena16LnProxy"),
+    }[section]
+
+    # Not given
+    cc_cov = ClusterCountsGaussian(_load_config())
+    assert cc_cov.completeness is None and cc_cov.purity is None
+
+    # From the configuration, with crow defaults for parameters not given
+    config = _load_config()
+    config[section] = {"model": name, "a_n": 1.5}
+    model = getattr(ClusterCountsGaussian(config), section)
+    assert isinstance(model, model_class)
+    assert model.parameters["a_n"] == 1.5
+    assert model.parameters["b_n"] == model_class().parameters["b_n"]
+
+    # crow objects are used directly
+    config[section] = model_class()
+    assert getattr(ClusterCountsGaussian(config), section) is config[section]
+
+    for conf in [{"model": "Unknown"}, {"model": name, "unknown": 1}]:
+        config[section] = conf
+        with pytest.raises((ValueError, KeyError)):
+            ClusterCountsGaussian(config)
+
+
+def test_mass_richness_purity_one(mock_covariance_gauss):
+    # With purity 1, the integral over the richness bin with the purity is
+    # the binned mass-richness relation
+    from crow.cluster_modules.purity_models import PurityAguena16
+
+    ln_m = np.log(np.geomspace(1e13, 1e15, 10))
+    binned = mock_covariance_gauss.mass_richness_vec(ln_m, 0.4, 1)
+    purity = PurityAguena16()
+    purity.parameters["a_logm_piv"] = -10.0
+    mock_covariance_gauss.purity = purity
+    test = mock_covariance_gauss.mass_richness_vec(ln_m, 0.4, 1)
+    assert test == pytest.approx(binned, rel=1e-4)
+
+
+def test_completeness_purity_vs_crow(mock_cosmo, save_cluster_sacc_data):
+    # The change of the counts due to completeness and purity is the same as
+    # in crow
+    from crow import ClusterAbundance, kernel, mass_proxy
+    from crow.cluster_modules.completeness_models import (
+        CompletenessAguena16,
+    )
+    from crow.cluster_modules.purity_models import PurityAguena16
+    from crow.recipes.binned_grid import GridBinnedClusterRecipe
+
+    z, richness_i = 0.4, 1
+    config = _load_config()
+    config["completeness"] = {"model": "Aguena16"}
+    config["purity"] = {"model": "Aguena16"}
+    cc_cov = ClusterCountsGaussian(config)
+    cc_cov.load_from_cosmology(mock_cosmo)
+    n_sel = cc_cov.mass_richness_integral(z, richness_i, remove_bias=True)
+    cc_cov.completeness = cc_cov.purity = None
+    n = cc_cov.mass_richness_integral(z, richness_i, remove_bias=True)
+
+    mor = config["mor_parameters"]
+    rich_edges = np.log10(cc_cov.richness_bins[richness_i : richness_i + 2])
+    counts = []
+    for completeness, purity in [(None, None), (True, True)]:
+        recipe = GridBinnedClusterRecipe(
+            cluster_theory=ClusterAbundance(
+                mock_cosmo, ccl.halos.MassFuncTinker08(mass_def="200m")
+            ),
+            redshift_distribution=kernel.SpectroscopicRedshift(),
+            mass_distribution=mass_proxy.MurataUnbinned(
+                mor["m_pivot"], mor["z_pivot"]
+            ),
+            completeness=completeness and CompletenessAguena16(),
+            purity=purity and PurityAguena16(),
+            mass_interval=(13.0, 16.0),
+            proxy_grid_size=64,
+            redshift_grid_size=5,
+            mass_grid_size=400,
+        )
+        for p in ["mu", "sigma"]:
+            for i in range(3):
+                recipe.mass_distribution.parameters[f"{p}{i}"] = mor[
+                    f"{p}_p{i}"
+                ]
+        recipe.setup()
+        counts.append(
+            recipe.evaluate_theory_prediction_counts(
+                (z - 0.005, z + 0.005), rich_edges, 5000.0
+            )
+        )
+
+    assert n_sel / n != pytest.approx(1, rel=1e-2)
+    assert n_sel / n == pytest.approx(counts[1] / counts[0], rel=2e-3)
 
 
 def test_load_from_cosmology(mock_covariance_gauss: CovarianceClusterCounts):
@@ -287,10 +419,14 @@ def test_cov_nxn(
         (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
         (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
     )
-    cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(
-        (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
-        (SURVEY_NAME, "bin_rich_0", "bin_z_0"),
-    )
+    # The SSC block also contains the mean log mass
+    comb = (SURVEY_NAME, "bin_rich_0", "bin_z_0")
+    s = mock_covariance_ssc.io.get_sacc_file()
+    dtypes = [s.data[i].data_type for i in s.indices(tracers=comb)]
+    icc = dtypes.index(sacc.standard_types.cluster_counts)
+    cov_00_ssc = mock_covariance_ssc.get_covariance_block_for_sacc(comb, comb)[
+        icc, icc
+    ]
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
 
     cov_00_gauss = mock_covariance_gauss.get_covariance_block(
@@ -302,6 +438,38 @@ def test_cov_nxn(
         ("clusters_0_0",),
     )
     assert cov_00_gauss + cov_00_ssc == pytest.approx(ref_sum, rel=1e-3)
+
+
+def test_cov_ssc_mean_log_mass(mock_covariance_ssc: ClusterCountsSSC):
+    cov = mock_covariance_ssc
+    s = cov.io.get_sacc_file()
+    cc = sacc.standard_types.cluster_counts
+    mlm = sacc.standard_types.cluster_mean_log_mass
+    comb1 = (SURVEY_NAME, "bin_rich_0", "bin_z_0")
+    comb2 = (SURVEY_NAME, "bin_rich_1", "bin_z_1")
+    d1 = [s.data[i].data_type for i in s.indices(tracers=comb1)]
+    d2 = [s.data[i].data_type for i in s.indices(tracers=comb2)]
+
+    block = cov.get_covariance_block_for_sacc(comb1, comb2)
+    assert block.shape == (2, 2)
+    # Counts unchanged
+    assert block[d1.index(cc), d2.index(cc)] == pytest.approx(
+        cov.ssc_total[0, 1, 0, 1]
+    )
+    # Covariance with and of the mean log mass, in the sacc order
+    nb, nb_mlm = cov.Nb, cov.Nb_mean_log_mass
+    sigma2 = cov.sigma2_zizj[0, 1]
+    assert block[d1.index(cc), d2.index(mlm)] == pytest.approx(
+        nb[0, 0] * nb_mlm[1, 1] * sigma2
+    )
+    assert block[d1.index(mlm), d2.index(cc)] == pytest.approx(
+        nb_mlm[0, 0] * nb[1, 1] * sigma2
+    )
+    assert block[d1.index(mlm), d2.index(mlm)] == pytest.approx(
+        nb_mlm[0, 0] * nb_mlm[1, 1] * sigma2
+    )
+    # Heavier halos are more biased, so <log M> grows with the long mode
+    assert np.all(nb_mlm > 0)
 
 
 def test_cluster_count_tracer_missing_throws(save_cluster_sacc_data):

@@ -110,11 +110,19 @@ def get_fsky(tr1, tr2, tr3, tr4):
     m3 = hp.read_map(mf[tr3])
     m4 = hp.read_map(mf[tr4])
 
-    return np.mean(m1 * m2 * m3 * m4)
+    return float(np.mean(m1 * m2 * m3 * m4))
 
 
 def test_smoke():
     FouriercNGHaloModel(INPUT_YML_cNG)
+
+
+def test_get_fsky(cov_fcNG):
+    # The masks are float32 maps, but CCL needs fsky as a Python float
+    tr = dict(zip([1, 2, 3, 4], ["DESgc__0", "DESgc__0", "DESwl__0"] * 2))
+    fsky = cov_fcNG._get_fsky(tr)
+    assert type(fsky) is float
+    assert fsky == pytest.approx(get_fsky(*[tr[i] for i in range(1, 5)]))
 
 
 @pytest.mark.skipif(
@@ -197,7 +205,7 @@ def test_get_covariance_block(cov_fcNG, tracer_comb1, tracer_comb2):
         prof3 = hod
         calculate_with_hod = True
 
-    if "gc" in tracer_comb2[0]:
+    if "gc" in tracer_comb2[1]:
         bias4 = cov_fcNG.bias_lens[tracer_comb2[1]]
         prof4 = hod
         calculate_with_hod = True

@@ -93,7 +93,6 @@ class CovarianceCalculator:
                     )
 
             self.cov_classes = cov_classes
-
         return self.cov_classes
 
     def get_covariance(self):

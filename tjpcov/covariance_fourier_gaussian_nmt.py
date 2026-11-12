@@ -421,13 +421,16 @@ class FourierGaussianNmt(CovarianceFourier):
             fnames = [None]
             isfiles = [None]
 
-        cw = nmt.NmtCovarianceWorkspace()
         if "recompute" in kwargs:
             recompute = kwargs.pop("recompute")
         else:
             recompute = False
+        # from_fields and from_file work with NaMaster >= 2 (the bare
+        # constructor was removed in v3)
         if recompute or (not np.any(isfiles)):
-            cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
+            cw = nmt.NmtCovarianceWorkspace.from_fields(
+                f1, f2, f3, f4, **kwargs
+            )
             if fnames[0] and not os.path.isfile(fnames[0]):
                 cw.write_to(fnames[0])
             for fn, isf in zip(fnames[1:], isfiles[1:]):
@@ -437,7 +440,7 @@ class FourierGaussianNmt(CovarianceFourier):
                     os.remove(fn)
         else:
             ix = isfiles.index(True)
-            cw.read_from(fnames[ix])
+            cw = nmt.NmtCovarianceWorkspace.from_file(fnames[ix])
 
         return cw
 
@@ -689,23 +692,20 @@ class FourierGaussianNmt(CovarianceFourier):
         else:
             fname = isfile = fname2 = isfile2 = None
 
-        w = nmt.NmtWorkspace()
         if "recompute" in kwargs:
             recompute = kwargs.pop("recompute")
         else:
             recompute = False
 
         if recompute or ((not isfile) and (not isfile2)):
-            w.compute_coupling_matrix(f1, f2, bins, **kwargs)
+            w = nmt.NmtWorkspace.from_fields(f1, f2, bins, **kwargs)
             if fname and not os.path.isfile(fname):
                 w.write_to(fname)
             if isfile2 and os.path.isfile(fname2):
                 # Remove the other to avoid later confusions.
                 os.remove(fname2)
-        elif isfile:
-            w.read_from(fname)
         else:
-            w.read_from(fname2)
+            w = nmt.NmtWorkspace.from_file(fname if isfile else fname2)
 
         return w
 
@@ -803,8 +803,7 @@ class FourierGaussianNmt(CovarianceFourier):
                         fname = cache_wsp[k]
                     else:
                         fname = cache_wsp[k[::-1]]
-                    wsp = nmt.NmtWorkspace()
-                    wsp.read_from(fname)
+                    wsp = nmt.NmtWorkspace.from_file(fname)
                     w[i] = w_by_mask_name_s[k] = wsp
                 else:
                     w_by_mask_name_s[k] = self.get_workspace(

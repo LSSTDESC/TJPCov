@@ -27,6 +27,45 @@ halo_bias_map = {
 }
 
 
+def get_halo_model(config):
+    """Return the halo model shared by the halo model covariances.
+
+    The mass definition, mass function and halo bias are read from
+    config['mor_parameters'] if present, so that the C_ell and cluster
+    covariances use the same halo model. Otherwise, they default to 200m,
+    Tinker08 and Tinker10. The concentration is always Duffy08.
+
+    Args:
+        config (dict): Configuration dictionary
+
+    Returns:
+        tuple:
+            - hmc (:obj:`pyccl.halos.HMCalculator`): Halo model calculator
+            - cM (:obj:`pyccl.halos.Concentration`): Concentration-mass
+              relation
+            - nfw (:obj:`pyccl.halos.HaloProfileNFW`): NFW profile
+    """
+    mor = config.get("mor_parameters", {})
+    mass_def = mor.get("mass_def", "200m")
+    mass_func_name = mor.get("mass_func", "Tinker08")
+    halo_bias_name = mor.get("halo_bias", "Tinker10")
+    if mass_func_name not in mass_func_map:
+        raise ValueError(f"Invalid mass function: {mass_func_name}")
+    if halo_bias_name not in halo_bias_map:
+        raise ValueError(f"Invalid halo bias: {halo_bias_name}")
+
+    hmc = ccl.halos.HMCalculator(
+        mass_function=mass_func_map[mass_func_name](mass_def=mass_def),
+        halo_bias=halo_bias_map[halo_bias_name](mass_def=mass_def),
+        mass_def=mass_def,
+    )
+    cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
+    nfw = ccl.halos.HaloProfileNFW(
+        mass_def=mass_def, concentration=cM, fourier_analytic=True
+    )
+    return hmc, cM, nfw
+
+
 class FFTHelper(object):
     """Fft helper class.
 

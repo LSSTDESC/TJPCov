@@ -28,7 +28,7 @@ dependencies = [
     "numpy",
     "Jinja2",
     "pyyaml",
-    "pyccl>=3.2.0",
+    "pyccl>3.3.6",
     "sacc>=0.12",
     "camb",
     "healpy",
@@ -48,7 +48,7 @@ doc = [
     "sphinx-book-theme",
 ]
 nmt = [
-    "pymaster>=2,<3"
+    "pymaster>=2"
 ]
 mpi = [
     "mpi4py"
@@ -57,7 +57,7 @@ clusters = [
     "lsstdesc-crow"
 ]
 full = [
-    "pymaster>=2,<3",
+    "pymaster>=2",
     "mpi4py",
     "lsstdesc-crow",
     "sphinx",

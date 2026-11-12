@@ -13,9 +13,9 @@ dependencies:
   - numpy
   - scipy
   - pyyaml
-  - pyccl>=3.2
+  - pyccl>3.3.6
   - sacc>=0.12
-  - namaster>2,<3
+  - namaster>=2
   - camb<2
   - Jinja2
   - healpy

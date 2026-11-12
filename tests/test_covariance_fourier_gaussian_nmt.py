@@ -198,17 +198,14 @@ def get_benchmark_cov(tracer_comb1, tracer_comb2):
 
 def get_workspace_from_trs(tr1, tr2):
     config = get_xcell_yml()
-    w = nmt.NmtWorkspace()
     bn = get_pair_folder_name((tr1, tr2))
     m1 = config["tracers"][tr1]["mask_name"]
     m2 = config["tracers"][tr2]["mask_name"]
     fname = os.path.join(ROOT, bn, f"w__{m1}__{m2}.fits")
-    w.read_from(fname)
-    return w
+    return nmt.NmtWorkspace.from_file(fname)
 
 
 def get_workspace_from_dtype(dtype):
-    w = nmt.NmtWorkspace()
     if dtype == "galaxy_clustering":
         fname = os.path.join(
             ROOT, "DESgc_DESgc/w__mask_DESgc__mask_DESgc.fits"
@@ -221,21 +218,17 @@ def get_workspace_from_dtype(dtype):
         fname = os.path.join(
             ROOT, "DESgc_DESwl/w__mask_DESgc__mask_DESwl0.fits"
         )
-    w.read_from(fname)
-
-    return w
+    return nmt.NmtWorkspace.from_file(fname)
 
 
 def get_covariance_workspace(tr1, tr2, tr3, tr4):
     config = get_xcell_yml()
-    cw = nmt.NmtCovarianceWorkspace()
     m1 = config["tracers"][tr1]["mask_name"]
     m2 = config["tracers"][tr2]["mask_name"]
     m3 = config["tracers"][tr3]["mask_name"]
     m4 = config["tracers"][tr4]["mask_name"]
     fname = os.path.join(ROOT, "cov", f"cw__{m1}__{m2}__{m3}__{m4}.fits")
-    cw.read_from(fname)
-    return cw
+    return nmt.NmtCovarianceWorkspace.from_file(fname)
 
 
 def get_xcell_yml():
@@ -267,18 +260,14 @@ def get_workspaces_dict_for_cov(**kwargs):
     bins = get_nmt_bin()
     f = get_fields_dict_for_cov()
 
-    w12 = nmt.NmtWorkspace()
-    w12.compute_coupling_matrix(f[1], f[2], bins, **kwargs)
+    w12 = nmt.NmtWorkspace.from_fields(f[1], f[2], bins, **kwargs)
 
-    w34 = nmt.NmtWorkspace()
-    w34.compute_coupling_matrix(f[3], f[4], bins, **kwargs)
+    w34 = nmt.NmtWorkspace.from_fields(f[3], f[4], bins, **kwargs)
 
-    w13 = nmt.NmtWorkspace()
-    w13.compute_coupling_matrix(f[1], f[3], bins, **kwargs)
+    w13 = nmt.NmtWorkspace.from_fields(f[1], f[3], bins, **kwargs)
     w23 = w13
 
-    w14 = nmt.NmtWorkspace()
-    w14.compute_coupling_matrix(f[1], f[4], bins, **kwargs)
+    w14 = nmt.NmtWorkspace.from_fields(f[1], f[4], bins, **kwargs)
     w24 = w14
 
     return {13: w13, 23: w23, 14: w14, 24: w24, 12: w12, 34: w34}
@@ -672,8 +661,7 @@ def test_get_covariance_workspace(cov_fg_nmt, kwargs):
     f1 = f2 = nmt.NmtField(m1, None, spin=0)
     f3 = f4 = nmt.NmtField(m3, None, spin=2)
 
-    cw = nmt.NmtCovarianceWorkspace()
-    cw.compute_coupling_coefficients(f1, f2, f3, f4, **kwargs)
+    cw = nmt.NmtCovarianceWorkspace.from_fields(f1, f2, f3, f4, **kwargs)
 
     cl = get_cl("cross", fiducial=False)
     cl_fid = get_cl("cross", fiducial=True)
@@ -981,8 +969,7 @@ def test_get_workspace(cov_fg_nmt, kwargs):
     f1 = nmt.NmtField(m1, None, spin=0)
     f2 = nmt.NmtField(m2, None, spin=2)
 
-    w = nmt.NmtWorkspace()
-    w.compute_coupling_matrix(f1, f2, bins, **kwargs)
+    w = nmt.NmtWorkspace.from_fields(f1, f2, bins, **kwargs)
 
     # Compute workspace with cov_fg_nmt
     s1 = 0

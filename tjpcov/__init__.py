@@ -27,6 +27,10 @@ def covariance_from_name(name):
         from .covariance_cluster_counts_gaussian import (
             ClusterCountsGaussian as Cov,
         )
+    elif name == "ClusterClcNGHaloModel":
+        from .covariance_cluster_counts_cl import ClusterClcNGHaloModel as Cov
+    elif name == "ClusterClSSCHaloModel":
+        from .covariance_cluster_counts_cl import ClusterClSSCHaloModel as Cov
     elif name == "ClusterMass":
         from .covariance_cluster_mass import ClusterMass as Cov
     elif name == "FourierGaussianFsky":

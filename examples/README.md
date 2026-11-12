@@ -17,6 +17,10 @@ Both of these files require an input `sacc` datavector, from which  `TJPCov` wil
 In these examples, we make use of the data used to test TJPCov. However, the format is general enough to be able to swap different data.
 The cosmology is also specified as a separate `.yaml` file, which helps to ensure a consistent cosmology between covariance computations. The cosmology is defined in the `3x2pt_cov_cosmology.yaml` of this directory. 
 
+## Joint C_ell and Cluster Covariance
+
+`shear_and_cluster_covariance.ipynb` computes the joint covariance of cosmic shear power spectra and cluster counts and mean log mass, including their cross-covariance (`ClusterClcNGHaloModel`, `ClusterClSSCHaloModel`). The cross-covariance also supports galaxy clustering and galaxy-galaxy lensing, with galaxies described by an HOD. It needs a CCL version with `pyccl.angular_cl_cov_counts`.
+
 ## Computing Additional Covariance Matrices
 
 [Active Development]

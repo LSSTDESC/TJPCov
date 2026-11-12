@@ -3,6 +3,7 @@ import healpy as hp
 import numpy as np
 import pyccl as ccl
 
+from .clusters_helpers import get_halo_model
 from .covariance_builder import CovarianceFourier
 
 
@@ -111,16 +112,7 @@ class FourierSSCHaloModel(CovarianceFourier):
         tr[3], tr[4] = tracer_comb2
 
         cosmo = self.get_cosmology()
-        mass_def = ccl.halos.MassDef200m
-        hmf = ccl.halos.MassFuncTinker08(mass_def=mass_def)
-        hbf = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
-        cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
-        nfw = ccl.halos.HaloProfileNFW(
-            mass_def=mass_def, concentration=cM, fourier_analytic=True
-        )
-        hmc = ccl.halos.HMCalculator(
-            mass_function=hmf, halo_bias=hbf, mass_def=mass_def
-        )
+        hmc, _, nfw = get_halo_model(self.config)
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals

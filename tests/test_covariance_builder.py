@@ -279,9 +279,15 @@ def test_get_covariance_block_for_sacc():
                 return ["cl"]
 
     cb = CovarianceBuilderTester(INPUT_YML)
+    # Two different tracer combinations, so that their data types differ
+    trs_cov = cb.get_list_of_tracers_for_cov()[1]
     cov = cb.get_covariance_block_for_sacc(*trs_cov)
     cov2 = get_covariance_block(*trs_cov)
     assert np.all(cov == cov2)
+
+    # "cl" must not match "cluster" data types
+    cb._tracer_types = ["cl", "cl"]
+    assert not np.any(cb.get_covariance_block_for_sacc(*trs_cov))
 
 
 def test_get_list_of_tracers_for_cov(mock_builder):

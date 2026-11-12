@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pyccl as ccl
 
+from .clusters_helpers import get_halo_model
 from .covariance_builder import CovarianceFourier
 
 
@@ -54,6 +55,81 @@ class FouriercNGHaloModel(CovarianceFourier):
                     + " in the HOD header for cNG calculation"
                 )
 
+        # Cache of the trispectrum terms, shared by many blocks
+        self.tk_cache = {}
+
+    def _get_tk3D(self, a_arr, lk_arr, isnc, bias):
+        """Return the cNG trispectrum for a combination of tracers.
+
+        Tk3D = bias * T_234h (NFW) + T_1h (HOD for number counts tracers).
+        The 2-, 3- and 4-halo terms are computed once for each a and k grid
+        and the 1-halo term once for each combination of profiles.
+
+        Args:
+            a_arr (array): Scale factors
+            lk_arr (array): Natural logarithm of the wavenumbers in 1/Mpc
+            isnc (tuple): If each of the 4 tracers is number counts
+            bias (float): Product of the linear bias of the 4 tracers
+
+        Returns:
+            :class:`~pyccl.tk3d.Tk3D`: Connected trispectrum
+        """
+        cosmo = self.get_cosmology()
+        hmc, cM, nfw = get_halo_model(self.config)
+        mass_def = hmc.mass_def
+        k = np.exp(lk_arr)
+        grid = (a_arr.tobytes(), lk_arr.tobytes())
+
+        if (grid, "234h") not in self.tk_cache:
+            args = (cosmo, hmc, k, a_arr)
+            H = ccl.halos
+            self.tk_cache[(grid, "234h")] = (
+                H.pk_4pt.halomod_trispectrum_2h_22(
+                    *args, prof=nfw, separable_growth=True
+                )
+                + H.halomod_trispectrum_2h_13(*args, prof=nfw)
+                + H.halomod_trispectrum_3h(
+                    *args, prof=nfw, separable_growth=True
+                )
+                + H.halomod_trispectrum_4h(
+                    *args, prof=nfw, separable_growth=True
+                )
+            )
+
+        if (grid, isnc) not in self.tk_cache:
+            hod = ccl.halos.HaloProfileHOD(
+                mass_def=mass_def, concentration=cM, **self.HOD_dict
+            )
+            # Choose using the HOD with or without number_counts = True
+            # based on the results of isnc
+            p = [hod if nc else nfw for nc in isnc]
+            p2pt = [
+                (
+                    ccl.halos.profiles_2pt.Profile2ptHOD()
+                    if isnc[i] and isnc[i + 1]
+                    else ccl.halos.profiles_2pt.Profile2pt()
+                )
+                for i in (0, 2)
+            ]
+            self.tk_cache[(grid, isnc)] = ccl.halos.halomod_trispectrum_1h(
+                cosmo,
+                hmc,
+                k,
+                a_arr,
+                prof=p[0],
+                prof2=p[1],
+                prof3=p[2],
+                prof4=p[3],
+                prof12_2pt=p2pt[0],
+                prof34_2pt=p2pt[1],
+            )
+
+        tkk = bias * self.tk_cache[(grid, "234h")]
+        tkk += self.tk_cache[(grid, isnc)]
+        return ccl.tk3d.Tk3D(
+            a_arr=a_arr, lk_arr=lk_arr, tkk_arr=tkk, is_logt=False
+        )
+
     def _get_fsky(self, tr=None):
         """Returns the fractional sky area from the mean survey masks.
 
@@ -64,7 +140,8 @@ class FouriercNGHaloModel(CovarianceFourier):
             - (:obj:`float`): fractional sky area.
         """
         masks = self.get_masks_dict(tr, {})
-        fsky = np.mean(masks[1] * masks[2] * masks[3] * masks[4])
+        # Masks can be float32 maps, which CCL does not accept as a double
+        fsky = float(np.mean(masks[1] * masks[2] * masks[3] * masks[4]))
         return fsky
 
     def get_covariance_block(
@@ -116,41 +193,6 @@ class FouriercNGHaloModel(CovarianceFourier):
         tr[1], tr[2] = tracer_comb1
         tr[3], tr[4] = tracer_comb2
         cosmo = self.get_cosmology()
-        mass_def = ccl.halos.MassDef200m
-        hmf = ccl.halos.MassFuncTinker08(mass_def=mass_def)
-        hbf = ccl.halos.HaloBiasTinker10(mass_def=mass_def)
-        cM = ccl.halos.ConcentrationDuffy08(mass_def=mass_def)
-        nfw = ccl.halos.HaloProfileNFW(
-            mass_def=mass_def, concentration=cM, fourier_analytic=True
-        )
-        hmc = ccl.halos.HMCalculator(
-            mass_function=hmf,
-            halo_bias=hbf,
-            mass_def=mass_def,
-        )
-
-        hod = ccl.halos.HaloProfileHOD(
-            mass_def=mass_def,
-            concentration=cM,
-            log10Mmin_0=self.HOD_dict["log10Mmin_0"],
-            log10Mmin_p=self.HOD_dict["log10Mmin_p"],
-            siglnM_0=self.HOD_dict["siglnM_0"],
-            siglnM_p=self.HOD_dict["siglnM_p"],
-            log10M0_0=self.HOD_dict["log10M0_0"],
-            log10M0_p=self.HOD_dict["log10M0_p"],
-            log10M1_0=self.HOD_dict["log10M1_0"],
-            log10M1_p=self.HOD_dict["log10M1_p"],
-            alpha_0=self.HOD_dict["alpha_0"],
-            alpha_p=self.HOD_dict["alpha_p"],
-            fc_0=self.HOD_dict["fc_0"],
-            fc_p=self.HOD_dict["fc_p"],
-            bg_0=self.HOD_dict["bg_0"],
-            bg_p=self.HOD_dict["bg_p"],
-            bmax_0=self.HOD_dict["bmax_0"],
-            bmax_p=self.HOD_dict["bmax_p"],
-            a_pivot=self.HOD_dict["a_pivot"],
-            ns_independent=self.HOD_dict["ns_independent"],
-        )
 
         # Get range of redshifts. z_min = 0 for compatibility with the limber
         # integrals
@@ -174,82 +216,27 @@ class FouriercNGHaloModel(CovarianceFourier):
         sel[np.sum(~sel) - 1] = True
         a_arr = a_arr[sel]
 
-        # Array of k
+        # Array of k. The P(k) spline one by default, which can have > 1000
+        # nodes. config['cNG']['nk'] sets a coarser grid to speed up the
+        # trispectrum calculation, which scales as nk^2.
         lk_arr = cosmo.get_pk_spline_lk()
+        if self.cNG_conf.get("nk") is not None:
+            lk_arr = np.linspace(lk_arr[0], lk_arr[-1], self.cNG_conf["nk"])
 
-        bias1 = self.bias_lens.get(tr[1], 1)
-        bias2 = self.bias_lens.get(tr[2], 1)
-        bias3 = self.bias_lens.get(tr[3], 1)
-        bias4 = self.bias_lens.get(tr[4], 1)
+        bias = np.prod([self.bias_lens.get(tr[i], 1) for i in range(1, 5)])
 
         ccl_tracers, _ = self.get_tracer_info()
 
         # TODO: This should be unified with the other classes in
         # CovarianceBuilder.
         fsky = self._get_fsky(tr=tr)
-        # Tk3D = b1*b2*b3*b4 * T_234h (NFW) + T_1h (HOD)
 
-        tkk = ccl.halos.pk_4pt.halomod_trispectrum_2h_22(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
+        isnc = tuple(
+            (sacc_file.tracers[tr[i]].quantity == "galaxy_density")
+            or ("lens" in tr[i])
+            for i in range(1, 5)
         )
-
-        tkk += ccl.halos.halomod_trispectrum_2h_13(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw
-        )
-
-        tkk += ccl.halos.halomod_trispectrum_3h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
-        )
-
-        tkk += ccl.halos.halomod_trispectrum_4h(
-            cosmo, hmc, np.exp(lk_arr), a_arr, prof=nfw, separable_growth=True
-        )
-
-        tkk *= bias1 * bias2 * bias3 * bias4
-
-        isnc = {}
-        for i in range(1, 5):
-            isnc[i] = (
-                sacc_file.tracers[tr[i]].quantity == "galaxy_density"
-            ) or ("lens" in tr[i])
-
-        # Choose using the HOD with or without number_counts = True
-        # based on the results of isnc
-
-        prof1 = hod if isnc[1] else nfw
-        prof2 = hod if isnc[2] else nfw
-        prof3 = hod if isnc[3] else nfw
-        prof4 = hod if isnc[4] else nfw
-
-        prof_2pt_hod = ccl.halos.profiles_2pt.Profile2ptHOD()
-        prof_2pt_avg = ccl.halos.profiles_2pt.Profile2pt()
-        HOD = ccl.halos.HaloProfileHOD
-        if isinstance(prof1, HOD) and isinstance(prof2, HOD):
-            prof12_2pt = prof_2pt_hod
-        else:
-            prof12_2pt = prof_2pt_avg
-
-        if isinstance(prof3, HOD) and isinstance(prof4, HOD):
-            prof34_2pt = prof_2pt_hod
-        else:
-            prof34_2pt = prof_2pt_avg
-
-        tkk += ccl.halos.halomod_trispectrum_1h(
-            cosmo,
-            hmc,
-            np.exp(lk_arr),
-            a_arr,
-            prof=prof1,
-            prof2=prof2,
-            prof3=prof3,
-            prof4=prof4,
-            prof12_2pt=prof12_2pt,
-            prof34_2pt=prof34_2pt,
-        )
-
-        tk3D = ccl.tk3d.Tk3D(
-            a_arr=a_arr, lk_arr=lk_arr, tkk_arr=tkk, is_logt=False
-        )
+        tk3D = self._get_tk3D(a_arr, lk_arr, isnc, bias)
         ell = self.get_ell_eff()
         cov_cng = ccl.covariances.angular_cl_cov_cNG(
             cosmo,

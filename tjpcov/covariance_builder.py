@@ -177,6 +177,9 @@ class CovarianceBuilder(ABC):
 
             ix1 = s.indices(tracers=tracer_comb1, data_type=my_dtype)
             ix2 = s.indices(tracers=tracer_comb2, data_type=my_dtype)
+            # Blocks of tracers without my_dtype have been zeroed out above
+            if (ix1.size == 0) or (ix2.size == 0):
+                continue
 
             cov_full[np.ix_(ix1, ix2)] = cov_ij
             cov_full[np.ix_(ix2, ix1)] = cov_ij.T
@@ -204,13 +207,13 @@ class CovarianceBuilder(ABC):
         """
         # Make a list of all independent tracer combinations
         tracers_cov = self.get_list_of_tracers_for_cov()
-
         # Save blocks and the corresponding tracers, as comm.gather does not
         # return the blocks in the original order.
         blocks = []
         tracers_blocks = []
         print("Computing independent covariance blocks", flush=True)
         tasks_per_rank = self._split_tasks_by_rank(tracers_cov)
+
         for tracer_comb1, tracer_comb2 in tasks_per_rank:
             print(
                 f"Rank {self.rank}: {tracer_comb1}, {tracer_comb2}", flush=True
@@ -339,20 +342,17 @@ class CovarianceBuilder(ABC):
 
         s = self.io.get_sacc_file()
 
-        # Check in the given order
-        correct_dtype1 = any(
-            self._tracer_types[0] in dtype for dtype in dtypes1
-        )
-        correct_dtype2 = any(
-            self._tracer_types[1] in dtype for dtype in dtypes2
-        )
-        correct_dtypes = correct_dtype1 and correct_dtype2
-
-        if not correct_dtypes:
-            # Check in the opposite order
-            correct_dtypes = (self._tracer_types[1] in dtypes1) and (
-                self._tracer_types[0] in dtypes2
+        def has_type(ttype, dtypes):
+            # Match full words to avoid e.g. "cl" matching "cluster_counts"
+            return any(
+                (ttype == dt) or (ttype in dt.split("_")) for dt in dtypes
             )
+
+        # Check in the given order and in the opposite one
+        tt1, tt2 = self._tracer_types
+        correct_dtypes = (
+            has_type(tt1, dtypes1) and has_type(tt2, dtypes2)
+        ) or (has_type(tt2, dtypes1) and has_type(tt1, dtypes2))
 
         # If still the dtypes are not of the class, return 0's
         if not correct_dtypes:
@@ -495,12 +495,24 @@ class CovarianceBuilder(ABC):
         """
         if self.nbpw is None:
             sacc_file = self.io.get_sacc_file()
-            dtype = sacc_file.get_data_types()[0]
+            dtype = self._get_first_data_type()
             tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
             ix = sacc_file.indices(data_type=dtype, tracers=tracers)
             self.nbpw = ix.size
 
         return self.nbpw
+
+    def _get_first_data_type(self):
+        """Return the first two-point data type in the sacc file.
+
+        Cluster data types are skipped so that sacc files combining C_ell (or
+        xi) and cluster data can be used.
+
+        Returns:
+            str: First two-point data type in the sacc file.
+        """
+        dtypes = self.io.get_sacc_file().get_data_types()
+        return next((dt for dt in dtypes if "cluster" not in dt), dtypes[0])
 
     def get_tracers_spin_dict(self, tracer_names):
         """Return a dictionary with the spins assotiated to the given tracers.
@@ -718,7 +730,7 @@ class CovarianceFourier(CovarianceBuilder):
             array: Array with the effective ell in the sacc file.
         """
         sacc_file = self.io.get_sacc_file()
-        dtype = sacc_file.get_data_types()[0]
+        dtype = self._get_first_data_type()
         tracers = sacc_file.get_tracer_combinations(data_type=dtype)[0]
         ell, _ = sacc_file.get_ell_cl(dtype, *tracers)
 
@@ -739,8 +751,8 @@ class CovarianceFourier(CovarianceBuilder):
             ell_edges: Array with bandpower edges (assumed to be contiguous).
         """
         sacc_file = self.io.get_sacc_file()
-        tr1, tr2 = sacc_file.get_tracer_combinations()[0]
-        dt = sacc_file.get_data_types(tracers=(tr1, tr2))[0]
+        dt = self._get_first_data_type()
+        tr1, tr2 = sacc_file.get_tracer_combinations(data_type=dt)[0]
         inds = sacc_file.indices(data_type=dt, tracers=(tr1, tr2))
         bpw = sacc_file.get_bandpower_windows(inds)
         if bpw is not None:
@@ -767,7 +779,8 @@ class CovarianceFourier(CovarianceBuilder):
 
         dt_long = []
         for dt in dtypes:
-            if len(dt.split("_")) > 2:
+            # Cluster data types are not C_ell and are left untouched
+            if (len(dt.split("_")) > 2) and ("cluster" not in dt):
                 dt_long.append(dt)
 
         for dt in dt_long:

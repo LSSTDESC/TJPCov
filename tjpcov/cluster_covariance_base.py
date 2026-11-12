@@ -51,10 +51,7 @@ class ClusterCovarianceBase:
         num_z_bins = len(z_bins)
         z_min = np.min([zbin.lower for zbin in z_bins])
         z_max = np.max([zbin.upper for zbin in z_bins])
-        z_bins = np.array(
-            [round(z_bins[0].lower, 2)]
-            + [round(zbin.upper, 2) for zbin in z_bins]
-        )
+        z_bins = np.array([z_bins[0].lower] + [zbin.upper for zbin in z_bins])
         z_bin_spacing = (z_max - z_min) / num_z_bins
         z_lower_limit = max(0.02, z_bins[0] - 4 * z_bin_spacing)
         z_upper_limit = (
@@ -77,7 +74,6 @@ class ClusterCovarianceBase:
             [10 ** richness_bins[0].lower]
             + [10**rbin.upper for rbin in richness_bins]
         )
-        richness_bins = np.round(richness_bins, 2)
 
         sacc_meta_dict = {
             "survey_area": survey_area,

@@ -8,6 +8,7 @@ arguments) in any test module under ``tests/`` without importing them.
 
 import os
 
+import healpy as hp
 import numpy as np
 import pyccl
 import pytest
@@ -15,6 +16,14 @@ import sacc
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 OUTDIR = "./tests/tmp/"
+
+
+def cap_mask(area, nside=128):
+    """HEALPix mask of a spherical cap with the given area in sr."""
+    mask = np.zeros(hp.nside2npix(nside))
+    theta = np.arccos(1 - area / (2 * np.pi))
+    mask[hp.query_disc(nside, [0, 0, 1], theta)] = 1
+    return mask
 
 
 @pytest.fixture(name="save_cluster_sacc_data", scope="module")
@@ -25,53 +34,18 @@ def fixture_save_cluster_sacc_data() -> sacc.Sacc:
     s_count = sacc.Sacc()
     s_count.add_tracer("survey", survey_name, area)
 
-    # Define bin information
+    # Define bin information. The reference covariances were computed with
+    # these edges (redshift and richness rounded to two decimals).
+    z_edges = [0.2, 0.28, 0.35, 0.43, 0.5, 0.57, 0.65]
+    log_rich_edges = np.log10([7.39, 16.14, 35.25, 77.0])
     bin_info = [
-        {
-            "name": "bin_z_0",
-            "lower": 0.20000240679472392,
-            "upper": 0.27500177702032774,
-        },
-        {
-            "name": "bin_z_1",
-            "lower": 0.27500177702032774,
-            "upper": 0.35000114724593157,
-        },
-        {
-            "name": "bin_z_2",
-            "lower": 0.35000114724593157,
-            "upper": 0.42500051747153533,
-        },
-        {
-            "name": "bin_z_3",
-            "lower": 0.42500051747153533,
-            "upper": 0.49999988769713916,
-        },
-        {
-            "name": "bin_z_4",
-            "lower": 0.49999988769713916,
-            "upper": 0.574999257922743,
-        },
-        {
-            "name": "bin_z_5",
-            "lower": 0.574999257922743,
-            "upper": 0.6499986281483467,
-        },
-        {
-            "name": "bin_rich_0",
-            "lower": 0.8685892469619315,
-            "upper": 1.2078890373785933,
-        },
-        {
-            "name": "bin_rich_1",
-            "lower": 1.2078890373785933,
-            "upper": 1.547188827795255,
-        },
-        {
-            "name": "bin_rich_2",
-            "lower": 1.547188827795255,
-            "upper": 1.8864886182119167,
-        },
+        {"name": f"bin_z_{i}", "lower": lo, "upper": hi}
+        for i, (lo, hi) in enumerate(zip(z_edges[:-1], z_edges[1:]))
+    ] + [
+        {"name": f"bin_rich_{i}", "lower": lo, "upper": hi}
+        for i, (lo, hi) in enumerate(
+            zip(log_rich_edges[:-1], log_rich_edges[1:])
+        )
     ]
 
     # Add bin tracers

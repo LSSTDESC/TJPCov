@@ -1,7 +1,33 @@
 """Tests for the cluster_helpers module."""
 
-from tjpcov.clusters_helpers import FFTHelper
+from tjpcov.clusters_helpers import FFTHelper, get_halo_model
+import pyccl as ccl
 import pytest
+
+
+def test_get_halo_model():
+    """Test the defaults and that mor_parameters set the halo model."""
+    hmc, cM, nfw = get_halo_model({})
+    assert hmc.mass_def.name == "200m"
+    assert isinstance(hmc.mass_function, ccl.halos.MassFuncTinker08)
+    assert isinstance(hmc.halo_bias, ccl.halos.HaloBiasTinker10)
+    assert isinstance(cM, ccl.halos.ConcentrationDuffy08)
+    assert isinstance(nfw, ccl.halos.HaloProfileNFW)
+
+    mor = {
+        "mass_def": "200c",
+        "mass_func": "Tinker10",
+        "halo_bias": "Tinker10",
+    }
+    hmc, cM, nfw = get_halo_model({"mor_parameters": mor})
+    assert hmc.mass_def.name == "200c"
+    assert isinstance(hmc.mass_function, ccl.halos.MassFuncTinker10)
+    assert isinstance(hmc.halo_bias, ccl.halos.HaloBiasTinker10)
+    assert cM.mass_def.name == "200c"
+
+    for key in ["mass_func", "halo_bias"]:
+        with pytest.raises(ValueError):
+            get_halo_model({"mor_parameters": {key: "Invalid"}})
 
 
 @pytest.fixture
