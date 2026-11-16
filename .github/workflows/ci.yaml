@@ -112,13 +112,9 @@ jobs:
 
       - name: Run MPI Tests (mpich)
         run: |
-          mamba install -y mpich
-          pip install -U mpi4py --no-cache-dir --no-deps
-
+          mamba install -y mpich mpi4py
           mpiexec -n 2 pytest -vv tests/test_mpi.py
-
-          mamba remove -y mpich
-          pip uninstall -y mpi4py
+          mamba remove -y mpich mpi4py
       
       - name: Collect coverage report
         uses: coverallsapp/github-action@v2
