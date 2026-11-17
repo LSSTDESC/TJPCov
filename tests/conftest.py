@@ -7,6 +7,7 @@ arguments) in any test module under ``tests/`` without importing them.
 """
 
 import os
+import shutil
 
 import numpy as np
 import pyccl
@@ -15,6 +16,33 @@ import sacc
 
 INPUT_YML = "./tests/data/conf_covariance_clusters.yaml"
 OUTDIR = "./tests/tmp/"
+# Blocks that passed their correctness tests, kept for
+# test_full_covariance_psd.py (OUTDIR is wiped between tests).
+VALIDATED_BLOCKS_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "validated_blocks"
+)
+
+
+def pytest_sessionstart(session):
+    """Start every session without validated blocks, so that
+    test_full_covariance_psd.py only uses blocks that passed in this run."""
+    shutil.rmtree(VALIDATED_BLOCKS_DIR, ignore_errors=True)
+
+
+@pytest.fixture
+def keep_validated_block():
+    """Return a function that saves a covariance block for later checks.
+
+    Call it at the end of a test, after its assertions, so that only blocks
+    that passed are kept.
+    """
+
+    def save(term, tracer_comb1, tracer_comb2, cov):
+        os.makedirs(VALIDATED_BLOCKS_DIR, exist_ok=True)
+        fname = "{}_{}_{}_{}_{}.npz".format(term, *tracer_comb1, *tracer_comb2)
+        np.savez(os.path.join(VALIDATED_BLOCKS_DIR, fname), cov=cov)
+
+    return save
 
 
 @pytest.fixture(name="save_cluster_sacc_data", scope="module")

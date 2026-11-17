@@ -80,7 +80,9 @@ def test_smoke():
         (("DESwl__0", "DESwl__0"), ("DESwl__1", "DESwl__1")),
     ],
 )
-def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
+def test_get_covariance_block(
+    cov_fssc, tracer_comb1, tracer_comb2, keep_validated_block
+):
     # TJPCov covariance
     cosmo = cov_fssc.get_cosmology()
     s = cov_fssc.io.get_sacc_file()
@@ -235,6 +237,9 @@ def test_get_covariance_block(cov_fssc, tracer_comb1, tracer_comb2):
     )
 
     assert np.all(covf["cov"] == cov_ssc_zb)
+
+    # Passed: keep it for test_full_covariance_psd.py
+    keep_validated_block("ssc", tracer_comb1, tracer_comb2, cov_ssc)
 
 
 def test_get_covariance_block_WL_benchmark(cov_fssc):

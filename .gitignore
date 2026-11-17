@@ -109,3 +109,5 @@ venv.bak/
 
 # Mutex lock object (auto generated)
 lockfile.lock
+# Covariance blocks kept by the correctness tests for test_full_covariance_psd.py
+tests/validated_blocks/
